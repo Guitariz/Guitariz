@@ -366,47 +366,50 @@
 }
 
 /* ---------Scale Explorer Enhancements--------- */
+
+/* Button and Input Clarity */
+button, input, select, textarea {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
+}
+
 .scale-explorer-note-chip {
-  @apply transition-all duration-300;
+  transition: all 0.2s ease-out;
+  -webkit-font-smoothing: antialiased;
+  backface-visibility: hidden;
 }
 
 .scale-explorer-note-chip:hover {
-  @apply scale-110 shadow-lg;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .scale-explorer-note-chip:active {
-  @apply scale-95;
-}
-
-.scale-note-degree {
-  @apply text-xs font-semibold opacity-80;
-}
-
-.scale-info-card {
-  @apply transition-all duration-300 hover:shadow-lg hover:border-primary/40;
+  transform: scale(0.95);
 }
 
 .scale-selector-button {
-  @apply transition-all duration-200 hover:translate-x-1;
+  transition: all 0.2s ease-out;
+  -webkit-font-smoothing: antialiased;
 }
 
-.scale-selector-button[data-selected="true"] {
-  @apply scale-105 shadow-lg;
+.scale-selector-button:hover {
+  transform: translateX(2px);
 }
 
 .fretboard-note-dot {
-  @apply transition-all duration-200 hover:scale-125;
+  transition: all 0.2s ease-out;
+  -webkit-font-smoothing: antialiased;
 }
 
-.fretboard-note-degree-label {
-  @apply absolute -top-6 left-1/2 transform -translate-x-1/2 bg-primary/80 text-white text-xs font-bold py-1 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none;
-}
-
-/* Stagger animation for note chips */
+/* Note Chip Animations */
 @keyframes noteChipFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.8) translateY(8px);
+    transform: scale(0.85) translateY(6px);
   }
   to {
     opacity: 1;
@@ -418,38 +421,68 @@
   animation: noteChipFadeIn 0.3s ease-out forwards;
 }
 
-/* Glow effect for root note */
+/* Root Note Glow */
 @keyframes rootNoteGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 10px rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 8px rgba(255, 215, 0, 0.1);
   }
   50% {
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6), inset 0 0 12px rgba(255, 215, 0, 0.2);
   }
 }
 
 .root-note-highlight {
-  animation: rootNoteGlow 2s ease-in-out infinite;
+  animation: rootNoteGlow 2.5s ease-in-out infinite;
 }
 
-/* Responsive adjustments for Scale Explorer */
+/* Scale Cards */
+.scale-info-card {
+  transition: all 0.3s ease-out;
+}
+
+.scale-info-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
 @media (max-width: 1024px) {
-  .scale-explorer-note-chip {
-    @apply px-3 py-2 text-sm;
+  .note-chip {
+    padding: 0.625rem 0.625rem;
+    font-size: 0.75rem;
   }
 }
 
 @media (max-width: 768px) {
   .note-chip {
-    @apply px-2.5 py-2 text-xs;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
   }
   
   .scale-explorer-note-chip:hover {
-    @apply scale-105;
+    transform: scale(1.05);
   }
 
   .fretboard-note-dot:hover {
-    @apply scale-110;
+    transform: scale(1.1);
   }
 }
+
+/* Ensure crisp rendering on all elements */
+.glass-card {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Clear button focus states */
+button:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* Remove any blur from animations */
+* {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 
