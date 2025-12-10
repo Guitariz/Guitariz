@@ -4,12 +4,9 @@
   "installCommand": "npm install",
   "framework": "vite",
   "outputDirectory": "dist",
-  "env": [
-    {
-      "key": "NODE_ENV",
-      "value": "production"
-    }
-  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
   "functions": {
     "api/**/*.ts": {
       "memory": 1024,
