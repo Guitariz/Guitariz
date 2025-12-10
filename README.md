@@ -30,8 +30,6 @@ An interactive web application for exploring guitar, piano, and music theory thr
 
 ## ✨ Features
 
-## ✨ Features
-
 - **🎹 Interactive Fretboard** - Click to play notes or use keyboard. Real-time chord detection identifies what you're playing.
 - **🎹 Piano Keyboard** - 88-key piano with keyboard controls. Navigate octaves and explore note positions.
 - **🎵 Chord Explorer** - Browse different chord voicings (Major, Minor, 7th, sus2/sus4, etc.) with interactive finger position diagrams.
