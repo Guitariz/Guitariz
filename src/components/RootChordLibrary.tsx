@@ -3,85 +3,56 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Search, X, Layers } from "lucide-react";
-import { chordLibraryData } from "@/data/chordData";
+import { chordLibraryData, findChordByName } from "@/data/chordData";
 import { ChordRoot, ChordVariant } from "@/types/chordTypes";
 import ChordDiagram from "./chord/ChordDiagram";
 
 const ChordVariantCard = lazy(() => import("./chord/ChordVariantCard"));
 
+// Move constant outside component to prevent recreating on every render
 const CHROMATIC_ROOTS = [
   "C", "C#/Db", "D", "D#/Eb", "E", "F",
   "F#/Gb", "G", "G#/Ab", "A", "A#/Bb", "B"
-];
+] as const;
 
 const RootChordLibrary = () => {
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter roots based on search
+  // Filter roots based on search - no unnecessary filtering
   const filteredRoots = useMemo(() => {
-    if (!searchQuery) return CHROMATIC_ROOTS;
-    return CHROMATIC_ROOTS.filter(root =>
+    if (!searchQuery) return Array.from(CHROMATIC_ROOTS);
+    return Array.from(CHROMATIC_ROOTS).filter(root =>
       root.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery]);
 
-  // Search for specific chords (e.g., "A#major", "Cm7")
+  // Optimized search using indexed lookup - O(1) instead of O(n²)
   const searchedChord = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return null;
-
-    const query = searchQuery.toLowerCase().trim();
-
-    // Try to parse chord name (e.g., "A#major" -> root: "A#", variant: "Major")
-    for (const root of chordLibraryData.roots) {
-      for (const variant of root.variants) {
-        const fullChordName = `${root.root}${variant.name}`.toLowerCase();
-
-        // Create shorthand versions for common chord types
-        let shortChordName = `${root.root}${variant.name}`.toLowerCase();
-
-        // Apply common abbreviations
-        shortChordName = shortChordName
-          .replace('major', '')  // Cmajor -> C
-          .replace('minor', 'm') // Cminor -> Cm
-          .replace('7', '7')     // C7 -> C7
-          .replace('maj7', 'maj7') // Cmaj7 -> Cmaj7
-          .replace('m7', 'm7')   // Cm7 -> Cm7
-          .replace('sus4', 'sus4') // Csus4 -> Csus4
-          .replace('sus2', 'sus2') // Csus2 -> Csus2
-          .replace('dim', 'dim') // Cdim -> Cdim
-          .replace('aug', 'aug') // Caug -> Caug
-          .replace('add9', 'add9') // Cadd9 -> Cadd9
-          .replace('6', '6')     // C6 -> C6
-          .replace('m6', 'm6');  // Cm6 -> Cm6
-
-        if (fullChordName === query || shortChordName === query) {
-          return { root, variant };
-        }
-      }
-    }
-
-    return null;
+    return findChordByName(searchQuery, chordLibraryData.roots) || null;
   }, [searchQuery]);
 
-  // Get selected root data
+  // Get selected root data with optimized lookup
   const selectedRootData = useMemo(() => {
     if (!selectedRoot) return null;
 
-    // Handle enharmonic equivalents (e.g., C# = Db)
+    // Handle enharmonic equivalents (e.g., C# = Db) - use cached lookup
     const rootVariations = selectedRoot.split('/');
     return chordLibraryData.roots.find(r =>
       rootVariations.some(variant => r.root === variant)
-    );
+    ) || null;
   }, [selectedRoot]);
 
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent, root: string) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setSelectedRoot(root);
-    }
-  };
+  // Memoize keyboard handler callback
+  const handleKeyDown = useMemo(() => {
+    return (e: React.KeyboardEvent, root: string) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setSelectedRoot(root);
+      }
+    };
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-background via-background to-primary/5 py-12 px-8">

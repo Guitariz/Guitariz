@@ -1,5 +1,71 @@
 import { ChordLibraryData } from "@/types/chordTypes";
 
+// Optimized chord search index - maps chord names to their data for O(1) lookup
+type ChordIndex = Map<string, { root: string; variantName: string }>;
+let chordIndex: ChordIndex | null = null;
+
+// Lazy initialize the chord index for optimal performance
+function buildChordIndex(roots: typeof chordLibraryData.roots): ChordIndex {
+  const index = new Map<string, { root: string; variantName: string }>();
+  
+  for (const rootData of roots) {
+    for (const variant of rootData.variants) {
+      // Add full name variant (e.g., "cmajor", "c#major")
+      const fullName = `${rootData.root}${variant.name}`.toLowerCase();
+      index.set(fullName, { root: rootData.root, variantName: variant.name });
+      
+      // Add abbreviated variants (e.g., "c", "c#m", "c#m7")
+      const abbreviated = getAbbreviatedChordName(rootData.root, variant.name).toLowerCase();
+      if (abbreviated !== fullName) {
+        index.set(abbreviated, { root: rootData.root, variantName: variant.name });
+      }
+    }
+  }
+  
+  return index;
+}
+
+// Get abbreviated chord name (e.g., "Major" -> "", "Minor" -> "m", "m7" -> "m7")
+function getAbbreviatedChordName(root: string, variantName: string): string {
+  const abbreviations: Record<string, string> = {
+    "Major": "",
+    "Minor": "m",
+    "7": "7",
+    "maj7": "maj7",
+    "m7": "m7",
+    "sus4": "sus4",
+    "sus2": "sus2",
+    "add9": "add9",
+    "dim": "dim",
+    "aug": "aug",
+    "6": "6",
+    "m6": "m6",
+  };
+  
+  const abbrev = abbreviations[variantName] ?? variantName.toLowerCase();
+  return `${root}${abbrev}`;
+}
+
+/**
+ * Searches for a chord by name using optimized index lookup
+ * O(1) complexity vs previous O(n²) nested loops
+ */
+export function findChordByName(searchQuery: string, roots: typeof chordLibraryData.roots) {
+  if (!chordIndex) {
+    chordIndex = buildChordIndex(roots);
+  }
+  
+  const query = searchQuery.toLowerCase().trim();
+  const match = chordIndex.get(query);
+  
+  if (!match) return null;
+  
+  const rootData = roots.find(r => r.root === match.root);
+  const variant = rootData?.variants.find(v => v.name === match.variantName);
+  
+  return rootData && variant ? { root: rootData, variant } : null;
+}
+
 // Comprehensive chord library data with root → variants structure
 export const chordLibraryData: ChordLibraryData = {
   version: "1.0.0",

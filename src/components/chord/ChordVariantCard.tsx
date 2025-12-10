@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,32 +16,42 @@ const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => 
   const [currentVoicingIndex, setCurrentVoicingIndex] = useState(0);
 
   const currentVoicing = variant.voicings[currentVoicingIndex];
-  const hasMultipleVoicings = variant.voicings.length > 1;
+  const hasMultipleVoicings = useMemo(
+    () => variant.voicings.length > 1,
+    [variant.voicings.length]
+  );
 
-  const handlePlayChord = () => {
+  // Memoize callbacks to prevent unnecessary re-renders of child components
+  const handlePlayChord = useCallback(() => {
     if (currentVoicing) {
       playChord(currentVoicing.frets);
     }
-  };
+  }, [currentVoicing]);
 
-  const nextVoicing = () => {
+  const nextVoicing = useCallback(() => {
     setCurrentVoicingIndex((prev) =>
       prev < variant.voicings.length - 1 ? prev + 1 : 0
     );
-  };
+  }, [variant.voicings.length]);
 
-  const prevVoicing = () => {
+  const prevVoicing = useCallback(() => {
     setCurrentVoicingIndex((prev) =>
       prev > 0 ? prev - 1 : variant.voicings.length - 1
     );
-  };
+  }, [variant.voicings.length]);
+
+  // Memoize chord display name
+  const chordDisplayName = useMemo(
+    () => `${rootNote}${variant.name === "Major" ? "" : variant.name}`,
+    [rootNote, variant.name]
+  );
 
   return (
     <Card className="glass-card p-6 animate-fade-in">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-xl font-bold text-gradient mb-1">
-            {rootNote}{variant.name === "Major" ? "" : variant.name}
+            {chordDisplayName}
           </h3>
           <p className="text-xs text-muted-foreground">
             Intervals: {variant.intervals}
