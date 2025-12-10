@@ -4,94 +4,118 @@ import RootChordLibrary from "@/components/RootChordLibrary";
 import ScaleExplorer from "@/components/ScaleExplorer";
 import Metronome from "@/components/Metronome";
 import CircleOfFifths from "@/components/CircleOfFifths";
-import { Music2, Sparkles, Zap, Globe, Star } from "lucide-react";
+import { Music2, Zap, Globe, Star, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-accent/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-ocean/5 rounded-full blur-3xl" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-neon/3 rounded-full blur-2xl animate-pulse"></div>
-      </div>
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Subtle background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none"></div>
 
       <Navigation />
 
-      {/* Enhanced Hero Section */}
-      <section className="pt-32 pb-24 px-6 relative">
-        <div className="container mx-auto text-center max-w-5xl">
-          <div className="mb-8 flex justify-center">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-accent flex items-center justify-center animate-float glow-accent hover-lift transition-all duration-500 overflow-hidden">
-              <img src="/logo.png" alt="Guitariz Logo" className="w-12 h-12 object-contain" />
-            </div>
-          </div>
-
-          <h1 className="text-5xl md:text-8xl font-bold mb-8 animate-fade-in leading-tight">
-            Welcome to <span className="text-gradient animate-gradient-x bg-clip-text">Guitariz</span>
+      {/* Hero Section - Clean & Modern */}
+      <section className="pt-40 pb-32 px-6 relative">
+        <div className="container mx-auto text-center max-w-4xl">
+          {/* Main Title */}
+          <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+            Learn Music Theory
+            <br />
+            <span className="text-primary">Hands-On</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 animate-fade-in max-w-3xl mx-auto leading-relaxed">
-            Your complete toolkit for music theory, chords, and guitar learning.
-            <span className="text-primary font-medium"> Visualize, learn, and master music like never before.</span>
+          {/* Subtitle */}
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Interactive fretboard, chord explorer, scales, and metronome. Master music theory visually and intuitively.
           </p>
 
-          {/* Feature highlights */}
-          <div className="flex flex-wrap justify-center gap-6 mb-12 animate-fade-in">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20 hover-lift transition-all duration-300">
-              <Zap className="w-4 h-4 text-accent animate-pulse" />
+          {/* CTA Button */}
+          <Button size="lg" className="gap-2 mb-16 shadow-lg hover:shadow-xl transition-shadow">
+            Start Exploring
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+
+          {/* Feature Pills */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
+            <div className="flex items-center justify-center gap-3 p-4 rounded-xl border border-border/50 bg-card/30 backdrop-blur hover:border-primary/50 transition-colors">
+              <Zap className="w-5 h-5 text-primary flex-shrink-0" />
               <span className="text-sm font-medium">Interactive Tools</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20 hover-lift transition-all duration-300">
-              <Globe className="w-4 h-4 text-primary animate-pulse" />
-              <span className="text-sm font-medium">Cross-Cultural Theory</span>
+            <div className="flex items-center justify-center gap-3 p-4 rounded-xl border border-border/50 bg-card/30 backdrop-blur hover:border-primary/50 transition-colors">
+              <Globe className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm font-medium">Global Music Theory</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full glass-card border-primary/20 hover-lift transition-all duration-300">
-              <Star className="w-4 h-4 text-accent animate-pulse" />
-              <span className="text-sm font-medium">Professional Quality</span>
+            <div className="flex items-center justify-center gap-3 p-4 rounded-xl border border-border/50 bg-card/30 backdrop-blur hover:border-primary/50 transition-colors">
+              <Star className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-sm font-medium">No Installation</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content Sections */}
-      <div className="container mx-auto px-6 space-y-32 pb-32 relative">
-        <section id="fretboard" className="animate-fade-in">
+      {/* Content Sections */}
+      <div className="container mx-auto px-6 space-y-24 pb-32 relative">
+        <section id="fretboard" className="scroll-mt-20">
           <Fretboard />
         </section>
 
-        <section id="chords" className="animate-fade-in">
+        <section id="chords" className="scroll-mt-20">
           <RootChordLibrary />
         </section>
 
-        <section id="scales" className="animate-fade-in">
+        <section id="scales" className="scroll-mt-20">
           <ScaleExplorer />
         </section>
 
-        <section id="metronome" className="animate-fade-in">
+        <section id="metronome" className="scroll-mt-20">
           <Metronome />
         </section>
 
-        <section id="theory" className="animate-fade-in">
+        <section id="theory" className="scroll-mt-20">
           <CircleOfFifths />
         </section>
       </div>
 
-      {/* Enhanced Footer */}
-      <footer className="border-t border-border/50 py-12 px-6 bg-card relative overflow-hidden">
-        <div className="container mx-auto text-center relative z-10">
-            <div className="flex items-center justify-center gap-2 mb-4">
-            {/* <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center">
-              <Music2 className="w-4 h-4 text-primary-foreground" />
-            </div> */}
-            <span className="text-sm font-medium text-gradient">Guitariz :))</span>
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-16 px-6 bg-card/50 backdrop-blur">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Music2 className="w-5 h-5 text-primary" />
+                <span className="font-bold text-lg">Guitariz</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Learn music theory interactively with hands-on tools.
+              </p>
+            </div>
+
+            {/* Links */}
+            <div>
+              <h3 className="font-semibold mb-4 text-sm">Tools</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="#fretboard" className="hover:text-primary transition-colors">Fretboard</a></li>
+                <li><a href="#chords" className="hover:text-primary transition-colors">Chord Library</a></li>
+                <li><a href="#scales" className="hover:text-primary transition-colors">Scale Explorer</a></li>
+              </ul>
+            </div>
+
+            {/* More Links */}
+            <div>
+              <h3 className="font-semibold mb-4 text-sm">Info</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li><a href="/" className="hover:text-primary transition-colors">Home</a></li>
+                <li><a href="https://github.com/abhi9vaidya/guitariz" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">GitHub</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">License</a></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mb-2">
-            Built with ❤️ for musicians and guitarists worldwide
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Guitariz © 2025 - Your complete music companion
-          </p>
+
+          <div className="border-t border-border/50 pt-8 text-center text-sm text-muted-foreground">
+            <p>© 2025 Guitariz. Made for musicians.</p>
+          </div>
         </div>
       </footer>
     </div>
