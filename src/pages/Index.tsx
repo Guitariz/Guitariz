@@ -1,6 +1,6 @@
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Music2, Layers, Disc, Music, BookOpen } from "lucide-react";
+import { ArrowRight, Sparkles, Music2, Layers, Disc, Music, BookOpen, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -28,6 +28,12 @@ const toolCards = [
     desc: "Stay in time with a clean, glowing click.",
     icon: Music,
     to: "/metronome",
+  },
+  {
+    title: "Chord AI",
+    desc: "Coming soon.",
+    icon: Bot,
+    to: "/chord-ai",
   },
   {
     title: "Circle of Fifths",
