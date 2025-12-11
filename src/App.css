@@ -1,2 +1,182 @@
-/* Guitariz Main Styles */
+/* Guitariz Motion + Atmosphere */
+
+/* Soft aurora that quietly moves behind the homepage */
+.home-aurora::before,
+.home-aurora::after {
+	content: "";
+	position: fixed;
+	inset: -30%;
+	pointer-events: none;
+	z-index: -1;
+	background: conic-gradient(
+		from 120deg,
+		rgba(98, 148, 255, 0.06),
+		rgba(255, 184, 122, 0.12),
+		rgba(121, 255, 214, 0.08),
+		rgba(98, 148, 255, 0.06)
+	);
+	filter: blur(140px) saturate(1.1);
+	animation: aurora-spin 26s linear infinite;
+}
+
+.home-aurora::after {
+	animation-duration: 34s;
+	animation-direction: reverse;
+	opacity: 0.6;
+}
+
+/* Gentle noise overlay for depth */
+.home-noise {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+	mix-blend-mode: soft-light;
+}
+
+/* Fade + rise used on hero content */
+.fade-in-up {
+	opacity: 0;
+	transform: translateY(18px);
+	animation: fade-up 0.9s ease forwards;
+}
+
+.delay-1 {
+	animation-delay: 0.08s;
+}
+
+.delay-2 {
+	animation-delay: 0.16s;
+}
+
+.delay-3 {
+	animation-delay: 0.24s;
+}
+
+.delay-4 {
+	animation-delay: 0.32s;
+}
+
+/* Soft float on accent blobs */
+.float-soft {
+	animation: float-soft 14s ease-in-out infinite;
+}
+
+.float-soft.delay {
+	animation-delay: 5s;
+}
+
+/* Subtle tilt and lift on hover for feature cards */
+.card-lift {
+	transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.card-lift:hover {
+	transform: translateY(-6px) scale(1.01);
+	box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+	border-color: rgba(120, 184, 255, 0.5);
+}
+
+.glow-ring {
+	position: relative;
+}
+
+.glow-ring::after {
+	content: "";
+	position: absolute;
+	inset: -22px;
+	border-radius: 999px;
+	background: radial-gradient(circle, rgba(120, 184, 255, 0.25), transparent 60%);
+	opacity: 0;
+	transition: opacity 220ms ease;
+	filter: blur(16px);
+	z-index: -1;
+}
+
+.glow-ring:hover::after {
+	opacity: 1;
+}
+
+/* Gradient shimmer used on section dividers */
+.sheen {
+	position: relative;
+	overflow: hidden;
+}
+
+.sheen::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+	transform: translateX(-60%);
+	animation: sheen 9s ease-in-out infinite;
+	mix-blend-mode: screen;
+}
+
+@keyframes fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(18px) scale(0.995);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes aurora-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes float-soft {
+	0%,
+	100% {
+		transform: translateY(0px) scale(1);
+	}
+	50% {
+		transform: translateY(-12px) scale(1.02);
+	}
+}
+
+@keyframes sheen {
+	0% {
+		transform: translateX(-60%);
+		opacity: 0;
+	}
+	15% {
+		opacity: 1;
+	}
+	40% {
+		transform: translateX(70%);
+		opacity: 0.3;
+	}
+	60% {
+		opacity: 0;
+	}
+	100% {
+		transform: translateX(110%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.home-aurora::before,
+	.home-aurora::after,
+	.home-noise,
+	.fade-in-up,
+	.float-soft,
+	.sheen::after {
+		animation: none !important;
+		transition: none !important;
+	}
+	.fade-in-up {
+		opacity: 1;
+		transform: none;
+	}
+}
 
