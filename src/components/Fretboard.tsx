@@ -220,6 +220,10 @@ const Fretboard = () => {
         ...highlightedNotes,
         { string: stringIndex, fret, note },
       ]);
+
+      // Play the clicked note immediately for feedback
+      const freq = getNoteFrequency(stringIndex, fret);
+      playNote(freq, 1.2, 0.35, 'piano');
     }
   };
 
@@ -247,7 +251,7 @@ const Fretboard = () => {
     sorted.forEach((noteData, index) => {
       const freq = getNoteFrequency(noteData.string, noteData.fret);
       const velocity = getVelocity(index, sorted.length);
-      playNote(freq, 1.8, velocity, 'guitar');
+      playNote(freq, 1.8, velocity, 'piano');
     });
   };
 
@@ -261,7 +265,7 @@ const Fretboard = () => {
       setTimeout(() => {
         const freq = getNoteFrequency(noteData.string, noteData.fret);
         const velocity = getVelocity(index, sorted.length);
-        playNote(freq, 1.8, velocity, 'guitar');
+        playNote(freq, 1.8, velocity, 'piano');
       }, index * strumSpeed);
     });
   };
@@ -404,7 +408,7 @@ const Fretboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
           <div className="glass-card border-primary/20 rounded-xl p-4">
             <p className="text-sm font-semibold">Strumming</p>
-            <p className="text-sm text-muted-foreground">Enter strums high to low; Shift+Enter strums low to high. Tune the feel with strum speed and velocity in settings.</p>
+            <p className="text-sm text-muted-foreground">Press Enter to strum your selected notes. Tune the feel with strum speed and velocity in settings.</p>
           </div>
           <div className="glass-card border-primary/20 rounded-xl p-4">
             <p className="text-sm font-semibold">Keyboard layout</p>

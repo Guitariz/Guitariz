@@ -70,7 +70,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
     sorted.forEach((position, index) => {
       const freq = getNoteFrequency(position);
       const velocity = getVelocity(index, sorted.length);
-      playNote(freq, 1.5, velocity, 'guitar');
+      playNote(freq, 1.5, velocity, 'piano');
     });
 
     // After strumming, clear accumulated notes (for chord mode)
@@ -127,7 +127,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
         const fret = noteMapping.position.fret + octaveShift.current * 12;
         const position = { ...noteMapping.position, fret };
         const freq = getNoteFrequency(position);
-        playNote(freq, 0.9, 0.5, 'guitar');
+        playNote(freq, 0.9, 0.5, 'piano');
         activeNotes.current.set(key, position);
         pressedKeys.current.add(key);
         onNoteOn?.(noteMapping.note, 0.5, position);
