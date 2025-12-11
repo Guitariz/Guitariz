@@ -10,6 +10,7 @@ const FretboardPage = lazy(() => import("./pages/FretboardPage"));
 const ChordsPage = lazy(() => import("./pages/ChordsPage"));
 const ScalesPage = lazy(() => import("./pages/ScalesPage"));
 const MetronomePage = lazy(() => import("./pages/MetronomePage"));
+const ChordAIPage = lazy(() => import("./pages/ChordAIPage"));
 const TheoryPage = lazy(() => import("./pages/TheoryPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -63,6 +64,14 @@ const App = () => (
             element={
               <Suspense fallback={<RouteFallback />}>
                 <MetronomePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/chord-ai"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <ChordAIPage />
               </Suspense>
             }
           />

@@ -1,4 +1,4 @@
-import { Guitar, Layers, Disc, BookOpen, Music } from "lucide-react";
+import { Guitar, Layers, Disc, BookOpen, Music, Bot } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -8,6 +8,7 @@ const Navigation = () => {
     { icon: Layers, label: "Chords", path: "/chords" },
     { icon: Disc, label: "Scales", path: "/scales" },
     { icon: Music, label: "Metronome", path: "/metronome" },
+    { icon: Bot, label: "Chord AI", path: "/chord-ai" },
     { icon: BookOpen, label: "Theory", path: "/theory" },
   ];
 
