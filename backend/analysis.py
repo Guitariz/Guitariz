@@ -364,12 +364,12 @@ def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, bea
 
 
 def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
-    \"\"\"Analyze audio file for chords, tempo, and key.
+    """Analyze audio file for chords, tempo, and key.
     
     Args:
         file_path: Path to audio file
         separate_vocals: If True, separate vocals from music before analysis (more accurate)
-    \"\"\"
+    """
     actual_path = file_path
     
     # If vocal separation is requested, process the file first

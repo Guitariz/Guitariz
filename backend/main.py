@@ -21,12 +21,12 @@ app.add_middleware(
 
 @app.post("/api/analyze")
 async def analyze(file: UploadFile = File(...), separate_vocals: bool = False):
-    \"\"\"Analyze audio file for chords.
+    """Analyze audio file for chords.
     
     Args:
         file: Audio file to analyze
         separate_vocals: If True, separate vocals before analysis for better accuracy
-    \"\"\"
+    """
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals})")
     if not file.filename:
         raise HTTPException(status_code=400, detail="File required")
@@ -118,3 +118,9 @@ async def download_separated(session_id: str, track_type: str):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
