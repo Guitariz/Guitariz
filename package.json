@@ -1,10 +1,10 @@
 {
   "name": "guitariz",
-  "description": "Interactive web application for guitar learning, music theory, and chord exploration",
-  "version": "1.0.0",
+  "description": "Full-stack music learning platform with AI-powered chord detection, vocal isolation, and interactive theory tools.",
+  "version": "1.1.0",
   "type": "module",
   "private": false,
-  "author": "Abhinav Vaidya <your-email@example.com>",
+  "author": "Abhinav Vaidya",
   "license": "MIT",
   "repository": {
     "type": "git",

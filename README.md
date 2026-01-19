@@ -32,26 +32,20 @@ An interactive web application for exploring guitar, piano, and music theory thr
 
 - **🎹 Interactive Fretboard** - Click to play notes or use keyboard. Real-time chord detection identifies what you're playing.
 - **🎹 Piano Keyboard** - 88-key piano with keyboard controls. Navigate octaves and explore note positions.
-- **🎵 Chord Explorer** - Browse different chord voicings (Major, Minor, 7th, sus2/sus4, etc.) with interactive finger position diagrams.
-- **🎼 Music Theory Tools** - Circle of Fifths, Scale Explorer, Key Signatures, and Chromatic Reference for visual learning.
-- **⏱️ Metronome** - Adjustable tempo (40-300 BPM), multiple time signatures, visual beat indicator, and sound feedback.
-- **⌨️ Keyboard Support** - Customizable keyboard mappings (QWERTY, AZERTY) for hands-on practice.
+- **🪄 Vocal Splitter** - AI-powered source separation to isolate vocals and instrumentals from any song.
+- **🤖 Chord AI** - Upload any audio file to detect chords, key, and tempo. Supports **Vocal Filtering** to improve accuracy on busy tracks.
+- **🎵 Chord Explorer** - Browse different chord voicings with interactive finger position diagrams.
+- **🎼 Music Theory Tools** - Circle of Fifths, Scale Explorer, Key Signatures, and Chromatic Reference.
+- **⏱️ Metronome** - Adjustable tempo (40-300 BPM), multiple time signatures, and visual beat indicators.
+- **⌨️ Keyboard Support** - Play the fretboard and piano using your computer keyboard (QWERTY/AZERTY).
 - **🎯 Responsive Design** - Works seamlessly on desktop, tablet, and mobile devices.
 - **💾 Persistent Settings** - Your preferences are saved locally for a consistent experience.
-- **🤖 Chord AI (in progress)** - Upload audio to preview chords, tempo, and key; frontend is live, backend endpoint is still being finalized.
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Node.js 16+
-- npm or bun
-- A modern web browser
-
-### Installation & Setup
-
+### 1. Frontend Setup (React)
 ```bash
 # Clone the repository
 git clone https://github.com/abhi9vaidya/guitariz.git
@@ -64,31 +58,32 @@ npm install
 npm run dev
 ```
 
-Open your browser to `http://localhost:5173` and start exploring.
-
-### Building for Production
-
+### 2. Backend Setup (Python)
+The AI features (Vocal Separation and Chord Detection) require a Python backend.
 ```bash
-# Create an optimized production build
-npm run build
+cd backend
+python -m venv .venv
+# Activate environment (Windows)
+.venv\Scripts\activate
+# Activate environment (Mac/Linux)
+source .venv/bin/activate
 
-# Preview the production build locally
-npm run preview
+pip install -r requirements.txt
+python main.py
 ```
+*Note: Requires [FFmpeg](https://ffmpeg.org/download.html) installed on your system.*
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
+| Category | Technology |
 |-----------|---------|
-| **React 18** | UI library |
-| **TypeScript 5** | Type-safe development |
-| **Vite 5** | Build tool & dev server |
-| **Tailwind CSS** | Styling & responsive design |
-| **shadcn/ui** | Component library |
-| **Radix UI** | Accessible primitives |
-| **Lucide Icons** | Icon set |
+| **Frontend** | React 18, TypeScript 5, Vite 5, Tailwind CSS, Framer Motion |
+| **UI Components** | shadcn/ui, Radix UI, Lucide Icons |
+| **Audio Processing** | Web Audio API, Librosa (Python) |
+| **AI Models** | Meta Demucs (Source Separation), PyTorch |
+| **Backend** | FastAPI, Uvicorn |
 
 ---
 
@@ -119,157 +114,46 @@ npm run preview
 
 ## 📁 Project Structure
 
-```
-src/
-├── components/
-│   ├── ui/                    # Reusable UI components (badge, button, card, etc.)
-│   ├── chord/                 # Chord diagram & variation components
-│   ├── chord-ai/              # Waveform, timeline, and summary UI (Chord AI)
-│   ├── piano/                 # Piano keyboard components
-│   ├── fretboard/             # Fretboard & keyboard settings
-│   ├── Fretboard.tsx          # Main fretboard interface
-│   ├── ScaleExplorer.tsx      # Scale exploration tool
-│   ├── CircleOfFifths.tsx     # Music theory visualization
-│   ├── Metronome.tsx          # Tempo practice tool
-│   └── Navigation.tsx         # Header navigation
-├── hooks/
-│   ├── useKeyboardFretboard.ts    # Keyboard input handling
-│   ├── usePianoKeyboard.ts        # Piano keyboard input
-│   ├── useChordAnalysis.ts        # Chord AI client for backend/local analysis
-│   ├── useAudioPlayer.ts          # Audio playback + peaks for analysis
-│   └── use-toast.ts               # Toast notifications
-├── lib/
-│   ├── chordDetection.ts      # Core chord detection algorithm
-│   ├── chordAudio.ts          # Sound generation
-│   ├── chordAdapter.ts        # Data transformation utilities
-│   ├── api/
-│   │   └── analyzeClient.ts   # Chord AI API client (expects VITE_CHORD_AI_API)
-│   └── utils.ts               # General utilities
-├── types/
-│   ├── chordTypes.ts          # Chord-related types
-│   ├── chordDetectionTypes.ts # Detection algorithm types
-│   ├── keyboardTypes.ts       # Keyboard input types
-│   └── pianoTypes.ts          # Piano component types
-├── data/
-│   └── chordData.ts           # Chord database
-├── pages/
-│   ├── Index.tsx              # Main application page
-│   ├── ChordAIPage.tsx        # Chord AI experience (in progress)
-│   └── NotFound.tsx           # 404 page
-├── App.tsx                    # Root component
-├── main.tsx                   # Application entry point
-├── index.css                  # Global styles
-└── vite-env.d.ts              # Vite environment types
-backend/                       # Experimental Chord AI backend (not bundled for deployment)
+```text
+├── src/
+│   ├── components/       # UI Components (Fretboard, Piano, AI panels)
+│   ├── hooks/            # Custom React hooks (Audio, Keyboard, API)
+│   ├── lib/              # Utility functions and API clients (chord detection)
+│   ├── pages/            # Application routes (Splitter, ChordAI, etc.)
+│   └── types/            # TypeScript definitions
+├── backend/
+│   ├── main.py           # FastAPI server & API endpoints
+│   ├── analysis.py       # AI Processing logic (Demucs & Librosa)
+│   └── requirements.txt  # Python dependencies
+└── VOCAL_SEPARATION.md   # Detailed AI documentation
 ```
 
 ---
 
-## 🔧 Development
+## 🤝 Contributing
 
-### Available Commands
+Contributions are welcome! Whether it's fixing bugs, adding new theory tools, or improving the AI models.
 
-```bash
-npm run dev        # Start development server with hot reload
-npm run build      # Create optimized production build
-npm run build:dev  # Build in development mode (for debugging)
-npm run lint       # Run ESLint for code quality checks
-npm run preview    # Preview production build locally
-```
-
-### Code Quality
-
-This project uses ESLint for code quality. Run `npm run lint` to check for issues.
-
-### Project Components
-
-| Component | Purpose |
-|-----------|---------|
-| **Fretboard** | Main 6-string guitar interface with note playback and chord detection |
-| **Piano** | 88-key piano keyboard with octave navigation |
-| **ScaleExplorer** | Select root note and scale type to see patterns on fretboard |
-| **CircleOfFifths** | Visualize key relationships and chord progressions |
-| **Metronome** | Adjustable tempo and time signature for practice |
-| **ChordDiagram** | Interactive visualization of chord finger positions |
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-## 🌐 Browser Support
+## 📄 License
 
-| Browser | Support |
-|---------|---------|
-| Chrome | ✅ Latest version |
-| Firefox | ✅ Latest version |
-| Safari | ✅ Latest version |
-| Edge | ✅ Latest version |
-| Mobile (iOS/Android) | ✅ Latest versions |
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## 🚢 Deployment
+## 👨‍💻 Author
 
-### Deploy to Vercel (Recommended)
+**Abhinav Vaidya** - [GitHub](https://github.com/abhi9vaidya)
 
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com)
-3. Click "New Project" and import your repository
-4. Vercel will auto-detect the settings
-5. Click "Deploy"
-
-### Deploy to Other Platforms
-
-Any static hosting service works. Build the project and deploy the `dist` folder:
-
-```bash
-npm run build
-# Then upload the dist/ folder to your hosting provider
-```
-
-**Compatible with:** GitHub Pages, Netlify, Cloudflare Pages, AWS S3, Firebase Hosting, etc.
+Project Link: [https://github.com/abhi9vaidya/guitariz](https://github.com/abhi9vaidya/guitariz)
 
 ---
 
-## 📊 What Makes It Useful
-
-- **No login required** - Just open and start exploring
-- **Real-time feedback** - Instant chord detection as you play
-- **Interactive learning** - Understand through exploration, not just reading
-- **Keyboard-based** - Your computer keyboard becomes the instrument
-- **Clean interface** - Straightforward and intuitive navigation
-- **Open source** - Free to use, modify, and learn from
-
----
-
-## 🐛 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Keyboard not responding | Ensure keyboard input is enabled in settings. Try refreshing the page. |
-| Chord detection not working | Play 2+ notes simultaneously and hold them together. Check lenient mode in settings. |
-| Lag or performance issues | Clear your browser cache or try a different browser. |
-| Build errors | Run `npm install` again and verify you have Node.js 16+. |
-| Port already in use | Change the dev port by running `npm run dev -- --port 3000` |
-
----
-
-## 📝 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-You're free to use, modify, and distribute this project as you wish.
-
----
-
-## 🙏 Acknowledgments
-
-Built with:
-- [React](https://react.dev) - UI library
-- [Vite](https://vitejs.dev) - Build tool
-- [Tailwind CSS](https://tailwindcss.com) - Styling
-- [shadcn/ui](https://ui.shadcn.com) - Components
-- [Radix UI](https://www.radix-ui.com) - Primitives
-- [Lucide](https://lucide.dev) - Icons
-
----
-
-**Made with 🎵 by [Abhinav Vaidya](https://github.com/abhi9vaidya)**
+**Made with 🎵 by Abhinav Vaidya**
