@@ -13,6 +13,7 @@ export const useChordAnalysis = (
   audioBuffer: AudioBuffer | null,
   file?: File | null,
   useRemote: boolean = true,
+  separateVocals: boolean = false,
 ): UseChordAnalysisState => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -29,7 +30,7 @@ export const useChordAnalysis = (
         // Prefer remote analysis when a file is available
         if (useRemote && file) {
           try {
-            const remote = await analyzeRemote(file);
+            const remote = await analyzeRemote(file, undefined, separateVocals);
             if (!isCancelled) {
               setResult(remote);
               return;
@@ -59,7 +60,7 @@ export const useChordAnalysis = (
     return () => {
       isCancelled = true;
     };
-  }, [audioBuffer, file, useRemote]);
+  }, [audioBuffer, file, useRemote, separateVocals]);
 
   return { result, loading, error };
 };

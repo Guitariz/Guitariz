@@ -28,7 +28,8 @@ const ChordAIPage = () => {
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSimple, setShowSimple] = useState(false);
-  const { result, loading: analysisLoading } = useChordAnalysis(audioBuffer, selectedFile, true);
+  const [separateVocals, setSeparateVocals] = useState(false);
+  const { result, loading: analysisLoading } = useChordAnalysis(audioBuffer, selectedFile, true, separateVocals);
   const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
@@ -162,15 +163,28 @@ const ChordAIPage = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
-                        <Label htmlFor="mode-switch" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
-                          Complex
-                        </Label>
-                        <Switch
-                          id="mode-switch"
-                          checked={!showSimple}
-                          onCheckedChange={(checked) => setShowSimple(!checked)}
-                        />
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
+                          <Label htmlFor="mode-switch" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
+                            Complex
+                          </Label>
+                          <Switch
+                            id="mode-switch"
+                            checked={!showSimple}
+                            onCheckedChange={(checked) => setShowSimple(!checked)}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
+                          <Label htmlFor="vocal-switch" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
+                            Isolate
+                          </Label>
+                          <Switch
+                            id="vocal-switch"
+                            checked={separateVocals}
+                            onCheckedChange={setSeparateVocals}
+                          />
+                        </div>
                       </div>
                     </div>
 

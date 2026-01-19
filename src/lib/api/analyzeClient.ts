@@ -14,9 +14,10 @@ const normalizeChords = (chords: any[], durationHint?: number): ChordSegment[] =
     .filter((c) => c.end > c.start);
 };
 
-export async function analyzeRemote(file: File, endpoint: string = defaultEndpoint): Promise<AnalysisResult> {
+export async function analyzeRemote(file: File, endpoint: string = defaultEndpoint, separateVocals: boolean = false): Promise<AnalysisResult> {
   const form = new FormData();
   form.append("file", file);
+  form.append("separate_vocals", separateVocals.toString());
 
   const res = await fetch(endpoint, {
     method: "POST",
