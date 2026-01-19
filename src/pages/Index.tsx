@@ -1,6 +1,6 @@
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Music2, Layers, Disc, Music, BookOpen, Bot } from "lucide-react";
+import { ArrowRight, Music2, Layers, Disc, Music, BookOpen, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -61,13 +61,36 @@ const Index = () => {
             </motion.div>
 
             {/* Feature Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-20">
-              {toolCards.map((tool, idx) => (
+            <motion.div 
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.15,
+                    delayChildren: 0.4
+                  }
+                }
+              }}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-20"
+            >
+              {toolCards.map((tool) => (
                 <motion.div
                   key={tool.title}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + idx * 0.1, duration: 0.8 }}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    show: { 
+                      opacity: 1, 
+                      y: 0,
+                      transition: {
+                        type: "spring",
+                        stiffness: 50,
+                        damping: 15 // Smooth, premium feel
+                      }
+                    }
+                  }}
                 >
                   <Link 
                     to={tool.to}
@@ -91,7 +114,7 @@ const Index = () => {
                   </Link>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
       </main>
