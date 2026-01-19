@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles, Music2, Layers, Disc, Music, BookOpen, Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -94,29 +95,10 @@ const staggered = (stagger = 0.1, delayChildren = 0) => ({
 
 const Index = () => {
   return (
-    <div className="min-h-screen relative overflow-hidden home-aurora">
-      <div className="home-noise" aria-hidden="true" />
-      <div className="absolute inset-0 -z-10">
-        <motion.div
-          className="absolute inset-0 opacity-55"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 22% 20%, hsla(24,94%,60%,0.14), transparent 34%), radial-gradient(circle at 78% 12%, hsla(195,83%,52%,0.12), transparent 32%), radial-gradient(circle at 70% 78%, hsla(220,80%,66%,0.12), transparent 30%)",
-          }}
-          animate={{ opacity: [0.45, 0.62, 0.5] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_45%)] blur-xl opacity-26" />
-        <motion.div
-          className="absolute -bottom-32 -left-10 w-80 h-80 bg-gradient-to-br from-primary/25 via-accent/18 to-secondary/20 rounded-full blur-xl"
-          animate={{ x: [0, 12, -8, 0], y: [0, -14, 8, 0], rotate: [0, 4, -3, 0], opacity: [0.7, 0.9, 0.75, 0.7] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute -top-24 right-10 w-96 h-96 bg-gradient-to-br from-secondary/22 via-primary/18 to-accent/18 rounded-full blur-xl"
-          animate={{ x: [0, -10, 14, 0], y: [0, 10, -12, 0], rotate: [0, -5, 3, 0], opacity: [0.6, 0.85, 0.7, 0.6] }}
-          transition={{ duration: 24, repeat: Infinity, ease: "easeInOut" }}
-        />
+    <div className="min-h-screen relative bg-background overflow-x-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(124,58,237,0.05),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(249,115,22,0.03),transparent_40%)]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
       </div>
 
       <Navigation />
@@ -176,7 +158,7 @@ const Index = () => {
                 {["Music-first flow", "Audio on tap", "Built for practice"].map((text, idx) => (
                   <motion.div
                     key={text}
-                    className="p-3 rounded-xl bg-card/60 border border-border/60 backdrop-blur-md text-sm text-muted-foreground card-lift sheen"
+                    className="p-3 rounded-xl bg-card/40 border border-white/5 backdrop-blur-sm text-sm text-muted-foreground transition-colors hover:border-primary/30"
                     variants={fadeFlat(0.2 + idx * 0.06)}
                   >
                     {text}

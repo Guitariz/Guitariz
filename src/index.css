@@ -9,11 +9,11 @@
    ----------------------------- */
 
 :root {
-  /* Core palette: midnight eggplant + sunset coral + electric teal */
-  --background: 258 52% 7%;
-  --foreground: 44 38% 96%;
+  /* Cleaner, more professional neutral-dark palette */
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
 
-  --card: 250 40% 12%;
+  --card: 240 10% 6%;
   --card-foreground: 44 38% 96%;
 
   --popover: 255 40% 10%;
@@ -161,7 +161,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    filter: drop-shadow(0 4px 8px rgba(var(--primary), 0.1));
+    filter: drop-shadow(0 4px 8px hsla(var(--primary) / 0.2));
   }
 
   .glow-accent { box-shadow: 0 0 30px hsl(var(--primary) / 0.3); }
