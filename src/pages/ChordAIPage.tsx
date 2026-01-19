@@ -85,7 +85,7 @@ const ChordAIPage = () => {
   }, [currentTime, currentChords]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/80 to-background relative overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background/80 to-background relative">
       <div className="absolute inset-0 pointer-events-none opacity-60" aria-hidden="true">
         <div className="absolute -left-10 top-10 w-72 h-72 rounded-full blur-3xl bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20" />
         <div className="absolute right-0 bottom-10 w-80 h-80 rounded-full blur-3xl bg-gradient-to-br from-secondary/18 via-primary/16 to-accent/18" />

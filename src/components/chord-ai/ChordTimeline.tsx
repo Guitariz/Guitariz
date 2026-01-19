@@ -26,7 +26,7 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
     if (activeRef.current) {
       activeRef.current.scrollIntoView({
         behavior: "smooth",
-        block: "center",
+        block: "nearest",
       });
     }
   }, [activeIndex]);
