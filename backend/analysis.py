@@ -1,10 +1,12 @@
 import subprocess
 import tempfile
+import os
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import librosa
 import numpy as np
+import soundfile as sf
 
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
@@ -47,6 +49,46 @@ def _ffmpeg_to_wav(src: Path, dst: Path):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+
+
+def _separate_vocals(audio_path: Path) -> Optional[Path]:
+    """Separate vocals from music using Demucs. Returns path to instrumental track."""
+    try:
+        from demucs.pretrained import get_model
+        from demucs.apply import apply_model
+        import torch
+        
+        # Load pre-trained Demucs model (htdemucs is fast and good quality)
+        model = get_model("htdemucs")
+        model.cpu()  # Use CPU for compatibility
+        model.eval()
+        
+        # Load audio
+        wav, sr = librosa.load(audio_path, sr=44100, mono=False)
+        if wav.ndim == 1:
+            wav = np.stack([wav, wav])  # Convert mono to stereo
+        
+        # Convert to torch tensor
+        wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
+        
+        # Apply separation
+        with torch.no_grad():
+            sources = apply_model(model, wav_tensor, device="cpu", shifts=1, split=True)
+        
+        # Extract instrumental (all stems except vocals)
+        # Demucs outputs: [drums, bass, other, vocals]
+        stems = sources[0]  # Remove batch dimension
+        instrumental = stems[0] + stems[1] + stems[2]  # drums + bass + other
+        
+        # Save instrumental to temp file
+        output_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
+        sf.write(output_path, instrumental.cpu().numpy().T, sr)
+        
+        return output_path
+        
+    except Exception as e:
+        print(f"Vocal separation failed: {e}")
+        return None
 
 
 def _estimate_key(chroma: np.ndarray) -> Tuple[str, str]:
@@ -273,18 +315,43 @@ def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, bea
     return merged
 
 
-def analyze_file(file_path: Path) -> dict:
+def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
+    \"\"\"Analyze audio file for chords, tempo, and key.
+    
+    Args:
+        file_path: Path to audio file
+        separate_vocals: If True, separate vocals from music before analysis (more accurate)
+    \"\"\"
+    actual_path = file_path
+    
+    # If vocal separation is requested, process the file first
+    if separate_vocals:
+        print("Separating vocals from instrumental...")
+        separated_path = _separate_vocals(file_path)
+        if separated_path:
+            actual_path = separated_path
+            print(f"Using separated instrumental track: {actual_path}")
+        else:
+            print("Vocal separation failed, using original audio")
+    
     # Try loading directly first (librosa + soundfile/audioread can handle many formats)
     try:
-        y, sr = librosa.load(str(file_path), sr=22050, mono=True)
+        y, sr = librosa.load(str(actual_path), sr=22050, mono=True)
     except Exception:
         # Fallback to ffmpeg only if direct load fails
         try:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp_wav:
-                _ffmpeg_to_wav(file_path, Path(tmp_wav.name))
+                _ffmpeg_to_wav(actual_path, Path(tmp_wav.name))
                 y, sr = librosa.load(tmp_wav.name, sr=22050, mono=True)
         except Exception as e:
             raise RuntimeError(f"Could not load audio file. Please ensure it is a valid audio format. (Error: {e})")
+    finally:
+        # Cleanup separated file if it was created
+        if separate_vocals and actual_path != file_path:
+            try:
+                actual_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
     if y.size == 0:
         return {"tempo": 0, "key": "C", "scale": "major", "chords": []}

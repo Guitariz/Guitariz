@@ -4,5 +4,7 @@ uvicorn[standard]==0.30.0
 librosa==0.10.2
 numpy==1.26.4
 soundfile==0.12.1
-pydantic==2.8.2
+pydantic==2.6.0
 python-multipart==0.0.9
+demucs==4.0.1
+torch>=2.0.0

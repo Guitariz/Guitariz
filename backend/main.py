@@ -19,8 +19,14 @@ app.add_middleware(
 
 
 @app.post("/api/analyze")
-async def analyze(file: UploadFile = File(...)):
-    print(f"Received analysis request for file: {file.filename}")
+async def analyze(file: UploadFile = File(...), separate_vocals: bool = False):
+    \"\"\"Analyze audio file for chords.
+    
+    Args:
+        file: Audio file to analyze
+        separate_vocals: If True, separate vocals before analysis for better accuracy
+    \"\"\"
+    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals})")
     if not file.filename:
         raise HTTPException(status_code=400, detail="File required")
 
@@ -30,7 +36,7 @@ async def analyze(file: UploadFile = File(...)):
         tmp_path = Path(tmp.name)
 
     try:
-        result = analyze_file(tmp_path)
+        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
         return JSONResponse(result)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
