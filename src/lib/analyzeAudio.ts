@@ -221,18 +221,22 @@ export async function analyzeTrack(audioBuffer: AudioBuffer): Promise<AnalyzeTra
 
     return {
       tempo: safeTempo,
+      meter: 4,
       key,
       scale,
       chords: safeChords,
+      simpleChords: safeChords.map(s => ({ ...s, chord: s.chord.split(" ")[0] })),
     };
   } catch (err) {
     console.error("analyzeTrack failed", err);
     // Return a safe fallback instead of throwing so UI can continue
     return {
       tempo: 0,
+      meter: 4,
       key: "--",
       scale: "--",
       chords: [],
+      simpleChords: [],
     };
   }
 }

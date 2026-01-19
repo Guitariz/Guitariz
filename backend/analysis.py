@@ -137,6 +137,101 @@ def _segment_chords(
     return segments
 
 
+def _simplify_chord(chord_name: str) -> str:
+    if chord_name == "N.C.":
+        return "N.C."
+    
+    # Extract root (handle #)
+    if len(chord_name) > 1 and chord_name[1] == "#":
+        root = chord_name[:2]
+        suffix = chord_name[2:]
+    else:
+        root = chord_name[0]
+        suffix = chord_name[1:]
+    
+    if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
+        return f"{root}min"
+    if suffix.startswith("dim"):
+        return f"{root}dim"
+    if suffix.startswith("aug"):
+        return f"{root}aug"
+    # Treat sus2, sus4, 7, maj7, 6 etc as major for "simple" view
+    return root
+
+
+def _smooth_chords(chords: List[dict], min_duration: float = 0.5) -> List[dict]:
+    if not chords:
+        return []
+    
+    # Initial merge of identical consecutive chords
+    merged = []
+    current = chords[0].copy()
+    for i in range(1, len(chords)):
+        if chords[i]["chord"] == current["chord"]:
+            current["end"] = chords[i]["end"]
+            current["confidence"] = max(current["confidence"], chords[i]["confidence"])
+        else:
+            merged.append(current)
+            current = chords[i].copy()
+    merged.append(current)
+    
+    # Filter out very short chords by merging them into neighbors
+    if len(merged) < 2:
+        return merged
+        
+    final = []
+    i = 0
+    while i < len(merged):
+        curr = merged[i]
+        dur = curr["end"] - curr["start"]
+        
+        if dur < min_duration:
+            # Try to merge with neighbor
+            if i > 0 and i < len(merged) - 1:
+                # Merge with the one that has higher confidence or is longer?
+                # For simplicity, merge with previous if it exists
+                final[-1]["end"] = curr["end"]
+                # Skip this one
+            elif i == 0:
+                # Merge into next
+                merged[i+1]["start"] = curr["start"]
+            elif i == len(merged) - 1:
+                # Merge into previous
+                final[-1]["end"] = curr["end"]
+        else:
+            final.append(curr)
+        i += 1
+        
+    return final
+
+
+def _estimate_meter(y: np.ndarray, sr: int, tempo: float) -> int:
+    """Estimate if song is 4/4 or 3/4."""
+    if tempo <= 0:
+        return 4
+    
+    try:
+        # Get onset envelope
+        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
+        # Check autocorrelation at lags corresponding to 3 and 4 beats
+        # One beat in frames:
+        hop_length = 512
+        beat_gap = (60.0 / tempo) * sr / hop_length
+        
+        # We check lag for 3 beats and 4 beats
+        lags = [int(beat_gap * 3), int(beat_gap * 4)]
+        ac = librosa.autocorrelate(onset_env, max_size=max(lags) + 2)
+        
+        score3 = ac[lags[0]] if lags[0] < len(ac) else 0
+        score4 = ac[lags[1]] if lags[1] < len(ac) else 0
+        
+        if score3 > score4 * 1.1: # Significant bias to 3
+            return 3
+        return 4
+    except:
+        return 4
+
+
 def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, beats_per_bar: int = 4) -> List[dict]:
     # Quantize chords so each bar has one representative chord, picked by overlap.
     if duration <= 0:
@@ -211,30 +306,33 @@ def analyze_file(file_path: Path) -> dict:
     chroma = librosa.util.normalize(chroma, axis=0)
 
     key, scale = _estimate_key(chroma)
+    meter = _estimate_meter(y, sr, tempo)
     
     # If beat tracking returned nothing, create artificial beats
     if beat_frames is None or len(beat_frames) < 2:
         # Roughly 2 segments per second
         beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
 
-    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, beats_per_bar=2) # 2 beats per chord for more "precision"
-
-    # Merge consecutive identical chords
-    merged_chords = []
-    if chords:
-        current = chords[0].copy()
-        for i in range(1, len(chords)):
-            if chords[i]["chord"] == current["chord"]:
-                current["end"] = chords[i]["end"]
-                current["confidence"] = max(current["confidence"], chords[i]["confidence"])
-            else:
-                merged_chords.append(current)
-                current = chords[i].copy()
-        merged_chords.append(current)
+    # Precise chords (smaller windows)
+    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, beats_per_bar=2)
+    
+    # Simple chords (larger windows or smoothed)
+    simple_chords_raw = []
+    for c in chords:
+        simple_chords_raw.append({
+            **c,
+            "chord": _simplify_chord(c["chord"])
+        })
+    
+    # Merge consecutive identical chords and smooth
+    merged_precise = _smooth_chords(chords, min_duration=0.2)
+    merged_simple = _smooth_chords(simple_chords_raw, min_duration=0.8) # More aggressive smoothing for simple
 
     return {
         "tempo": float(round(float(tempo), 2)),
+        "meter": meter,
         "key": key,
         "scale": scale,
-        "chords": merged_chords,
+        "chords": merged_precise,
+        "simpleChords": merged_simple,
     }

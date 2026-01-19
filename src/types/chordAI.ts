@@ -7,7 +7,9 @@ export type ChordSegment = {
 
 export type AnalysisResult = {
   tempo: number;
+  meter: number;
   key: string;
   scale: string;
   chords: ChordSegment[];
+  simpleChords: ChordSegment[];
 };

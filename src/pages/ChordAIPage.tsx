@@ -12,7 +12,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
 import { ChordSegment } from "@/types/chordAI";
-import { Bot, Upload, Pause, Play, Music2, AlertTriangle, Activity } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Bot, Upload, Pause, Play, Music2, AlertTriangle, Activity, Settings2 } from "lucide-react";
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -30,6 +32,7 @@ const ChordAIPage = () => {
   const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, error: audioError } =
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showSimple, setShowSimple] = useState(false);
   // Enable remote analysis by default (falls back to local if remote fails).
   const { result, loading: analysisLoading, error: analysisError } = useChordAnalysis(audioBuffer, selectedFile, true);
 
@@ -71,10 +74,15 @@ const ChordAIPage = () => {
     await handleFiles(e.dataTransfer.files);
   };
 
+  const currentChords = useMemo(() => {
+    if (!result) return [];
+    return showSimple && result.simpleChords ? result.simpleChords : result.chords;
+  }, [result, showSimple]);
+
   const currentChord = useMemo<ChordSegment | undefined>(() => {
-    if (!result?.chords) return undefined;
-    return result.chords.find((seg) => currentTime >= seg.start && currentTime <= seg.end);
-  }, [currentTime, result]);
+    if (!currentChords) return undefined;
+    return currentChords.find((seg) => currentTime >= seg.start && currentTime <= seg.end);
+  }, [currentTime, currentChords]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background/80 to-background relative overflow-hidden">
@@ -127,19 +135,29 @@ const ChordAIPage = () => {
                 )}
                 <p className="text-[11px] text-muted-foreground/80">Analysis calls backend at <span className="font-mono text-xs">{import.meta.env.VITE_CHORD_AI_API || "/api/analyze"}</span> and falls back to local if unreachable.</p>
               </div>
-              <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/m4a"
-                className="hidden"
-                onChange={(e) => handleFiles(e.target.files)}
-              />
-              <Button variant="outline" size="lg" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-5 h-5 mr-2" />
-                Select Audio File
-              </Button>
-            </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="chord-mode"
+                    checked={showSimple}
+                    onCheckedChange={setShowSimple}
+                  />
+                  <Label htmlFor="chord-mode" className="text-sm font-medium cursor-pointer">
+                    Simple Chords
+                  </Label>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/m4a"
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+                <Button variant="outline" size="lg" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-5 h-5 mr-2" />
+                  Select Audio File
+                </Button>
+              </div>
           </CardContent>
         </Card>
 
@@ -276,7 +294,7 @@ const ChordAIPage = () => {
                       <p className="text-sm font-medium animate-pulse">Running Neural Harmonic Engine...</p>
                     </div>
                   ) : (
-                    <AnalysisSummary tempo={result?.tempo} keySignature={result?.key} scale={result?.scale} />
+                    <AnalysisSummary tempo={result?.tempo} meter={result?.meter} keySignature={result?.key} scale={result?.scale} />
                   )}
                 </CardContent>
               </Card>
@@ -290,13 +308,13 @@ const ChordAIPage = () => {
                       <CardTitle className="text-xl">Timeline</CardTitle>
                       <p className="text-xs text-muted-foreground">Live progression tracking</p>
                     </div>
-                    <Badge variant="secondary" className="font-mono">{result?.chords?.length || 0} SEGS</Badge>
+                    <Badge variant="secondary" className="font-mono">{currentChords?.length || 0} SEGS</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 pt-4">
-                  {result?.chords?.length ? (
+                  {currentChords?.length ? (
                     <ChordTimeline 
-                      segments={result.chords} 
+                      segments={currentChords} 
                       currentTime={currentTime} 
                       onSeek={seek}
                     />
