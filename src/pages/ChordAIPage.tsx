@@ -83,7 +83,7 @@ const ChordAIPage = () => {
                   Chord <span className="text-muted-foreground font-thin">AI</span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed font-light">
-                  Decode the architecture of any song. Our neural engine extracts harmonic progressions, tempo clusters, and scale maps from raw audio.
+                  Decode the architecture of any song. Our neural engine extracts harmonic progressions, tempo clusters, and scale maps from raw audio. <span className="text-white/40">Enable "Vocal Filter" for better chord accuracy on songs with vocals.</span>
                 </p>
               </div>
             </div>
@@ -177,7 +177,7 @@ const ChordAIPage = () => {
                         
                         <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
                           <Label htmlFor="vocal-switch" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
-                            Isolate
+                            Vocal Filter
                           </Label>
                           <Switch
                             id="vocal-switch"
