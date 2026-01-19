@@ -35,7 +35,6 @@ const Index = () => {
               className="space-y-10 text-center py-20"
             >
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-white/5 bg-white/[0.02] text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase">
-                <Sparkles className="w-3 h-3" />
                 <span>Modern Music Laboratory</span>
               </div>
               
@@ -100,7 +99,7 @@ const Index = () => {
       <footer className="relative z-10 border-t border-white/5 py-10">
         <div className="container mx-auto px-6 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-[0.5em] font-bold">
-             2024 Guitariz Studio  Obsidian High-Fidelity
+             2026 Guitariz Studio 
           </p>
         </div>
       </footer>
