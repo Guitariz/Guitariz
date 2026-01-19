@@ -7,39 +7,45 @@ import { motion } from "framer-motion";
 const toolCards = [
   {
     title: "Fretboard",
-    desc: "Hear and see every position with color-coded notes.",
+    desc: "Interactive guitar neck with adaptive note labeling and tuning.",
     icon: Music2,
     to: "/fretboard",
+    color: "from-orange-500/20 to-primary/20",
   },
   {
     title: "Chord Library",
-    desc: "Browse voicings and shapes without the clutter.",
+    desc: "1,000+ voicings with interactive diagrams and audio.",
     icon: Layers,
     to: "/chords",
+    color: "from-blue-500/20 to-accent/20",
   },
   {
     title: "Scale Explorer",
-    desc: "Western modes and ragas with clear visuals.",
+    desc: "Visualize modes, ragas, and exotic scales instantly.",
     icon: Disc,
     to: "/scales",
+    color: "from-emerald-500/20 to-secondary/20",
   },
   {
     title: "Metronome",
-    desc: "Stay in time with a clean, glowing click.",
+    desc: "High-precision timing with visual pulse and sound.",
     icon: Music,
     to: "/metronome",
+    color: "from-purple-500/20 to-primary/20",
   },
   {
     title: "Chord AI",
-    desc: "Coming soon.",
+    desc: "Upload any audio to extract chords and key in seconds.",
     icon: Bot,
     to: "/chord-ai",
+    color: "from-red-500/20 to-orange-500/20",
   },
   {
     title: "Circle of Fifths",
-    desc: "See key relationships on their own canvas.",
+    desc: "Interactive wheel to master key relationships.",
     icon: BookOpen,
     to: "/theory",
+    color: "from-cyan-500/20 to-blue-500/20",
   },
 ];
 
@@ -136,11 +142,11 @@ const Index = () => {
                 <span>Playful. Focused. Fast.</span>
               </motion.div>
               <motion.div className="space-y-4" variants={tiltFade(0.12)}>
-                <h1 className="text-5xl md:text-6xl leading-tight font-bold text-gradient">
-                  Play, hear, and learn music.
+                <h1 className="text-6xl md:text-8xl leading-tight font-black tracking-tighter">
+                  Master your <span className="text-gradient">Sound.</span>
                 </h1>
-                <p className="text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed">
-                  Guitar and piano, chords and scales—everything stays musical. Jump between instruments, hear changes instantly, and keep the groove moving.
+                <p className="text-xl md:text-2xl text-muted-foreground/80 max-w-xl leading-relaxed font-medium">
+                  The ultimate visual playground for guitarists and pianists. Explore chords, scales, and rhythm with zero friction.
                 </p>
               </motion.div>
               <motion.div className="flex flex-wrap items-center gap-4" variants={tiltFade(0.18)}>
@@ -190,7 +196,7 @@ const Index = () => {
                   </div>
                 </div>
                 <div className="grid gap-3 auto-rows-fr">
-                  {toolCards.slice(0, 3).map(({ title, desc, icon: Icon, to }, idx) => (
+                  {toolCards.slice(0, 3).map(({ title, desc, icon: Icon, to, color }, idx) => (
                     <motion.div
                       key={title}
                       className="h-full"
@@ -200,19 +206,19 @@ const Index = () => {
                     >
                       <Link
                         to={to}
-                        className="block h-full p-4 rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md hover:border-primary/50 transition hover:-translate-y-1 hover:shadow-lg card-lift"
+                        className="block h-full p-4 rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md hover:border-primary/50 transition hover:-translate-y-1 hover:shadow-xl group"
                       >
                         <div className="flex items-center gap-3">
                           <motion.div
-                            className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 grid place-items-center"
-                            animate={{ y: [0, -4, 0], scale: [1, 1.05, 1] }}
+                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} grid place-items-center border border-white/5`}
+                            animate={{ y: [0, -4, 0] }}
                             transition={{ duration: 3 + idx * 0.2, repeat: Infinity, ease: "easeInOut" }}
                           >
-                            <Icon className="w-5 h-5 text-primary" />
+                            <Icon className="w-6 h-6 text-foreground group-hover:text-primary transition-colors" />
                           </motion.div>
                           <div>
-                            <p className="font-semibold">{title}</p>
-                            <p className="text-sm text-muted-foreground">{desc}</p>
+                            <p className="font-bold text-lg">{title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{desc}</p>
                           </div>
                         </div>
                       </Link>
@@ -231,22 +237,77 @@ const Index = () => {
           viewport={{ once: true, amount: 0.2 }}
           transition={{ staggerChildren: 0.08 }}
         >
-          <motion.div className="container mx-auto grid md:grid-cols-3 gap-4" variants={{ visible: { transition: { staggerChildren: 0.08 } } }}>
-            {["Speedy loads", "Stay musical", "No more heavy scroll"].map((text, idx) => (
+          <div className="container mx-auto">
+            <div className="bg-gradient-to-br from-card/40 to-background/40 border border-border/40 rounded-[3rem] p-8 md:p-16 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32 transition-transform duration-1000 group-hover:scale-110" />
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-[100px] -ml-32 -mb-32 transition-transform duration-1000 group-hover:scale-110" />
+              
+              <div className="relative grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                  <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 px-4 py-1.5 uppercase tracking-widest text-[10px] font-black">Philosophy</Badge>
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
+                    Tools that think like <span className="text-primary">Musicians.</span>
+                  </h2>
+                  <p className="text-muted-foreground text-lg leading-relaxed font-medium">
+                    We believe music theory shouldn't be boring. Guitariz is built to be a canvas where you can experiment, hear every note, and see the geometry of music without getting lost in technicalities.
+                  </p>
+                  <div className="flex items-center gap-6 pt-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-primary">0</p>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Latency</p>
+                    </div>
+                    <div className="w-px h-10 bg-border/40" />
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-secondary">∞</p>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Creativity</p>
+                    </div>
+                    <div className="w-px h-10 bg-border/40" />
+                    <div className="text-center">
+                      <p className="text-3xl font-black text-accent">100%</p>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Visual</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Neural Audio", color: "bg-orange-500/20" },
+                    { label: "Adaptive UI", color: "bg-blue-500/20" },
+                    { label: "Vector Theory", color: "bg-emerald-500/20" },
+                    { label: "Real-time AI", color: "bg-purple-500/20" },
+                  ].map((item) => (
+                    <div key={item.label} className={`p-8 rounded-[2rem] ${item.color} backdrop-blur-md border border-white/5 flex items-center justify-center text-center group/item hover:scale-[1.05] transition-transform cursor-default`}>
+                      <span className="font-bold tracking-tight group-hover/item:text-white transition-colors">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          className="px-6 mt-16"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ staggerChildren: 0.08 }}
+        >
+          <motion.div className="container mx-auto grid md:grid-cols-3 gap-6" variants={{ visible: { transition: { staggerChildren: 0.08 } } }}>
+            {["Lightning Fast", "Pure Audio", "Smart Layouts"].map((text, idx) => (
               <motion.div
                 key={text}
-                className="p-5 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md card-lift"
+                className="p-8 rounded-[2rem] border border-border/40 bg-card/60 backdrop-blur-md hover:border-primary/20 transition-all duration-300 group"
                 variants={fadeFlat(0.06 * idx)}
-                whileHover={{ y: -4, scale: 1.01 }}
-                transition={{ type: "spring", stiffness: 220, damping: 18 }}
+                whileHover={{ y: -4 }}
               >
-                <p className="font-semibold text-lg mb-1">{text}</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {text === "Speedy loads"
-                    ? "Each tool is code-split so you only load what you use."
-                    : text === "Stay musical"
-                    ? "Audio first: fretboard, piano, chords, and scales keep you hearing every change."
-                    : "Shorter pages mean smoother scrolling and faster paints."}
+                <div className="w-10 h-1 text-primary bg-primary/20 rounded-full mb-4 group-hover:w-20 transition-all duration-500" />
+                <p className="font-black text-xl mb-3 tracking-tight">{text}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed font-medium grayscale group-hover:grayscale-0 transition-all">
+                  {text === "Lightning Fast"
+                    ? "Each tool is optimized and code-split for immediate access to music gear."
+                    : text === "Pure Audio"
+                    ? "Synthesized in high-fidelity to ensure you stay in the musical mindset."
+                    : "Focused interfaces that put the instrument front and center, always."}
                 </p>
               </motion.div>
             ))}
@@ -270,7 +331,7 @@ const Index = () => {
               </div>
             </motion.div>
             <motion.div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr" variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } } }}>
-              {toolCards.map(({ title, desc, icon: Icon, to }, idx) => (
+              {toolCards.map(({ title, desc, icon: Icon, to, color }, idx) => (
                 <motion.div
                   key={title}
                   className="h-full"
@@ -280,19 +341,24 @@ const Index = () => {
                 >
                   <Link
                     to={to}
-                    className="block h-full p-5 rounded-2xl border border-border/50 bg-card/70 hover:border-primary/50 hover:-translate-y-1 transition shadow-md card-lift"
+                    className="block h-full p-6 rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl hover:border-primary/50 hover:bg-card/60 transition shadow-lg group relative overflow-hidden"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <motion.div
-                        className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 grid place-items-center"
-                        animate={{ scale: [1, 1.08, 1], y: [0, -3, 0] }}
-                        transition={{ duration: 3.4 + idx * 0.15, repeat: Infinity, ease: "easeInOut" }}
-                      >
-                        <Icon className="w-5 h-5 text-primary" />
-                      </motion.div>
-                      <p className="font-semibold text-lg">{title}</p>
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color} grid place-items-center border border-white/5 group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-7 h-7 text-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <div className="pt-1">
+                        <p className="font-black text-2xl tracking-tight">{title}</p>
+                        <div className="w-8 h-1 bg-primary/40 rounded-full mt-1 group-hover:w-16 transition-all duration-300" />
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">{desc}</p>
+                    
+                    <div className="mt-6 flex items-center text-xs font-bold uppercase tracking-widest text-primary/0 group-hover:text-primary transition-all gap-2">
+                       Explore Now <ArrowRight className="w-3 h-3" />
+                    </div>
                   </Link>
                 </motion.div>
               ))}

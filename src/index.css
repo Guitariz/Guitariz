@@ -157,10 +157,11 @@
   .gradient-glow { background: var(--gradient-glow); }
 
   .text-gradient {
-    background: var(--gradient-accent);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    filter: drop-shadow(0 4px 8px rgba(var(--primary), 0.1));
   }
 
   .glow-accent { box-shadow: 0 0 30px hsl(var(--primary) / 0.3); }
