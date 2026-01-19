@@ -15,6 +15,8 @@ const VocalSplitterPage = () => {
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [separated, setSeparated] = useState(false);
+  const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
+  const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(null);
   
   const [vocalsVolume, setVocalsVolume] = useState(100);
   const [instrumentalVolume, setInstrumentalVolume] = useState(100);
@@ -35,6 +37,8 @@ const VocalSplitterPage = () => {
     setSeparated(false);
     setVocalsAudio(null);
     setInstrumentalAudio(null);
+    setVocalsUrl(null);
+    setInstrumentalUrl(null);
   };
 
   const processSeparation = async () => {
@@ -72,6 +76,8 @@ const VocalSplitterPage = () => {
       }
       
       const data = await response.json();
+      setVocalsUrl(`${apiUrl}${data.vocalsUrl}`);
+      setInstrumentalUrl(`${apiUrl}${data.instrumentalUrl}`);
       
       // Load the separated audio files
       const ctx = new AudioContext();
@@ -184,27 +190,27 @@ const VocalSplitterPage = () => {
   };
 
   const downloadAudio = async (type: "vocals" | "instrumental") => {
-    if (!selectedFile) return;
+    const url = type === "vocals" ? vocalsUrl : instrumentalUrl;
+    if (!url) {
+      toast({
+        title: "Download failed",
+        description: "Separated audio not found. Please process the file first.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("type", type);
-      
-      const response = await fetch("/api/separate/download", {
-        method: "POST",
-        body: formData,
-      });
-      
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Download failed");
       
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `${selectedFile.name.split('.')[0]}_${type}.wav`;
+      a.href = downloadUrl;
+      a.download = `${selectedFile?.name.split(".")[0] || "audio"}_${type}.wav`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(downloadUrl);
       
       toast({
         title: "Download started",
