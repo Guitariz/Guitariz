@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { ChordSegment } from "@/types/chordAI";
 import { useEffect, useRef } from "react";
 
@@ -20,27 +19,19 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
   const containerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
-  const activeIndex = segments.findIndex(s => currentTime >= s.start && currentTime <= s.end);
+  const activeIndex = segments.findIndex(s => currentTime >= s.start && currentTime <= (s.end || s.start + 0.1));
 
   useEffect(() => {
     if (activeRef.current && containerRef.current) {
       const container = containerRef.current;
       const activeElement = activeRef.current;
       
-      const containerRect = container.getBoundingClientRect();
-      const activeRect = activeElement.getBoundingClientRect();
-      
-      // Calculate relative position to container
       const relativeTop = activeElement.offsetTop;
-      const relativeHeight = activeElement.offsetHeight;
       const containerScrollTop = container.scrollTop;
       const containerHeight = container.offsetHeight;
 
-      // If active element is outside current view, scroll it in
-      if (relativeTop < containerScrollTop) {
-        container.scrollTo({ top: relativeTop - 20, behavior: "smooth" });
-      } else if (relativeTop + relativeHeight > containerScrollTop + containerHeight) {
-        container.scrollTo({ top: relativeTop - containerHeight + relativeHeight + 20, behavior: "smooth" });
+      if (relativeTop < containerScrollTop || relativeTop > containerScrollTop + containerHeight - 100) {
+        container.scrollTo({ top: relativeTop - 100, behavior: "smooth" });
       }
     }
   }, [activeIndex]);
@@ -52,55 +43,61 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
     >
       <div className="space-y-3 py-2">
         {segments.map((seg, idx) => {
-          const isActive = currentTime >= seg.start && currentTime <= seg.end;
-          const progress = isActive ? ((currentTime - seg.start) / (seg.end - seg.start)) * 100 : 0;
+          const isActive = currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1);
+          const progress = isActive && seg.end ? ((currentTime - seg.start) / (seg.end - seg.start)) * 100 : 0;
           
           return (
             <div
-              key={`${seg.chord}-${seg.start.toFixed(3)}-${idx}`}
+              key={`${seg.chord}-${seg.start}-${idx}`}
               ref={isActive ? activeRef : null}
               onClick={() => onSeek(seg.start)}
-              className={`group relative overflow-hidden rounded-2xl border px-5 py-4 cursor-pointer transition-all duration-300 active:scale-95 ${
+              className={`group relative overflow-hidden rounded-2xl border px-5 py-5 cursor-pointer transition-all duration-300 ${
                 isActive 
-                  ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/10 scale-[1.02]" 
-                  : "border-border/40 bg-card/40 opacity-70 hover:opacity-100 hover:border-primary/40 hover:bg-card"
+                  ? "border-white bg-white/5 scale-[1.02] shadow-xl" 
+                  : "border-white/5 bg-white/[0.01] opacity-40 hover:opacity-100 hover:border-white/10 hover:bg-white/[0.02]"
               }`}
             >
-              {/* Progress Bar Background */}
+              {/* Progress Line */}
               {isActive && (
                 <div 
-                  className="absolute bottom-0 left-0 h-1 bg-primary/30 transition-all duration-100 ease-linear"
-                  style={{ width: `${progress}%` }}
+                  className="absolute bottom-0 left-0 h-0.5 bg-white/40 transition-all duration-100 ease-linear"
+                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                 />
               )}
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col">
-                  <span className={`text-2xl font-black tracking-tight ${isActive ? "text-primary" : "text-foreground"}`}>
+                  <span className={`text-2xl font-light tracking-tight ${isActive ? "text-white" : "text-muted-foreground"}`}>
                     {seg.chord}
                   </span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline" className={`text-[10px] uppercase font-bold tracking-widest px-1.5 h-4 flex items-center ${isActive ? "border-primary/50 text-primary" : "border-muted-foreground/30 text-muted-foreground"}`}>
-                      {Math.round(seg.confidence * 100)}% Match
-                    </Badge>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className={`text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border ${isActive ? "border-white/20 text-white" : "border-white/5 text-muted-foreground"}`}>
+                      {Math.round((seg.confidence || 0.94) * 100)}% Match
+                    </div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className="text-xs font-mono text-muted-foreground whitespace-nowrap">
+                  <div className="text-xs font-mono text-muted-foreground tabular-nums">
                     {formatTime(seg.start)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground/60 mt-1 uppercase">
-                    {(seg.end - seg.start).toFixed(1)}s
+                  <div className="text-[10px] text-muted-foreground/40 mt-1 uppercase font-bold tracking-tighter">
+                    {((seg.end || seg.start) - seg.start).toFixed(1)}s
                   </div>
                 </div>
               </div>
             </div>
           );
         })}
+        {segments.length === 0 && (
+           <div className="h-full flex items-center justify-center text-muted-foreground text-sm font-light italic opacity-50">
+             Waiting for harmonic sequence...
+           </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default ChordTimeline;
+

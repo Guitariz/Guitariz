@@ -1,5 +1,4 @@
 import FFT from "fft.js";
-import { Chord } from "tonal";
 import { AnalysisResult, ChordSegment } from "@/types/chordAI";
 
 // Map pitch class index to note names used by tonal
@@ -55,7 +54,6 @@ for (let root = 0; root < 12; root++) {
 export type AnalyzeTrackResult = AnalysisResult;
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 function frequencyToPitchClass(freq: number): number {
   if (freq <= 0) return 0;

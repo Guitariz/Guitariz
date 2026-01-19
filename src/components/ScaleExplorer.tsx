@@ -1,16 +1,9 @@
 import { useState, useMemo } from "react";
-// Remove this line - it's unused
-// import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { Music, Scale, Hash, Music2, Globe, Play, Info, Zap, Guitar, Search, X } from "lucide-react";
+import { Scale, Hash, Globe, Play, Info, Guitar, Search } from "lucide-react";
 import { playNote } from "@/lib/chordAudio";
-
 
 type ScaleDataBase = {
   intervals: number[];
@@ -36,49 +29,49 @@ const WESTERN_SCALES = {
   "Major (Ionian)": {
     intervals: [0, 2, 4, 5, 7, 9, 11],
     description: "The standard major scale - happy, bright sound",
-    chords: ["I", "ii", "iii", "IV", "V", "vi", "vii°"],
+    chords: ["I", "ii", "iii", "IV", "V", "vi", "vii"],
     usage: "Most common scale in Western music",
     category: "mode" as const
   },
   "Natural Minor (Aeolian)": {
     intervals: [0, 2, 3, 5, 7, 8, 10],
     description: "Sad, melancholic sound",
-    chords: ["i", "ii°", "III", "iv", "v", "VI", "VII"],
+    chords: ["i", "ii", "III", "iv", "v", "VI", "VII"],
     usage: "Minor key compositions",
     category: "mode" as const
   },
   "Harmonic Minor": {
     intervals: [0, 2, 3, 5, 7, 8, 11],
     description: "Minor scale with raised 7th - dramatic, exotic",
-    chords: ["i", "ii°", "III+", "iv", "V", "VI", "vii°"],
+    chords: ["i", "ii", "III+", "iv", "V", "VI", "vii"],
     usage: "Classical music, metal, jazz",
     category: "mode" as const
   },
   "Melodic Minor": {
     intervals: [0, 2, 3, 5, 7, 9, 11],
     description: "Minor scale with raised 6th and 7th",
-    chords: ["i", "ii", "III+", "IV", "V", "vi°", "vii°"],
+    chords: ["i", "ii", "III+", "IV", "V", "vi", "vii"],
     usage: "Jazz, fusion, classical",
     category: "mode" as const
   },
   "Dorian": {
     intervals: [0, 2, 3, 5, 7, 9, 10],
     description: "Minor scale with raised 6th - jazzy, mysterious",
-    chords: ["i", "ii", "III", "IV", "v", "vi°", "VII"],
+    chords: ["i", "ii", "III", "IV", "v", "vi", "VII"],
     usage: "Jazz, rock, folk",
     category: "mode" as const
   },
   "Phrygian": {
     intervals: [0, 1, 3, 5, 7, 8, 10],
     description: "Spanish-sounding scale - tense, exotic",
-    chords: ["i", "II", "III", "iv", "v°", "VI", "vii"],
+    chords: ["i", "II", "III", "iv", "v", "VI", "vii"],
     usage: "Flamenco, metal, world music",
     category: "mode" as const
   },
   "Lydian": {
     intervals: [0, 2, 4, 6, 7, 9, 11],
     description: "Major scale with raised 4th - dreamy, ethereal",
-    chords: ["I", "II", "iii", "#iv°", "V", "vi", "vii"],
+    chords: ["I", "II", "iii", "#iv", "V", "vi", "vii"],
     usage: "Film scores, jazz, progressive rock",
     category: "mode" as const
   },
@@ -92,7 +85,7 @@ const WESTERN_SCALES = {
   "Locrian": {
     intervals: [0, 1, 3, 5, 6, 8, 10],
     description: "Diminished scale - unstable, dissonant",
-    chords: ["i°", "ii", "iii", "iv", "V", "VI", "vii"],
+    chords: ["i", "ii", "iii", "iv", "V", "VI", "vii"],
     usage: "Rare, experimental music",
     category: "mode" as const
   },
@@ -127,7 +120,7 @@ const WESTERN_SCALES = {
   "Diminished": {
     intervals: [0, 2, 3, 5, 6, 8, 9, 11],
     description: "Alternating whole and half steps",
-    chords: ["i°", "ii°", "III", "iv°", "V", "VI", "vii°"],
+    chords: ["i", "ii", "III", "iv", "V", "VI", "vii"],
     usage: "Jazz, classical, modern",
     category: "exotic" as const
   }
@@ -136,765 +129,334 @@ const WESTERN_SCALES = {
 const RAGA_SCALES = {
   "Bhairav": {
     intervals: [0, 1, 4, 5, 7, 8, 11],
-    description: "Morning raga - devotional, serious. Equivalent to Phrygian dominant scale (5th mode of harmonic minor) with a unique komal re and dha.",
-    aroha: "S r G M P d n S'",
-    avaroha: "S' n d P M G r S",
+    description: "Morning raga - devotional, serious. Equivalent to Phrygian dominant scale.",
+    aroha: "S r G M P d n S",
+    avaroha: "S n d P M G r S",
     time: "Dawn",
     mood: "Devotional, contemplative"
   },
   "Yaman": {
     intervals: [0, 2, 4, 6, 7, 9, 11],
-    description: "Evening raga - romantic, majestic. Equivalent to Lydian mode (4th mode of major scale) - features a raised 4th (tivra ma).",
-    aroha: "N R G M D N S'",
-    avaroha: "S' N D M G R S",
+    description: "Evening raga - romantic, majestic. Equivalent to Lydian mode.",
+    aroha: "N R G M D N S",
+    avaroha: "S N D M G R S",
     time: "Evening",
     mood: "Romantic, heroic"
   },
   "Bhairavi": {
     intervals: [0, 1, 3, 5, 7, 8, 10],
-    description: "Dawn raga - devotional, soothing. Equivalent to Dorian mode (2nd mode of minor scale) with all komal notes except ma.",
-    aroha: "S r g M P d n S'",
-    avaroha: "S' n d P M g r S",
+    description: "Dawn raga - devotional, soothing. Minor scale with all komal notes.",
+    aroha: "S r g M P d n S",
+    avaroha: "S n d P M g r S",
     time: "Dawn",
     mood: "Devotional, peaceful"
   },
-  "Todi": {
-    intervals: [0, 1, 3, 6, 7, 8, 11],
-    description: "Morning raga - mystical, complex. Features komal re, ga, dha, and tivra (raised) ma - creates a haunting, exotic sound.",
-    aroha: "S r g M' P d n S'",
-    avaroha: "S' n d P M' g r S",
-    time: "Morning",
-    mood: "Mystical, intense"
-  },
   "Kafi": {
     intervals: [0, 2, 3, 5, 7, 9, 10],
-    description: "Evening raga - romantic, light. Equivalent to Dorian mode (2nd mode of minor scale) - features a raised 6th (tivra dha).",
-    aroha: "N R g M D n S'",
-    avaroha: "S' n D M g R S",
+    description: "Evening raga - romantic, light. Equivalent to Dorian mode.",
+    aroha: "N R g M D n S",
+    avaroha: "S n D M g R S",
     time: "Evening",
     mood: "Romantic, joyful"
-  },
-  "Bageshri": {
-    intervals: [0, 1, 3, 5, 7, 8, 10],
-    description: "Night raga - romantic, devotional. Features komal re and dha with natural (shudh) ga and ni - creates a melancholic yet devotional atmosphere.",
-    aroha: "S r g M P d n S'",
-    avaroha: "S' n d P M g r S",
-    time: "Night",
-    mood: "Romantic, devotional"
-  },
-  "Darbar": {
-    intervals: [0, 1, 4, 5, 7, 9, 10],
-    description: "Evening raga - majestic, royal. Equivalent to Lydian dominant scale - combines Lydian brightness with Mixolydian flat 7th.",
-    aroha: "S r G M P D n S'",
-    avaroha: "S' n D P M G r S",
-    time: "Evening",
-    mood: "Majestic, dignified"
-  },
-  "Malkauns": {
-    intervals: [0, 3, 5, 6, 7, 10],
-    description: "Late night raga - mystical, intense. Equivalent to a hexatonic scale similar to diminished patterns - creates a meditative, otherworldly sound.",
-    aroha: "S g M d n S'",
-    avaroha: "S' n d M g S",
-    time: "Late night",
-    mood: "Mystical, meditative"
-  },
-  "Bilawal": {
-    intervals: [0, 2, 4, 5, 7, 9, 11],
-    description: "Morning raga - pure, natural. Equivalent to major scale (Ionian mode) - all shudh notes, represents purity and clarity.",
-    aroha: "S R G M P D N S'",
-    avaroha: "S' N D P M G R S",
-    time: "Morning",
-    mood: "Pure, natural"
-  },
-  "Asavari": {
-    intervals: [0, 2, 3, 5, 7, 8, 10],
-    description: "Afternoon raga - devotional, serious. Equivalent to natural minor scale (Aeolian mode) - features komal dha and ni.",
-    aroha: "S R g M P d n S'",
-    avaroha: "S' n d P M g R S",
-    time: "Afternoon",
-    mood: "Devotional, serious"
-  },
-  "Bhopali": {
-    intervals: [0, 2, 4, 5, 7],
-    description: "Afternoon raga - happy, devotional. A pentatonic (5-note) scale using shudh (natural) swaras - bright and simple, evokes joy and clarity.",
-    aroha: "S R G P D S'",
-    avaroha: "S' D P G R S",
-    time: "Afternoon",
-    mood: "Happy, devotional"
-  },
-  "Durga": {
-    intervals: [0, 2, 4, 7, 9],
-    description: "Morning raga - powerful, heroic. A pentatonic (5-note) scale with shudh (natural) swaras - represents strength and majesty.",
-    aroha: "S R G P D S'",
-    avaroha: "S' D P G R S",
-    time: "Morning",
-    mood: "Powerful, heroic"
   }
 };
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const ENGLISH_INDIAN_NOTES = ["S", "r", "R", "g", "G", "M", "m", "P", "d", "D", "n", "N"];
-const DEVANAGARI_NOTES = ["सा", "रे♭", "रे", "ग♭", "ग", "म", "म#", "प", "ध♭", "ध", "नि♭", "नि"];
-
-// Color mapping for chromatic notes
-const NOTE_COLORS = {
-  "C": "bg-red-500 hover:bg-red-600 text-white",
-  "C#": "bg-red-400 hover:bg-red-500 text-white",
-  "D": "bg-orange-500 hover:bg-orange-600 text-white",
-  "D#": "bg-orange-400 hover:bg-orange-500 text-white",
-  "E": "bg-yellow-500 hover:bg-yellow-600 text-black",
-  "F": "bg-yellow-400 hover:bg-yellow-500 text-black",
-  "F#": "bg-green-500 hover:bg-green-600 text-white",
-  "G": "bg-green-400 hover:bg-green-500 text-white",
-  "G#": "bg-blue-500 hover:bg-blue-600 text-white",
-  "A": "bg-blue-400 hover:bg-blue-500 text-white",
-  "A#": "bg-purple-500 hover:bg-purple-600 text-white",
-  "B": "bg-purple-400 hover:bg-purple-500 text-white"
-};
-
 const ScaleExplorer = () => {
   const [rootNote, setRootNote] = useState("C");
   const [selectedScale, setSelectedScale] = useState("Major (Ionian)");
   const [scaleCategory, setScaleCategory] = useState("western");
-  const [indianNotationType, setIndianNotationType] = useState("english");
   const [lastPlayed, setLastPlayed] = useState<string | null>(null);
   const [scaleSearchQuery, setScaleSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
 
   const currentScales = (scaleCategory === "western" ? WESTERN_SCALES : RAGA_SCALES) as Record<string, ScaleData>;
 
-  // Filter scales based on search query and category
   const filteredScales = useMemo(() => {
     let scales = Object.keys(currentScales);
-    
     if (scaleSearchQuery.trim()) {
       scales = scales.filter(scale => 
         scale.toLowerCase().includes(scaleSearchQuery.toLowerCase())
       );
     }
-    
-    if (scaleCategory === "western" && selectedCategory) {
-      scales = scales.filter(scale => {
-        const scaleData = currentScales[scale];
-        return ('category' in scaleData) && scaleData.category === selectedCategory;
-      });
-    }
-    
     return scales;
-  }, [scaleSearchQuery, selectedCategory, scaleCategory, currentScales]);
+  }, [scaleSearchQuery, currentScales]);
 
   const getScaleNotes = useMemo(() => {
     const rootIndex = NOTES.indexOf(rootNote);
     const scaleData = currentScales[selectedScale];
-    if (!scaleData || !('intervals' in scaleData)) return [];
+    if (!scaleData) return [];
     return scaleData.intervals.map((interval: number) => NOTES[(rootIndex + interval) % 12]);
   }, [rootNote, selectedScale, currentScales]);
 
-  const getIndianNotation = useMemo(() => {
-    if (scaleCategory !== "raga") return [];
-    const rootIndex = NOTES.indexOf(rootNote);
-    const scaleData = RAGA_SCALES[selectedScale as keyof typeof RAGA_SCALES];
-    if (!scaleData || !('intervals' in scaleData)) return [];
-    const notesArray = indianNotationType === "devanagari" ? DEVANAGARI_NOTES : ENGLISH_INDIAN_NOTES;
-    return scaleData.intervals.map((interval: number) => notesArray[(rootIndex + interval) % 12]);
-  }, [rootNote, selectedScale, scaleCategory, indianNotationType]);
-
   const scaleData = currentScales[selectedScale];
 
+  const playScale = () => {
+    getScaleNotes.forEach((note, index) => {
+      setTimeout(() => {
+        const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(note) - 9) / 12);
+        playNote(noteFreq, 1.2, 0.4, "piano");
+        setLastPlayed(note);
+      }, index * 300);
+    });
+    setTimeout(() => setLastPlayed(null), getScaleNotes.length * 300);
+  };
+
   return (
-    <div className="relative w-full min-h-screen py-10 md:py-14 px-4 md:px-8 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-45" style={{ backgroundImage: "radial-gradient(circle at 18% 20%, hsla(24,94%,60%,0.10), transparent 30%), radial-gradient(circle at 78% 18%, hsla(195,83%,52%,0.10), transparent 26%)" }} />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_45%)] opacity-30" />
-      <div className="container relative">
-        {/* Header */}
-        <div className="mb-10 md:mb-12 text-center space-y-3">
-          <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Scales • Modes • Ragas</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gradient">Scale Explorer</h2>
-          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Slide between Western scales and Indian ragas and map the fretboard with a clean, calm layout.
-          </p>
-        </div>
+    <div className="flex flex-col lg:flex-row gap-8 w-full min-h-[600px]">
+      {/* Selection Sidebar */}
+      <div className="w-full lg:w-80 flex flex-col gap-6">
+        <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
+          <div className="space-y-6">
+            <div className="flex p-1 bg-white/[0.03] rounded-xl border border-white/5">
+              <button
+                onClick={() => {
+                  setScaleCategory("western");
+                  setSelectedScale("Major (Ionian)");
+                }}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                  scaleCategory === "western" 
+                    ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                    : "text-muted-foreground hover:text-white"
+                }`}
+              >
+                Western
+              </button>
+              <button
+                onClick={() => {
+                  setScaleCategory("raga");
+                  setSelectedScale("Bhairav");
+                }}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                  scaleCategory === "raga" 
+                    ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                    : "text-muted-foreground hover:text-white"
+                }`}
+              >
+                Raga
+              </button>
+            </div>
 
-        {/* Tabs */}
-        <Tabs value={scaleCategory} onValueChange={setScaleCategory} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 md:mb-8 h-12 md:h-14 rounded-xl bg-card/60 border border-border/60 p-1.5 gap-1">
-            <TabsTrigger value="western" className="flex items-center justify-center gap-2 text-sm md:text-base font-semibold data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-primary data-[state=active]:text-foreground transition-all duration-200 rounded-lg">
-              <Music className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Western</span>
-              <Badge variant="secondary" className="ml-2 text-[11px] h-fit">{Object.keys(WESTERN_SCALES).length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="raga" className="flex items-center justify-center gap-2 text-sm md:text-base font-semibold data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-primary data-[state=active]:text-foreground transition-all duration-200 rounded-lg">
-              <Globe className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Ragas</span>
-              <Badge variant="secondary" className="ml-2 text-[11px] h-fit">{Object.keys(RAGA_SCALES).length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Root Position</label>
+              <div className="grid grid-cols-6 gap-1">
+                {NOTES.map((note) => (
+                  <button
+                    key={note}
+                    onClick={() => setRootNote(note)}
+                    className={`h-8 rounded-md text-[10px] font-mono transition-all border ${
+                      rootNote === note
+                        ? "bg-white text-black border-white"
+                        : "bg-white/[0.02] border-white/5 text-muted-foreground hover:border-white/20 hover:text-white"
+                    }`}
+                  >
+                    {note}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <TabsContent value={scaleCategory} className="mt-6 md:mt-8">
-            <div className="grid lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-          {/* Enhanced Controls Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="glass-card rounded-xl shadow-md sticky top-4 lg:top-8 border border-border/40">
-              <CardHeader className="pb-3 md:pb-4">
-                <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-gradient">
-                  <Info className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                  <span>Selection</span>
-                </CardTitle>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  Configure your scale
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4 md:space-y-5">
-                {/* Root Note */}
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Hash className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    Root
-                  </label>
-                  <Select value={rootNote} onValueChange={setRootNote}>
-                    <SelectTrigger className="h-10 md:h-11 bg-background/50 border border-border/80 hover:border-primary/60 focus:border-primary transition-colors text-sm md:text-base">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NOTES.map((note) => (
-                        <SelectItem key={note} value={note} className="font-mono text-sm md:text-base">
-                          {note}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="space-y-3 flex-1">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-white transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search scales..."
+                  value={scaleSearchQuery}
+                  onChange={(e) => setScaleSearchQuery(e.target.value)}
+                  className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-medium shadow-inner"
+                />
+              </div>
+
+              <ScrollArea className="h-[400px] -mr-4 pr-4">
+                <div className="space-y-1">
+                  {filteredScales.map((scale) => (
+                    <button
+                      key={scale}
+                      onClick={() => setSelectedScale(scale)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
+                        selectedScale === scale
+                          ? "bg-white/10 border-white/10 text-white font-semibold shadow-sm"
+                          : "border-transparent text-muted-foreground hover:bg-white/[0.03] hover:text-white"
+                      }`}
+                    >
+                      {scale}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Scale Search & Filter */}
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Search className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    {scaleCategory === "western" ? "Scale" : "Raga"}
-                  </label>
-                  <div className="relative">
-                    <Input
-                      placeholder={`Search...`}
-                      value={scaleSearchQuery}
-                      onChange={(e) => setScaleSearchQuery(e.target.value)}
-                      className="h-10 md:h-11 bg-background/50 border border-border/80 hover:border-primary/60 pr-9 transition-colors text-sm md:text-base"
-                    />
-                    {scaleSearchQuery && (
-                      <button
-                        onClick={() => setScaleSearchQuery("")}
-                        className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Scale List */}
-                  <ScrollArea className="h-48 md:h-56 border border-border/50 rounded-lg p-2 bg-background/40 mt-2">
-                    <div className="space-y-1">
-                      {filteredScales.length > 0 ? (
-                        filteredScales.map((scale) => (
-                          <button
-                            key={scale}
-                            onClick={() => {
-                              setSelectedScale(scale);
-                              setScaleSearchQuery("");
-                            }}
-                            className={`w-full px-3 py-2 rounded-lg text-left text-xs md:text-sm font-semibold transition-all duration-150 line-clamp-1 ${
-                              selectedScale === scale
-                                ? "bg-card border border-primary text-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-card/70"
-                            }`}
-                          >
-                            {scale}
-                          </button>
-                        ))
-                      ) : (
-                        <p className="text-xs text-muted-foreground/60 text-center py-4">
-                          No scales found
-                        </p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-
-                {/* Category Filter */}
-                {scaleCategory === "western" && (
-                  <div className="space-y-2 pt-2 border-t border-border/30">
-                    <label className="text-xs md:text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Type
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        onClick={() => setSelectedCategory(null)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
-                          selectedCategory === null
-                            ? "bg-card border border-primary text-foreground"
-                            : "bg-card/70 border border-border/60 text-muted-foreground hover:border-primary/60 hover:text-foreground"
-                        }`}
-                      >
-                        All
-                      </button>
-                      {["mode", "pentatonic", "blues", "exotic"].map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all duration-200 ${
-                            selectedCategory === cat
-                                ? "bg-card border border-primary text-foreground"
-                                : "bg-card/70 border border-border/60 text-muted-foreground hover:border-primary/60 hover:text-foreground"
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Indian Notation */}
-                {scaleCategory === "raga" && (
-                  <div className="space-y-2">
-                    <label className="text-xs md:text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                      <Music2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      Notation
-                    </label>
-                    <Select value={indianNotationType} onValueChange={setIndianNotationType}>
-                      <SelectTrigger className="h-10 md:h-11 bg-background/50 border border-border/80 hover:border-primary/60 focus:border-primary transition-colors text-sm md:text-base">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="english">English</SelectItem>
-                        <SelectItem value="devanagari">Devanagari</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="pt-3 md:pt-4 border-t border-border/30 grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 text-center">
-                    <div className="text-lg md:text-xl font-bold text-primary">
-                      {getScaleNotes.length}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">Notes</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/20 text-center">
-                    <div className="text-lg md:text-xl font-bold text-accent">
-                      {scaleData?.intervals.length || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">Steps</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </ScrollArea>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Enhanced Scale Information */}
-          <div className="lg:col-span-2">
-            <div className="grid gap-4 md:gap-6 lg:gap-8">
-              {/* Scale Title Card */}
-              <Card className="glass-card rounded-xl shadow-md overflow-hidden border border-border/40 bg-card/80">
-                <div className="bg-card/70 border-b border-border/40 px-4 md:px-6 py-4 md:py-5">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg">
-                      <Music className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                        {rootNote} {selectedScale}
-                      </h3>
-                      <p className="text-xs md:text-sm text-muted-foreground">
-                        {scaleCategory === "western" ? "Western scale" : "Indian raga"}
-                      </p>
-                    </div>
-                  </div>
+      {/* Main Content Area */}
+      <div className="flex-1 space-y-6">
+        <div className="glass-card rounded-[2rem] p-8 border-white/10 bg-white/[0.01] overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Scale className="w-32 h-32 text-white" />
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px] font-mono text-muted-foreground uppercase px-2 py-0">
+                  {scaleCategory} structure
+                </Badge>
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight text-white">
+                {rootNote} <span className="text-muted-foreground font-medium">{selectedScale}</span>
+              </h1>
+              <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
+                {scaleData.description}
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={playScale}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full bg-white text-black font-semibold text-xs hover:bg-neutral-200 transition-all disabled:opacity-50"
+                  disabled={!!lastPlayed}
+                >
+                  <Play className="w-3 h-3 fill-current" />
+                  Audition Scale
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 md:max-w-[280px] justify-end">
+              {getScaleNotes.map((note, idx) => (
+                <div 
+                  key={idx}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold border transition-all ${
+                    note === rootNote 
+                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" 
+                      : "bg-white/[0.03] border-white/10 text-white"
+                  } ${lastPlayed === note ? "scale-110 ring-2 ring-primary border-primary" : ""}`}
+                >
+                  {note}
                 </div>
-                <CardContent className="px-4 md:px-6 py-4 md:py-5 space-y-5">
-                  {/* Scale Degrees */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Hash className="w-4 h-4 text-primary" />
-                      <div className="text-sm font-semibold">Scale Degrees</div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {getScaleNotes.map((note, index) => (
-                        <TooltipProvider key={index}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className={`inline-flex flex-col items-center gap-0.5 px-2.5 py-2 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-bold shadow-sm transition-all duration-150 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background ${NOTE_COLORS[note as keyof typeof NOTE_COLORS]}`}
-                                aria-label={`Note ${note}, degree ${index + 1}`}
-                                onClick={() => {
-                                  const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(note) - 9) / 12);
-                                  playNote(noteFreq, 1.6, 0.35, 'piano');
-                                  setLastPlayed(note);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === ' ' || e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(note) - 9) / 12);
-                                    playNote(noteFreq, 1.6, 0.35, 'piano');
-                                    setLastPlayed(note);
-                                  }
-                                }}
-                              >
-                                <span className="text-sm md:text-base leading-none">{note}</span>
-                                <span className="text-xs opacity-80 leading-none">°{index + 1}</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                              <div className="text-center text-xs">
-                                <div className="font-semibold">{note}</div>
-                                <div className="text-muted-foreground">Degree {index + 1}</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </div>
-                  </div>
-
-                  {scaleCategory === "raga" && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-accent" />
-                        <div className="text-sm font-semibold">Indian Notation</div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {getIndianNotation.map((note, index) => (
-                          <TooltipProvider key={index}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={`inline-flex flex-col items-center gap-0.5 px-2.5 py-2 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-bold shadow-sm transition-all duration-150 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background ${NOTE_COLORS[getScaleNotes[index] as keyof typeof NOTE_COLORS]}`}
-                                  aria-label={`Indian note ${note}, degree ${index + 1}`}
-                                  onClick={() => {
-                                    const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(getScaleNotes[index]) - 9) / 12);
-                                    playNote(noteFreq, 1.6, 0.35, 'piano');
-                                    setLastPlayed(getScaleNotes[index]);
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === ' ' || e.key === 'Enter') {
-                                      e.preventDefault();
-                                      const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(getScaleNotes[index]) - 9) / 12);
-                                      playNote(noteFreq, 1.6, 0.35, 'piano');
-                                      setLastPlayed(getScaleNotes[index]);
-                                    }
-                                  }}
-                                >
-                                  <span className="text-sm md:text-base leading-none">{note}</span>
-                                  <span className="text-xs opacity-80 leading-none">°{index + 1}</span>
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">
-                                <div className="text-center text-xs">
-                                  <div className="font-semibold">{note}</div>
-                                  <div className="text-muted-foreground">Degree {index + 1}</div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-6 pt-6 border-t border-border/50">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Scale className="w-4 h-4 text-primary" />
-                        <div className="text-sm font-semibold">Scale Formula</div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {scaleData?.intervals.map((interval, index) => (
-                          <Badge key={index} variant="outline" className="text-xs px-3 py-1 border-primary/30 bg-primary/5">
-                            {interval}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {scaleCategory === "western" && scaleData && "chords" in scaleData && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Music2 className="w-4 h-4 text-accent" />
-                          <div className="text-sm font-semibold">Common Chords</div>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {(scaleData as WesternScaleData).chords.map((chord: string, index: number) => (
-                            <Badge key={index} variant="outline" className="text-xs px-3 py-1 border-accent/30 bg-accent/5">
-                              {chord}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Scale Information Card */}
-              <Card className="glass-card rounded-xl shadow-md border border-border/40 bg-card/80">
-                <CardHeader className="pb-3 md:pb-4 border-b border-border/40">
-                  <CardTitle className="text-base md:text-lg flex items-center gap-2">
-                    <Info className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                    Info & Theory
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 md:px-6 py-4 md:py-5 space-y-4 md:space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-primary" />
-                        <div className="text-sm font-semibold">Description</div>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {scaleData?.description}
-                      </p>
-                    </div>
-
-                    {scaleCategory === "western" && scaleData && "usage" in scaleData && (
-                      <div className="space-y-3 p-4 rounded-lg bg-accent/10 border border-accent/20">
-                        <div className="flex items-center gap-2">
-                          <Play className="w-4 h-4 text-accent" />
-                          <div className="text-sm font-semibold">Common Usage</div>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {scaleData.usage}
-                        </p>
-                      </div>
-                    )}
-
-                    {scaleCategory === "raga" && scaleData && "time" in scaleData && (
-                      <div className="space-y-3 p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-orange-400 to-red-500"></div>
-                          <div className="text-sm font-semibold">Performance Time</div>
-                        </div>
-                        <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 w-fit">
-                          {(scaleData as RagaScaleData).time}
-                        </Badge>
-                      </div>
-                    )}
-
-                    {scaleCategory === "raga" && scaleData && "mood" in scaleData && (
-                      <div className="space-y-3 p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-gradient-to-r from-purple-400 to-pink-500"></div>
-                          <div className="text-sm font-semibold">Mood & Character</div>
-                        </div>
-                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 w-fit">
-                          {(scaleData as RagaScaleData).mood}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-
-                  {scaleCategory === "raga" && scaleData && "aroha" in scaleData && (
-                    <div className="space-y-4 pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-2">
-                        <Music className="w-4 h-4 text-primary" />
-                        <div className="text-sm font-semibold">Traditional Structure</div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
-                          <div className="text-sm font-medium text-primary flex items-center gap-2">
-                            <span className="text-lg">↑</span>
-                            Aroha (Ascending)
-                          </div>
-                          <div className="font-mono text-sm text-foreground/90">
-                            {(scaleData as RagaScaleData).aroha}
-                          </div>
-                        </div>
-                        <div className="space-y-2 p-3 rounded-lg bg-accent/5 border border-accent/20">
-                          <div className="text-sm font-medium text-accent flex items-center gap-2">
-                            <span className="text-lg">↓</span>
-                            Avaroha (Descending)
-                          </div>
-                          <div className="font-mono text-sm text-foreground/90">
-                            {(scaleData as RagaScaleData).avaroha}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Enhanced Visual Representations */}
-        <div className="lg:col-span-3 space-y-8">
-          {/* Fretboard Scale Visualization */}
-          <Card className="glass-card rounded-xl shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-accent/20 to-primary/20 rounded-lg">
-                  <Guitar className="w-5 h-5 text-accent" />
-                </div>
-                <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-                  Guitar Fretboard Pattern
-                </span>
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Clean fretboard showing only scale notes with chromatic colors - centered and visually appealing
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <div className="relative bg-gradient-to-b from-neutral-950 to-neutral-900 p-6 rounded-lg border-2 border-border/50 shadow-inner">
-                  {/* Fretboard grid */}
-                  <div className="relative pb-4" style={{ width: '560px', height: '320px' }}>
-                    {/* Strings (horizontal lines) */}
-                    {Array.from({ length: 6 }, (_, stringIndex) => (
-                      <div
-                        key={stringIndex}
-                        className="absolute w-full h-0.5 bg-neutral-700 shadow-inner"
-                        style={{ top: `${stringIndex * 40 + 20}px` }}
-                      ></div>
-                    ))}
-
-                    {/* Frets (vertical lines) */}
-                    {Array.from({ length: 13 }, (_, fretIndex) => {
-                      const isHighlight = [3, 5, 7, 9, 12].includes(fretIndex);
-                      return (
-                        <div key={fretIndex}>
-                          <div
-                            className={`absolute h-full w-0.5 ${fretIndex === 0 ? 'bg-neutral-600' : 'bg-neutral-700'} shadow-inner`}
-                            style={{ left: `${fretIndex * 40}px` }}
-                          ></div>
-                          {isHighlight && (
-                            <div
-                              className="absolute h-full w-px bg-accent/20"
-                              style={{ left: `${fretIndex * 40}px` }}
-                            ></div>
-                          )}
+        <div className="glass-card rounded-[2rem] p-1 border-white/5 bg-black/40 shadow-2xl overflow-hidden">
+          <div className="p-6 pb-2 border-b border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-secondary/10 rounded-lg">
+                <Guitar className="w-4 h-4 text-secondary" />
+              </div>
+              <h3 className="text-sm font-semibold text-white">Fretboard Mapping</h3>
+            </div>
+          </div>
+          <div className="p-8 overflow-x-auto scrollbar-hide">
+            <div className="relative min-w-[700px] h-[340px] flex items-center justify-center">
+              <div className="relative bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 shadow-inner">
+                <div className="relative" style={{ width: "560px", height: "200px" }}>
+                  {Array.from({ length: 6 }, (_, idx) => (
+                    <div key={idx} className="absolute w-full h-[1px] bg-white/10" style={{ top: `${idx * 40}px` }} />
+                  ))}
+                  {Array.from({ length: 13 }, (_, idx) => (
+                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/40" : "bg-white/10"}`} style={{ left: `${idx * (560/13)}px` }}>
+                      {[3, 5, 7, 9, 12].includes(idx) && (
+                        <div className="absolute left-1/2 -translate-x-1/2 -bottom-10 flex flex-col items-center gap-1 opacity-20">
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          {idx === 12 && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          <span className="text-[10px] font-mono mt-1">{idx}</span>
                         </div>
-                      );
-                    })}
-
-                    {/* Fret markers (moved slightly up so numbers sit inside the card) */}
-                    <div
-                      className="absolute left-0 right-0 flex justify-center"
-                      style={{ bottom: '14px', pointerEvents: 'none' }} // numbers are non-interactive
-                    >
-                      {Array.from({ length: 13 }, (_, i) => {
-                        const isDoubleDot = [3, 5, 7, 9, 12].includes(i);
-                        return (
-                          <div key={i} className="flex flex-col items-center" style={{ width: '40px' }}>
-                            <div className={`w-3 h-3 rounded-full ${isDoubleDot ? 'bg-neutral-600' : 'bg-neutral-700'}`}></div>
-                            {isDoubleDot && (
-                              <div className="w-3 h-3 bg-neutral-600 rounded-full mt-1"></div>
-                            )}
-                            <div className="text-[10px] text-muted-foreground/70 mt-1" style={{ marginTop: '6px' }}>{i}</div>
-                          </div>
-                        );
-                      })}
+                      )}
                     </div>
-
-                    {/* Notes */}
-                    {Array.from({ length: 6 }, (_, stringIndex) => {
-                      const stringNotes = ["E", "A", "D", "G", "B", "E"];
-                      const openNote = stringNotes[stringIndex];
-                      const openNoteIndex = NOTES.indexOf(openNote);
-
-                      return Array.from({ length: 13 }, (_, fretIndex) => {
-                        const noteIndex = (openNoteIndex + fretIndex) % 12;
-                        const note = NOTES[noteIndex];
-                        const isInScale = getScaleNotes.includes(note);
-                        const isRoot = note === rootNote;
-
-                        if (!isInScale && !isRoot) return null;
-
-                        // Calculate scale degree
-                        const scaleDegree = getScaleNotes.indexOf(note) + 1;
-                        const chromaticColor = NOTE_COLORS[note as keyof typeof NOTE_COLORS];
-                        const intersectionX = fretIndex * 40;
-                        const intersectionY = stringIndex * 40 + 20;
-
-                        return (
-                          <TooltipProvider key={`${stringIndex}-${fretIndex}`}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div
-                                  className={`absolute group transition-all duration-150 cursor-pointer hover:scale-112 ${
-                                              isRoot ? "z-20" : "z-10"
-                                            }`}
-                                  style={{
-                                    left: `${intersectionX}px`,
-                                    top: `${intersectionY}px`,
-                                  }}
-                                >
-                                  <div
-                                    className={`relative w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow ${
-                                      isRoot
-                                        ? "bg-yellow-500 text-white ring-2 ring-yellow-400/60"
-                                        : `${chromaticColor} text-white shadow-sm`
-                                    }`}
-                                    style={{
-                                      transform: isRoot ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%)',
-                                    }}
-                                  >
-                                    {note}
-                                  </div>
-                                  {/* Degree indicator - positioned above the note */}
-                                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-primary/80 text-white text-xs font-bold py-1 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                    °{scaleDegree}
-                                  </div>
+                  ))}
+                  {Array.from({ length: 6 }, (_, sIdx) => {
+                    const stringNotes = ["E", "A", "D", "G", "B", "E"];
+                    const openIdx = NOTES.indexOf(stringNotes[sIdx]);
+                    return Array.from({ length: 13 }, (_, fIdx) => {
+                      const note = NOTES[(openIdx + fIdx) % 12];
+                      if (!getScaleNotes.includes(note)) return null;
+                      return (
+                        <TooltipProvider key={`${sIdx}-${fIdx}`}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (560/13)}px`, top: `${sIdx * 40}px`, transform: "translate(-50%, -50%)" }}>
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[9px] border-2 transition-all ${note === rootNote ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-110" : "bg-black/80 text-white border-white/20"}`}>
+                                  {note}
                                 </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="text-center">
-                                  <div className="font-semibold">{note} (Fret {fretIndex})</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    String: {stringNotes[stringIndex]}
-                                  </div>
-                                  <div className="text-xs mt-1 font-medium">Scale degree °{scaleDegree}</div>
-                                  {isRoot && <div className="text-xs mt-1 text-yellow-400">Root note</div>}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      });
-                    })}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white text-[10px]">
+                              {note} on Fret {fIdx} ({stringNotes[sIdx]} string)
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      );
+                    });
+                  })}
+                </div>
+                <div className="absolute -left-10 top-8 bottom-8 flex flex-col justify-between text-[10px] font-mono text-muted-foreground/40">
+                  {["e", "B", "G", "D", "A", "E"].map((s, i) => <div key={i} className="h-0 flex items-center">{s}</div>)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {scaleCategory === "western" ? (
+            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary"><Hash className="w-4 h-4" /></div>
+                <h3 className="text-sm font-semibold text-white">Modal Degrees</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {(scaleData as WesternScaleData).chords.map((chord, idx) => (
+                    <div key={idx} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-mono text-white">
+                      <span className="text-muted-foreground mr-2">{idx + 1}.</span>{chord}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-accent/10 rounded-lg text-accent"><Globe className="w-4 h-4" /></div>
+                <h3 className="text-sm font-semibold text-white">Raga Details</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] text-muted-foreground uppercase block mb-1">Time</span>
+                    <span className="text-xs text-white">{(scaleData as RagaScaleData).time}</span>
                   </div>
-
-                  {/* String labels (aligned exactly to string lines) */}
-                  <div className="absolute -left-12 top-0 text-xs text-muted-foreground font-mono">
-                    {["E", "A", "D", "G", "B", "E"].map((note, index) => (
-                      <div
-                        key={index}
-                        className="absolute flex items-center justify-end text-right"
-                        style={{
-                          top: `${index * 40 + 20}px`,
-                          transform: 'translateY(-50%)',     // exact centering
-                          // tiny horizontal nudge so the label visually aligns with the left of the string
-                          // preserve right alignment so existing selectors/classnames still match
-                          marginRight: '6px',
-                          width: '36px'
-                        }}
-                      >
-                        {note}
-                      </div>
-                    ))}
+                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] text-muted-foreground uppercase block mb-1">Mood</span>
+                    <span className="text-xs text-white">{(scaleData as RagaScaleData).mood}</span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-mono text-xs space-y-2 text-center">
+                  <div className="flex items-center gap-3 justify-center">
+                    <span className="text-primary opacity-50">↑</span>
+                    <span className="tracking-widest">{(scaleData as RagaScaleData).aroha}</span>
+                  </div>
+                  <div className="h-px bg-white/5" />
+                  <div className="flex items-center gap-3 justify-center">
+                    <span className="text-accent opacity-50">↓</span>
+                    <span className="tracking-widest">{(scaleData as RagaScaleData).avaroha}</span>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
+          <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01] flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-neutral-100/10 rounded-lg text-white"><Info className="w-4 h-4" /></div>
+              <h3 className="text-sm font-semibold text-white">Music Theory Context</h3>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              This scale uses {getScaleNotes.length} notes. The relationship between the 3rd defines its core personality.
+            </p>
+          </div>
         </div>
-        </TabsContent>
-      </Tabs>
       </div>
-      <div id="sr-announcer" aria-live="polite" className="sr-only">{lastPlayed ? `Played ${lastPlayed}` : ''}</div>
     </div>
   );
-
 };
 
 export default ScaleExplorer;

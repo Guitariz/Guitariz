@@ -4,10 +4,8 @@
  */
 
 import { ChordCandidate } from '@/types/chordDetectionTypes';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Music, TrendingUp, Info } from 'lucide-react';
+import { Music, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChordDetectionPanelProps {
@@ -25,149 +23,99 @@ export const ChordDetectionPanel = ({
 }: ChordDetectionPanelProps) => {
   if (selectedNotes.length === 0) {
     return (
-      <Card className={cn("p-6", className)}>
-        <div className="text-center text-muted-foreground">
-          <Music className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Play notes to detect chords</p>
-        </div>
-      </Card>
+      <div className={cn("text-center py-6", className)}>
+        <Music className="w-8 h-8 mx-auto mb-2 opacity-20 text-white" />
+        <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Ready to Analyze</p>
+      </div>
     );
   }
 
   if (candidates.length === 0) {
     return (
-      <Card className={cn("p-6", className)}>
-        <div>
-          <p className="text-sm text-muted-foreground mb-3">Selected notes:</p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {selectedNotes.map((note, i) => (
-              <Badge key={i} variant="secondary" className="text-sm">
-                {note}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground italic">
-            No chord pattern detected. Try adding more notes.
-          </p>
+      <div className={cn("p-4", className)}>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Selected Tones</p>
+          <div className="h-[1px] flex-1 bg-white/5 mx-4"></div>
         </div>
-      </Card>
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {selectedNotes.map((note, i) => (
+            <div key={i} className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-bold text-white uppercase">
+              {note}
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground italic text-center">
+          No complex harmonic structure detected.
+        </p>
+      </div>
     );
   }
 
-  const getConfidenceColor = (score: number): string => {
-    if (score >= 90) return 'text-green-500';
-    if (score >= 75) return 'text-blue-500';
-    if (score >= 60) return 'text-yellow-500';
-    return 'text-orange-500';
-  };
-
-  const getConfidenceLabel = (score: number): string => {
-    if (score >= 90) return 'Very High';
-    if (score >= 75) return 'High';
-    if (score >= 60) return 'Medium';
-    return 'Low';
-  };
 
   return (
-    <Card className={cn("p-6", className)}>
-      <div className="space-y-4">
-        {/* Top candidate - prominent display */}
-        <div className="text-center pb-4 border-b border-border">
-          <p className="text-sm text-muted-foreground mb-2">Detected Chord:</p>
-          <div className="text-4xl font-bold text-gradient mb-3 animate-scale-in">
-            {candidates[0].name}
-          </div>
-          <div className="flex items-center justify-center gap-3 text-sm">
-            <div className="flex items-center gap-1">
-              <TrendingUp className={cn("w-4 h-4", getConfidenceColor(candidates[0].score))} />
-              <span className={getConfidenceColor(candidates[0].score)}>
-                {getConfidenceLabel(candidates[0].score)} ({Math.round(candidates[0].score)}%)
+    <div className={cn("space-y-6", className)}>
+      <div className="flex flex-col md:flex-row items-center gap-8">
+        {/* Main Identification */}
+        <div className="flex-1 text-center md:text-left space-y-1">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Primary Identification</p>
+          <div className="flex flex-col md:flex-row md:items-baseline gap-2">
+            <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter">
+              {candidates[0].name}
+            </h2>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 w-fit mx-auto md:mx-0">
+              <div className={cn("w-1.5 h-1.5 rounded-full", candidates[0].score > 80 ? "bg-primary" : "bg-white/40")}></div>
+              <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                {Math.round(candidates[0].score)}% Match
               </span>
             </div>
-            {candidates[0].inversion > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {candidates[0].inversion === 1 ? '1st' : candidates[0].inversion === 2 ? '2nd' : '3rd'} Inversion
-              </Badge>
-            )}
           </div>
           {candidates[0].alternateNames && candidates[0].alternateNames.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Also known as: {candidates[0].alternateNames.join(', ')}
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-1 opacity-60">
+              Aliases: {candidates[0].alternateNames.join(' | ')}
             </p>
-          )}
-          {onApplyChord && (
-            <Button
-              variant="default"
-              size="sm"
-              className="mt-3"
-              onClick={() => onApplyChord(candidates[0])}
-            >
-              Apply Voicing
-            </Button>
           )}
         </div>
 
-        {/* Alternative candidates */}
-        {candidates.length > 1 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Info className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-medium">Alternative Interpretations:</p>
-            </div>
-            <div className="space-y-2">
-              {candidates.slice(1).map((candidate, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{candidate.name}</span>
-                      {candidate.inversion > 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          Inv. {candidate.inversion}
-                        </Badge>
-                      )}
-                    </div>
-                    {candidate.alternateNames && candidate.alternateNames.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {candidate.alternateNames.join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className={cn("text-sm font-medium", getConfidenceColor(candidate.score))}>
-                      {Math.round(candidate.score)}%
-                    </div>
-                    {onApplyChord && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 text-xs h-7"
-                        onClick={() => onApplyChord(candidate)}
-                      >
-                        Apply
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Selected notes display */}
-        <div className="pt-3 border-t border-border">
-          <p className="text-xs text-muted-foreground mb-2">Notes analyzed:</p>
-          <div className="flex flex-wrap gap-1">
+        {/* Selected tones */}
+        <div className="flex-1 w-full md:w-auto">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-3 flex items-center gap-2">
+            Harmonic Content <span className="h-[1px] flex-1 bg-white/5"></span>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
             {selectedNotes.map((note, i) => (
-              <Badge key={i} variant="outline" className="text-xs">
+              <div key={i} className="px-3 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] font-black text-white hover:bg-white/10 transition-colors">
                 {note}
-              </Badge>
+              </div>
             ))}
           </div>
         </div>
       </div>
-    </Card>
+
+      {/* Alternatives */}
+      {candidates.length > 1 && (
+        <div className="pt-6 border-t border-white/5">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-4">Alternative voicings / interpretations</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {candidates.slice(1, 5).map((candidate, idx) => (
+              <div 
+                key={idx}
+                className="group flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all cursor-pointer"
+                onClick={() => onApplyChord?.(candidate)}
+              >
+                <div>
+                  <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">{candidate.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{Math.round(candidate.score)}% reliability</p>
+                </div>
+                {onApplyChord && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100">
+                    <TrendingUp className="w-3 h-3 text-white" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

@@ -1,6 +1,5 @@
-  import { useState, useMemo, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Keyboard, Info, Piano as PianoIcon, Music } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Keyboard, Info, Music } from "lucide-react";
 import { useKeyboardFretboard } from "@/hooks/useKeyboardFretboard";
 import { usePianoKeyboard } from "@/hooks/usePianoKeyboard";
 import { KeyboardHelpOverlay } from "./fretboard/KeyboardHelpOverlay";
@@ -69,7 +68,7 @@ const Fretboard = () => {
     return saved ? parseInt(saved) : 3;
   });
   const [showHelp, setShowHelp] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDebug] = useState(false);
 
   // Save settings to localStorage
   useEffect(() => {
@@ -112,7 +111,7 @@ const Fretboard = () => {
   // (moved below strum helpers to avoid reference order issues)
 
   // Fretboard keyboard integration
-  const { activeNotes: keyboardActiveNotes, octaveShift } = useKeyboardFretboard({
+  const { activeNotes: keyboardActiveNotes } = useKeyboardFretboard({
     enabled: keyboardEnabled && !pianoMode,
     keymap,
     strumSpeed,
@@ -238,12 +237,12 @@ const Fretboard = () => {
     return 0.2 + Math.pow(position, 1.5) * 0.3;
   };
 
-  const getNoteFrequency = (stringIndex: number, fret: number): number => {
+  const getNoteFrequency = useCallback((stringIndex: number, fret: number): number => {
     const base = STRING_BASE_FREQ[stringIndex] ?? 110; // fallback A2
     return base * Math.pow(2, fret / 12);
-  };
+  }, []);
 
-  const strumDown = () => {
+  const strumDown = useCallback(() => {
     if (highlightedNotes.length === 0) return;
     
     // Play all notes together for a tight chord instead of a sweep
@@ -253,9 +252,9 @@ const Fretboard = () => {
       const velocity = getVelocity(index, sorted.length);
       playNote(freq, 1.8, velocity, 'piano');
     });
-  };
+  }, [highlightedNotes, getNoteFrequency]);
 
-  const strumUp = () => {
+  const strumUp = useCallback(() => {
     if (highlightedNotes.length === 0) return;
     
     // Sort by string (ascending: 0→5, which is low E to high E)
@@ -268,7 +267,7 @@ const Fretboard = () => {
         playNote(freq, 1.8, velocity, 'piano');
       }, index * strumSpeed);
     });
-  };
+  }, [highlightedNotes, getNoteFrequency, strumSpeed]);
 
   // Allow Enter to strum highlighted frets when keyboard control is off
   useEffect(() => {
@@ -291,11 +290,6 @@ const Fretboard = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [pianoMode, keyboardEnabled, highlightedNotes, strumSpeed, strumDown, strumUp]);
 
-  const togglePianoMode = () => {
-    setPianoMode((prev: boolean) => !prev);
-    clearHighlights();
-  };
-
   const handlePianoNoteClick = (midiNote: number) => {
     setPianoNotes(prev => {
       if (prev.includes(midiNote)) {
@@ -307,119 +301,110 @@ const Fretboard = () => {
   };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-background via-background to-secondary/10 rounded-3xl p-8 border border-primary/30 shadow-2xl backdrop-blur-xl">
-      {/* Ambient lighting effects - minimal animations */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"></div>
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-transparent to-secondary/10" style={{animationDelay: '1s'}}></div>
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-accent/5 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-ocean/5 rounded-full blur-3xl" style={{ animationDelay: '2s' }}></div>
-
-      <div className="relative z-10">
-        {/* Modern Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-5xl font-bold mb-4 text-gradient animate-gradient-x font-['Inter'] tracking-tight">
-            Interactive {pianoMode ? 'Piano' : 'Fretboard'}
-          </h2>
-          <p className="text-lg text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
-            {pianoMode
-              ? 'Play piano keys or use your keyboard'
-              : 'Click on frets or use your keyboard to play'}
-          </p>
-        </div>
-
-        {/* Control Panel */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-          {keyboardEnabled && (pianoMode ? pianoOctaveShift : octaveShift) !== 0 && (
-            <div className="glass-card px-4 py-2 rounded-full border-primary/30">
-              <span className="text-primary font-mono text-sm font-semibold">
-                {(pianoMode ? pianoOctaveShift : octaveShift) > 0 ? '+' : ''}{pianoMode ? pianoOctaveShift : octaveShift} Oct
-              </span>
-            </div>
-          )}
-
-          {/* Modern Toggle Buttons */}
-          <button
-            onClick={togglePianoMode}
-            className={`px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm border ${
-              pianoMode
-                ? 'bg-gradient-accent text-primary-foreground glow-accent border-primary/50'
-                : 'glass-card hover-lift border-primary/30 hover:border-primary/50'
-            }`}
-          >
-            <PianoIcon className="w-4 h-4 inline mr-2" />
-            Piano {pianoMode ? "ON" : "OFF"}
-          </button>
-
-          <button
-            onClick={() => setKeyboardEnabled(!keyboardEnabled)}
-            className={`px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm border ${
-              keyboardEnabled
-                ? 'bg-gradient-ocean text-primary-foreground glow-accent border-primary/50'
-                : 'glass-card hover-lift border-primary/30 hover:border-primary/50'
-            }`}
-          >
-            <Keyboard className="w-4 h-4 inline mr-2" />
-            Keyboard {keyboardEnabled ? "ON" : "OFF"}
-          </button>
-
-          {pianoMode && (
+    <div className="relative overflow-hidden bg-transparent p-0">
+      <div className="relative z-10 p-4 md:p-8">
+        {/* Modern Control Panel */}
+        <div className="flex flex-wrap items-center justify-between gap-6 mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl backdrop-blur-md">
+          <div className="flex items-center gap-2">
             <button
-              onClick={toggleSustain}
-              className={`px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm border ${
-                sustained
-                  ? 'bg-primary text-primary-foreground glow-accent border-primary/50'
-                  : 'glass-card hover-lift border-primary/30 hover:border-primary/50'
+              onClick={() => setPianoMode(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                !pianoMode 
+                  ? "bg-white/10 text-white shadow-inner border border-white/10" 
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
               }`}
-              title="Toggle sustain (Space)"
             >
-              Sustain {sustained ? 'ON' : 'OFF'}
+              Guitar Fretboard
             </button>
-          )}
-
-          <button
-            onClick={() => setShowHelp(true)}
-            className="p-3 rounded-full glass-card hover-lift border-primary/30 hover:border-primary/50 transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm"
-          >
-            <Info className="w-5 h-5" />
-          </button>
-
-          {!pianoMode && highlightedNotes.length > 0 && (
             <button
-              onClick={strumDown}
-              className="px-4 py-3 rounded-full glass-card hover-lift border-primary/30 hover:border-primary/50 transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm font-semibold text-sm flex items-center gap-2"
-              title="Enter - Strum (High to Low)"
+              onClick={() => setPianoMode(true)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                pianoMode 
+                  ? "bg-white/10 text-white shadow-inner border border-white/10" 
+                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+              }`}
             >
-              <Music className="w-4 h-4" />
-              Strum
+              Piano Keys
             </button>
-          )}
+          </div>
 
-          <button
-            onClick={clearHighlights}
-            className="px-6 py-3 rounded-full glass-card hover-lift border-primary/30 hover:border-primary/50 transition-all duration-300 transform hover:scale-105 shadow-lg backdrop-blur-sm font-semibold text-sm"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setKeyboardEnabled(!keyboardEnabled)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                keyboardEnabled
+                  ? "bg-primary/20 border-primary/30 text-primary-foreground stroke-primary"
+                  : "bg-white/5 border-white/10 text-muted-foreground"
+              }`}
+            >
+              <Keyboard className="w-4 h-4" />
+              <span>Keyboard {keyboardEnabled ? "Enabled" : "Disabled"}</span>
+            </button>
 
-      {/* Quick guidance for fretboard mode */}
-      {!pianoMode && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-          <div className="glass-card border-primary/20 rounded-xl p-4">
-            <p className="text-sm font-semibold">Strumming</p>
-            <p className="text-sm text-muted-foreground">Press Enter to strum your selected notes. Tune the feel with strum speed and velocity in settings.</p>
-          </div>
-          <div className="glass-card border-primary/20 rounded-xl p-4">
-            <p className="text-sm font-semibold">Keyboard layout</p>
-            <p className="text-sm text-muted-foreground">Mapped letters light frets; '-' and '=' shift octaves. Toggle chord mode to stack notes before strumming.</p>
-          </div>
-          <div className="glass-card border-primary/20 rounded-xl p-4">
-            <p className="text-sm font-semibold">Clicks & cleanup</p>
-            <p className="text-sm text-muted-foreground">Click frets to toggle notes, watch mapped keys float above active frets, and use Clear anytime to reset the board.</p>
+            {pianoMode && (
+              <button
+                onClick={toggleSustain}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                  sustained
+                    ? "bg-accent/20 border-accent/30 text-accent-foreground"
+                    : "bg-white/5 border-white/10 text-muted-foreground"
+                }`}
+              >
+                Sustain
+              </button>
+            )}
+
+            <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block"></div>
+
+            <button
+              onClick={() => setShowHelp(true)}
+              className="p-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
+              title="Keyboard Shortcuts"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={clearHighlights}
+              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all text-sm font-medium"
+            >
+              Clear
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Quick Help Hints */}
+        {!pianoMode && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+              <div className="mt-1 p-1.5 rounded-md bg-primary/10 border border-primary/20">
+                <Music className="w-3 h-3 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-white">Strumming</p>
+                <p className="text-[11px] text-muted-foreground">Press Enter to strum your selected notes.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+              <div className="mt-1 p-1.5 rounded-md bg-secondary/10 border border-secondary/20">
+                <Keyboard className="w-3 h-3 text-secondary" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-white">Input mapping</p>
+                <p className="text-[11px] text-muted-foreground">Mapped letters light up frets/keys.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+              <div className="mt-1 p-1.5 rounded-md bg-accent/10 border border-accent/20">
+                <Info className="w-3 h-3 text-accent" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-white">Interactivity</p>
+                <p className="text-[11px] text-muted-foreground">Click frets to toggle notes; chords are auto-detected.</p>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Modern Settings Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -512,157 +497,145 @@ const Fretboard = () => {
       </div>
 
       {/* Main instrument display */}
-      {pianoMode ? (
-        <div className="relative">
-          {/* Piano Play Area with Glow */}
-          <div className="flex justify-center mb-8">
-            <div className="relative">
-              {/* Background glow for active notes */}
-              {pianoNotes.length > 0 && (
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-teal-500/20 rounded-3xl blur-2xl animate-pulse"></div>
-              )}
-              <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50 shadow-2xl max-w-4xl w-full">
-                <PianoKeyboard
-                  startOctave={pianoOctaveShift + 4}
-                  numOctaves={2}
-                  activeNotes={[...pianoNotes, ...pianoActiveNotes.map(entry => entry[0])]}
-                  onNoteClick={handlePianoNoteClick}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Chord Detection Panel - Centered and Modern */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-xl max-w-2xl w-full">
-              <ChordDetectionPanel
-                candidates={chordDetectionResult.candidates}
-                selectedNotes={chordDetectionResult.noteNames}
-              />
-            </div>
-          </div>
-        </div>
-
-      ) : (
-        <div className="relative glass-card rounded-2xl p-8 overflow-x-auto">
-        {/* Fret markers */}
-        <div className="absolute top-4 left-0 right-0 flex justify-around px-12">
-          {[3, 5, 7, 9, 12].map((fret) => (
-            <div
-              key={fret}
-              className="w-3 h-3 rounded-full bg-muted/30"
-              style={{ marginLeft: `${(fret - 1) * 8.33}%` }}
-            />
-          ))}
-        </div>
-
-        {/* Fretboard */}
-        <div className="space-y-4 mt-8">
-          {NOTES.map((openNote, stringIndex) => (
-            <div key={stringIndex} className="flex items-center gap-2">
-              {/* Open string note */}
-              <div className="w-12 text-center font-medium text-sm text-muted-foreground">
-                {openNote}
-              </div>
-
-              {/* Frets */}
-              <div className="flex-1 flex items-center relative">
-                {/* String line */}
-                <div
-                  className="absolute left-0 right-0 h-[2px] bg-foreground/20"
-                  style={{ top: "50%" }}
-                />
-
-                {/* Nut (fret 0) */}
-                <div className="relative w-8 h-8">
-                  <button
-                    onClick={() => toggleNote(stringIndex, 0)}
-                    className={`relative w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                      isNoteHighlighted(stringIndex, 0)
-                        ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/50"
-                        : isKeyboardActive(stringIndex, 0)
-                        ? "bg-accent border-accent-foreground text-accent-foreground shadow-md animate-pulse"
-                        : "border-muted hover:border-primary/50 bg-background/50"
-                    }`}
-                  >
-                    <span className="text-xs font-medium">
-                      {getNoteAtFret(stringIndex, 0)}
-                    </span>
-                    {isKeyboardActive(stringIndex, 0) && (
-                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-primary uppercase">
-                        {getActiveKey(stringIndex, 0)}
-                      </span>
-                    )}
-                  </button>
+      <div className="bg-black/40 border border-white/5 rounded-2xl p-4 md:p-8 mb-8 backdrop-blur-sm shadow-xl">
+        {pianoMode ? (
+          <div className="relative">
+            {/* Piano Play Area */}
+            <div className="flex justify-center mb-8 overflow-x-auto">
+              <div className="relative min-w-[700px]">
+                {/* Background glow for active notes */}
+                {pianoNotes.length > 0 && (
+                  <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-2xl animate-pulse"></div>
+                )}
+                <div className="relative">
+                  <PianoKeyboard
+                    startOctave={pianoOctaveShift + 4}
+                    numOctaves={2}
+                    activeNotes={[...pianoNotes, ...pianoActiveNotes.map(entry => entry[0])]}
+                    onNoteClick={handlePianoNoteClick}
+                  />
                 </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative overflow-x-auto">
+            <div className="min-w-[800px] py-4">
+              {/* Fret markers */}
+              <div className="absolute top-0 left-0 right-0 flex justify-around px-12 h-6 items-center">
+                {[3, 5, 7, 9, 12, 15, 17, 19, 21].map((fret) => (
+                  <div
+                    key={fret}
+                    className="w-1.5 h-1.5 rounded-full bg-white/20"
+                    style={{ marginLeft: `${(fret - 1) * 8.33}%` }}
+                  />
+                ))}
+              </div>
 
-                {/* Frets 1-12 */}
-                {Array.from({ length: FRETS }).map((_, fret) => {
-                  const fretNumber = fret + 1;
-                  return (
-                    <div key={fretNumber} className="relative flex-1">
-                      {/* Fret wire */}
-                      <div className="absolute left-0 w-[2px] h-12 bg-border -top-2" />
+              {/* Fretboard */}
+              <div className="space-y-4 mt-8">
+                {NOTES.map((openNote, stringIndex) => (
+                  <div key={stringIndex} className="flex items-center gap-2">
+                    {/* Open string note */}
+                    <div className="w-10 text-center font-bold text-xs text-muted-foreground/50 italic">
+                      {openNote}
+                    </div>
 
-                      {/* Note position */}
-                      <div className="flex items-center justify-center h-8">
+                    {/* Frets */}
+                    <div className="flex-1 flex items-center relative h-10">
+                      {/* String line */}
+                      <div
+                        className="absolute left-0 right-0 h-[1.5px] bg-white/10"
+                        style={{ top: "50%" }}
+                      />
+
+                      {/* Nut (fret 0) */}
+                      <div className="relative w-10 h-10 flex items-center justify-center">
                         <button
-                          onClick={() => toggleNote(stringIndex, fretNumber)}
-                          className={`relative w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                            isNoteHighlighted(stringIndex, fretNumber)
-                              ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/50"
-                              : isKeyboardActive(stringIndex, fretNumber)
-                              ? "bg-accent border-accent-foreground text-accent-foreground shadow-md animate-pulse"
-                              : "border-muted/30 hover:border-primary/50 bg-background/30"
+                          onClick={() => toggleNote(stringIndex, 0)}
+                          className={`relative w-8 h-8 rounded-full border-2 transition-all duration-200 group ${
+                            isNoteHighlighted(stringIndex, 0)
+                              ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                              : isKeyboardActive(stringIndex, 0)
+                              ? "bg-primary border-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]"
+                              : "border-white/10 hover:border-white/30 bg-white/5"
                           }`}
                         >
-                          <span className="text-xs font-medium">
-                            {getNoteAtFret(stringIndex, fretNumber)}
+                          <span className={`text-[10px] font-bold ${isNoteHighlighted(stringIndex, 0) ? "text-black" : "text-white"}`}>
+                            {getNoteAtFret(stringIndex, 0)}
                           </span>
-                          {isKeyboardActive(stringIndex, fretNumber) && (
-                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-primary uppercase">
-                              {getActiveKey(stringIndex, fretNumber)}
+                          {isKeyboardActive(stringIndex, 0) && (
+                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-primary uppercase tracking-tighter bg-black/80 px-1 rounded">
+                              {getActiveKey(stringIndex, 0)}
                             </span>
                           )}
                         </button>
                       </div>
+
+                      {/* Frets 1-12 */}
+                      {Array.from({ length: FRETS }).map((_, fret) => {
+                        const fretNumber = fret + 1;
+                        return (
+                          <div key={fretNumber} className="relative flex-1 flex items-center justify-center h-10">
+                            {/* Fret wire */}
+                            <div className="absolute left-0 w-[1.5px] h-10 bg-white/10" />
+
+                            <button
+                              onClick={() => toggleNote(stringIndex, fretNumber)}
+                              className={`relative w-8 h-8 rounded-full border-2 transition-all duration-200 group z-10 ${
+                                isNoteHighlighted(stringIndex, fretNumber)
+                                  ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+                                  : isKeyboardActive(stringIndex, fretNumber)
+                                  ? "bg-primary border-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]"
+                                  : "border-white/5 hover:border-white/20 bg-white/[0.02]"
+                              }`}
+                            >
+                              <span className={`text-[10px] font-bold ${isNoteHighlighted(stringIndex, fretNumber) ? "text-black" : "text-white"}`}>
+                                {getNoteAtFret(stringIndex, fretNumber)}
+                              </span>
+                              {isKeyboardActive(stringIndex, fretNumber) && (
+                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[9px] font-black text-primary uppercase tracking-tighter bg-black/80 px-1 rounded">
+                                  {getActiveKey(stringIndex, fretNumber)}
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+
+                {/* Fret numbers */}
+                <div className="flex items-center gap-2 mt-6 pl-12">
+                  <div className="w-10 text-center text-[10px] font-bold text-muted-foreground/30">0</div>
+                  {Array.from({ length: FRETS }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 text-center text-[10px] font-bold text-muted-foreground/30"
+                    >
+                      {i + 1}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          ))}
-
-          {/* Fret numbers */}
-          <div className="flex items-center gap-2 mt-6 pl-14">
-            <div className="w-8 text-center text-xs text-muted-foreground">0</div>
-            {Array.from({ length: FRETS }).map((_, i) => (
-              <div
-                key={i}
-                className="flex-1 text-center text-xs text-muted-foreground"
-              >
-                {i + 1}
-              </div>
-            ))}
           </div>
-        </div>
-        </div>
-      )}
+        )}
 
-      {/* Debug panel toggle */}
-      <div className="flex justify-center mt-8 mb-8">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowDebug(!showDebug)}
-          className="glass-card border-primary/30 hover:border-primary/50 text-xs"
-        >
-          {showDebug ? 'Hide' : 'Show'} Debug Info
-        </Button>
+        {/* Dynamic Status/Detection Bar */}
+        {(highlightedNotes.length > 0 || pianoNotes.length > 0) && (
+          <div className="mt-8 pt-6 border-t border-white/5">
+            <ChordDetectionPanel
+              candidates={chordDetectionResult.candidates}
+              selectedNotes={chordDetectionResult.noteNames}
+            />
+          </div>
+        )}
       </div>
 
       {showDebug && (
-        <div className="flex justify-center mb-8">
+        <div className="mb-8 p-6 rounded-2xl bg-red-950/10 border border-red-500/20 animate-in fade-in slide-in-from-top-4">
           <ChordDebugPanel
             midiNotes={chordDetectionResult.midiNotes}
             candidates={chordDetectionResult.candidates}
@@ -670,20 +643,9 @@ const Fretboard = () => {
           />
         </div>
       )}
-
-      {/* Chord Detection Display */}
-      {(highlightedNotes.length > 0 || pianoNotes.length > 0) && (
-        <div className="flex justify-center mt-8 mb-8">
-          <div className="glass-card rounded-2xl p-6 border-primary/30 shadow-xl max-w-2xl w-full">
-            <ChordDetectionPanel
-              candidates={chordDetectionResult.candidates}
-              selectedNotes={chordDetectionResult.noteNames}
-            />
-          </div>
-        </div>
-      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default Fretboard;
