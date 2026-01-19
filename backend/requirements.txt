@@ -1,0 +1,8 @@
+
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+librosa==0.10.2
+numpy==1.26.4
+soundfile==0.12.1
+pydantic==2.8.2
+python-multipart==0.0.9

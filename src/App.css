@@ -180,3 +180,21 @@
 	}
 }
 
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-2000 {
+  perspective: 2000px;
+}
+
+/* Custom glow animation */
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.4)); }
+  50% { filter: drop-shadow(0 0 15px rgba(124, 58, 237, 0.7)); }
+}
+
+.animate-glow {
+  animation: glow-pulse 2s infinite;
+}
+
