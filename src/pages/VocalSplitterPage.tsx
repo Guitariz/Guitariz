@@ -1,9 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Wand2, Upload, Mic, Music2, Download, Loader2 } from "lucide-react";
+import WaveformViewer from "@/components/chord-ai/WaveformViewer";
+import { Wand2, Upload, Mic, Music2, Download, Loader2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -29,8 +30,59 @@ const VocalSplitterPage = () => {
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const vocalsGainRef = useRef<GainNode | null>(null);
   const instrumentalGainRef = useRef<GainNode | null>(null);
-  
+
+  const startTimeRef = useRef<number>(0);
+  const offsetRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const [downloading, setDownloading] = useState<{ vocals: boolean; instrumental: boolean }>({
+    vocals: false,
+    instrumental: false,
+  });
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+  const duration = useMemo(() => {
+    if (!vocalsAudio && !instrumentalAudio) return 0;
+    return Math.max(vocalsAudio?.duration ?? 0, instrumentalAudio?.duration ?? 0);
+  }, [instrumentalAudio, vocalsAudio]);
+
+  const computePeaks = (audioBuffer: AudioBuffer, buckets = 400): number[] => {
+    const channelData = audioBuffer.getChannelData(0);
+    const blockSize = Math.max(1, Math.floor(channelData.length / buckets));
+    const peaks: number[] = [];
+    for (let i = 0; i < buckets; i += 1) {
+      const start = i * blockSize;
+      const end = Math.min(start + blockSize, channelData.length);
+      let max = 0;
+      for (let j = start; j < end; j += 1) {
+        max = Math.max(max, Math.abs(channelData[j]));
+      }
+      peaks.push(max);
+    }
+    return peaks;
+  };
+
+  const vocalsPeaks = useMemo(() => (vocalsAudio ? computePeaks(vocalsAudio) : []), [vocalsAudio]);
+  const instrumentalPeaks = useMemo(() => (instrumentalAudio ? computePeaks(instrumentalAudio) : []), [instrumentalAudio]);
+
+  const stopRaf = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  };
+
+  const updateClock = () => {
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+    const now = offsetRef.current + (isPlaying ? ctx.currentTime - startTimeRef.current : 0);
+    setCurrentTime(clamp(now, 0, duration));
+    rafRef.current = requestAnimationFrame(updateClock);
+  };
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -41,9 +93,40 @@ const VocalSplitterPage = () => {
     setInstrumentalUrl(null);
   };
 
+  const notifyDone = async () => {
+    // Always show the in-app toast via the normal flow.
+    // Try an OS/browser notification for background-tab friendliness.
+    if (!("Notification" in window)) return;
+
+    try {
+      if (Notification.permission === "granted") {
+        new Notification("Vocal Splitter", {
+          body: "Your vocals + instrumental stems are ready.",
+        });
+        return;
+      }
+
+      if (Notification.permission === "default") {
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          new Notification("Vocal Splitter", {
+            body: "Your vocals + instrumental stems are ready.",
+          });
+        }
+      }
+    } catch {
+      // ignore if browser blocks/throws
+    }
+  };
+
   const processSeparation = async () => {
     if (!selectedFile) return;
-    
+
+    toast({
+      title: "Splitting started",
+      description: "This can take a few minutes. You can keep this tab in the background - we’ll notify you when it’s done :))",
+    });
+
     setProcessing(true);
     try {
       const formData = new FormData();
@@ -103,10 +186,15 @@ const VocalSplitterPage = () => {
       setInstrumentalAudio(instrumentalBuffer);
       
       setSeparated(true);
+      offsetRef.current = 0;
+      setCurrentTime(0);
       toast({
         title: "Separation complete",
         description: "Vocals and instrumentals have been isolated successfully.",
       });
+
+      // Background-friendly notification (best-effort)
+      void notifyDone();
     } catch (error) {
       console.error("Separation error:", error);
       
@@ -135,49 +223,81 @@ const VocalSplitterPage = () => {
     }
   };
 
-  const playPreview = () => {
-    if (!vocalsAudio || !instrumentalAudio || !audioContextRef.current) return;
-    
-    const ctx = audioContextRef.current;
-    
-    // Stop any existing playback
-    if (isPlaying) {
-      vocalsSourceRef.current?.stop();
-      instrumentalSourceRef.current?.stop();
-      setIsPlaying(false);
-      return;
+  const stopPlayback = () => {
+    try {
+      vocalsSourceRef.current?.stop(0);
+    } catch (e) {
+      // ignore
     }
-    
-    // Create sources
+    try {
+      instrumentalSourceRef.current?.stop(0);
+    } catch (e) {
+      // ignore
+    }
+    vocalsSourceRef.current?.disconnect();
+    instrumentalSourceRef.current?.disconnect();
+    vocalsSourceRef.current = null;
+    instrumentalSourceRef.current = null;
+    setIsPlaying(false);
+  };
+
+  const startPlayback = () => {
+    if (!vocalsAudio || !instrumentalAudio || !audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+
+    stopPlayback();
+
     const vocalsSource = ctx.createBufferSource();
     const instrumentalSource = ctx.createBufferSource();
-    
     vocalsSource.buffer = vocalsAudio;
     instrumentalSource.buffer = instrumentalAudio;
-    
-    // Create gain nodes
-    const vocalsGain = ctx.createGain();
-    const instrumentalGain = ctx.createGain();
-    
-    vocalsGain.gain.value = vocalsVolume / 100;
-    instrumentalGain.gain.value = instrumentalVolume / 100;
-    
-    // Connect
-    vocalsSource.connect(vocalsGain).connect(ctx.destination);
-    instrumentalSource.connect(instrumentalGain).connect(ctx.destination);
-    
-    vocalsSourceRef.current = vocalsSource;
-    instrumentalSourceRef.current = instrumentalSource;
+
+    const vocalsGain = vocalsGainRef.current || ctx.createGain();
+    const instrumentalGain = instrumentalGainRef.current || ctx.createGain();
     vocalsGainRef.current = vocalsGain;
     instrumentalGainRef.current = instrumentalGain;
-    
-    // Play
-    vocalsSource.start();
-    instrumentalSource.start();
+
+    vocalsGain.gain.value = vocalsVolume / 100;
+    instrumentalGain.gain.value = instrumentalVolume / 100;
+
+    vocalsSource.connect(vocalsGain).connect(ctx.destination);
+    instrumentalSource.connect(instrumentalGain).connect(ctx.destination);
+
+    vocalsSourceRef.current = vocalsSource;
+    instrumentalSourceRef.current = instrumentalSource;
+
+    startTimeRef.current = ctx.currentTime;
+    vocalsSource.start(0, offsetRef.current);
+    instrumentalSource.start(0, offsetRef.current);
     setIsPlaying(true);
-    
-    // Handle end
-    vocalsSource.onended = () => setIsPlaying(false);
+
+    vocalsSource.onended = () => {
+      setIsPlaying(false);
+      offsetRef.current = duration;
+      setCurrentTime(duration);
+    };
+  };
+
+  const playPreview = () => {
+    if (!vocalsAudio || !instrumentalAudio || !audioContextRef.current) return;
+    if (isPlaying) {
+      const ctx = audioContextRef.current;
+      const elapsed = ctx.currentTime - startTimeRef.current;
+      offsetRef.current = clamp(offsetRef.current + elapsed, 0, duration);
+      setCurrentTime(offsetRef.current);
+      stopPlayback();
+      return;
+    }
+    startPlayback();
+  };
+
+  const seekPreview = (time: number) => {
+    const clamped = clamp(time, 0, duration);
+    offsetRef.current = clamped;
+    setCurrentTime(clamped);
+    if (isPlaying) {
+      startPlayback();
+    }
   };
 
   const updateVocalsVolume = (value: number[]) => {
@@ -204,11 +324,37 @@ const VocalSplitterPage = () => {
       });
       return;
     }
-    
+
+    // Prevent multi-click duplicate downloads
+    if (downloading[type]) return;
+
+    const label = type === "vocals" ? "Vocals" : "Instrumental";
+
+    setDownloading((d) => ({ ...d, [type]: true }));
+
+    // Be honest about what’s happening: the browser may show "Pending" until the server starts sending bytes.
+    toast({
+      title: "Requesting file…",
+      description: `${label} is being prepared on the server. You may see “Pending” for a bit.`,
+    });
+
+    const slowToastTimer = window.setTimeout(() => {
+      toast({
+        title: "Still preparing…",
+        description: `${label} is taking longer than usual to start. Please wait — avoid clicking multiple times.`,
+      });
+    }, 12000);
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error("Download failed");
-      
+
+      // Once headers/body start arriving, we’re no longer in "pending".
+      toast({
+        title: "Download starting…",
+        description: `${label} should begin downloading shortly.`,
+      });
+
       const blob = await response.blob();
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -216,10 +362,10 @@ const VocalSplitterPage = () => {
       a.download = `${selectedFile?.name.split(".")[0] || "audio"}_${type}.wav`;
       a.click();
       URL.revokeObjectURL(downloadUrl);
-      
+
       toast({
-        title: "Download started",
-        description: `${type === "vocals" ? "Vocals" : "Instrumental"} track is downloading.`,
+        title: "Download triggered",
+        description: `${label} download has been sent to your browser.`,
       });
     } catch (error) {
       toast({
@@ -227,8 +373,43 @@ const VocalSplitterPage = () => {
         description: "Could not download the audio file.",
         variant: "destructive",
       });
+    } finally {
+      window.clearTimeout(slowToastTimer);
+      setDownloading((d) => ({ ...d, [type]: false }));
     }
   };
+
+  useEffect(() => {
+    if (isPlaying) {
+      updateClock();
+    } else {
+      stopRaf();
+    }
+    return () => stopRaf();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, duration]);
+
+  useEffect(() => {
+    const base = "Vocal Splitter";
+    if (processing) {
+      document.title = "Splitting… | " + base;
+    } else if (separated) {
+      document.title = "Split ready | " + base;
+    } else {
+      document.title = base;
+    }
+  }, [processing, separated]);
+
+  useEffect(() => {
+    return () => {
+      stopRaf();
+      stopPlayback();
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
@@ -322,7 +503,7 @@ const VocalSplitterPage = () => {
                     {processing ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Separating Audio...
+                        Separating Audio… (this may take a few minutes)
                       </>
                     ) : (
                       <>
@@ -336,13 +517,53 @@ const VocalSplitterPage = () => {
                 {/* Controls */}
                 {separated && (
                   <div className="space-y-8">
-                    {/* Preview Button */}
-                    <Button
-                      onClick={playPreview}
-                      className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
-                    >
-                      {isPlaying ? "⏸ Pause Preview" : "▶ Play Preview"}
-                    </Button>
+                    {/* Preview + Seek */}
+                    <div className="space-y-4">
+                      <Button
+                        onClick={playPreview}
+                        className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
+                      >
+                        {isPlaying ? "⏸ Pause Preview" : "▶ Play Preview"}
+                      </Button>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+                            <Activity className="w-3 h-3" />
+                            Vocals Waveform
+                          </div>
+                          <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-2 overflow-hidden">
+                            <WaveformViewer
+                              peaks={vocalsPeaks}
+                              duration={duration}
+                              currentTime={currentTime}
+                              chordSegments={[]}
+                              onSeek={seekPreview}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+                            <Activity className="w-3 h-3" />
+                            Instrumental Waveform
+                          </div>
+                          <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-2 overflow-hidden">
+                            <WaveformViewer
+                              peaks={instrumentalPeaks}
+                              duration={duration}
+                              currentTime={currentTime}
+                              chordSegments={[]}
+                              onSeek={seekPreview}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground">
+                        Click anywhere on a waveform to jump to that moment.
+                      </div>
+                    </div>
 
                     {/* Volume Controls */}
                     <div className="grid md:grid-cols-2 gap-6">
@@ -366,11 +587,21 @@ const VocalSplitterPage = () => {
                         />
                         <Button
                           onClick={() => downloadAudio("vocals")}
+                          disabled={downloading.vocals}
                           variant="outline"
                           className="w-full rounded-lg"
                         >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download Vocals
+                          {downloading.vocals ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Waiting for server…
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4 mr-2" />
+                              Download Vocals
+                            </>
+                          )}
                         </Button>
                       </div>
 
@@ -394,11 +625,21 @@ const VocalSplitterPage = () => {
                         />
                         <Button
                           onClick={() => downloadAudio("instrumental")}
+                          disabled={downloading.instrumental}
                           variant="outline"
                           className="w-full rounded-lg"
                         >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download Instrumental
+                          {downloading.instrumental ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Waiting for server…
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4 mr-2" />
+                              Download Instrumental
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
