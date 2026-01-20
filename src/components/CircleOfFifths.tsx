@@ -24,6 +24,7 @@ const CIRCLE_KEYS = [
 const CircleOfFifths = () => {
   const [selectedKey, setSelectedKey] = useState<string | null>("C");
   const [activeTab, setActiveTab] = useState("overview");
+  const [showRelativeMinor, setShowRelativeMinor] = useState(false);
 
   const selectedKeyData = useMemo(() => {
     return CIRCLE_KEYS.find(key => key.note === selectedKey);
@@ -33,11 +34,23 @@ const CircleOfFifths = () => {
     if (!selectedKeyData) return [];
     const chords = selectedKeyData.diatonicChords;
     return [
-      { name: "I-IV-V-I", chords: [chords[0], chords[3], chords[4], chords[0]], desc: "Classical resolution" },
-      { name: "ii-V-I", chords: [chords[1], chords[4], chords[0]], desc: "Jazz standard" },
-      { name: "I-vi-IV-V", chords: [chords[0], chords[5], chords[3], chords[4]], desc: "Pop foundation" },
-      { name: "vi-IV-I-V", chords: [chords[5], chords[3], chords[0], chords[4]], desc: "Sentimental loop" }
+      { name: "I-IV-V-I", chords: [chords[0], chords[3], chords[4], chords[0]], desc: "Classical resolution", examples: "Rock, Pop, Blues" },
+      { name: "ii-V-I", chords: [chords[1], chords[4], chords[0]], desc: "Jazz standard", examples: "Jazz, Bebop" },
+      { name: "I-vi-IV-V", chords: [chords[0], chords[5], chords[3], chords[4]], desc: "Pop foundation", examples: "50s Pop, Doo-wop" },
+      { name: "vi-IV-I-V", chords: [chords[5], chords[3], chords[0], chords[4]], desc: "Sentimental loop", examples: "Modern Pop" },
+      { name: "I-V-vi-IV", chords: [chords[0], chords[4], chords[5], chords[3]], desc: "Axis progression", examples: "Let It Be, With Or Without You" }
     ];
+  }, [selectedKeyData]);
+  
+  const getRelatedKeys = useMemo(() => {
+    if (!selectedKeyData) return [];
+    const position = selectedKeyData.position;
+    return {
+      dominant: CIRCLE_KEYS.find(k => k.note === selectedKeyData.dominantKey),
+      subdominant: CIRCLE_KEYS.find(k => k.note === selectedKeyData.subdominantKey),
+      relative: CIRCLE_KEYS.find(k => k.relativeMinor === selectedKeyData.relativeMinor || k.note === selectedKeyData.relativeMinor),
+      parallel: CIRCLE_KEYS.find(k => k.note === selectedKeyData.parallelKey)
+    };
   }, [selectedKeyData]);
 
   return (
@@ -45,63 +58,129 @@ const CircleOfFifths = () => {
       <div className="grid lg:grid-cols-12 gap-12">
         {/* Circle Visualization */}
         <div className="lg:col-span-7 flex flex-col">
-          <div className="relative aspect-square max-w-[500px] mx-auto w-full group">
-            {/* Architectural Grid */}
-            <div className="absolute inset-0 rounded-full border border-white/5 pointer-events-none" />
-            <div className="absolute inset-[15%] rounded-full border border-white/5 pointer-events-none" />
+          {/* Toggle for showing relative minors */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+              Circle of Fifths
+            </div>
+            <button 
+              onClick={() => setShowRelativeMinor(!showRelativeMinor)}
+              className="text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-2"
+            >
+              <div className={cn(
+                "w-8 h-4 rounded-full transition-colors relative",
+                showRelativeMinor ? "bg-white/20" : "bg-white/5"
+              )}>
+                <div className={cn(
+                  "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                  showRelativeMinor ? "left-4" : "left-0.5"
+                )} />
+              </div>
+              Show Minor Keys
+            </button>
+          </div>
+          
+          <div className="relative aspect-square max-w-[520px] mx-auto w-full group">
+            {/* Architectural Grid with labels */}
+            <div className="absolute inset-0 rounded-full border-2 border-white/10 pointer-events-none" />
+            <div className="absolute inset-[20%] rounded-full border border-white/5 pointer-events-none" />
             
-            {/* Center Display */}
+            {/* Circle labels */}
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
+              Sharps →
+            </div>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
+              ← Flats
+            </div>
+            
+            {/* Center Display with key signature info */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div 
-                className="w-32 h-32 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-xl flex flex-col items-center justify-center transition-all cursor-pointer hover:bg-white/[0.08]"
+                className="w-36 h-36 rounded-full bg-white/[0.04] border-2 border-white/10 backdrop-blur-xl flex flex-col items-center justify-center transition-all cursor-pointer hover:bg-white/[0.08]"
                 onClick={() => setSelectedKey(null)}
               >
-                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Root</div>
-                <div className="text-3xl font-light text-white tracking-tighter tabular-nums">
-                  {selectedKey || "Select"}
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Selected Key</div>
+                <div className="text-4xl font-light text-white tracking-tighter tabular-nums mb-1">
+                  {selectedKey || "—"}
                 </div>
+                {selectedKeyData && (
+                  <div className="text-[9px] text-muted-foreground">
+                    {selectedKeyData.sharps > 0 && `${selectedKeyData.sharps}♯`}
+                    {selectedKeyData.flats > 0 && `${selectedKeyData.flats}♭`}
+                    {selectedKeyData.sharps === 0 && selectedKeyData.flats === 0 && "Natural"}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Key Segments */}
+            {/* Key Segments with relationships highlighted */}
             {CIRCLE_KEYS.map((k) => {
               const angle = (k.position * 30 - 90) * (Math.PI / 180);
               const radius = 42;
               const x = 50 + radius * Math.cos(angle);
               const y = 50 + radius * Math.sin(angle);
               const isActive = selectedKey === k.note;
+              const isDominant = selectedKeyData?.dominantKey === k.note;
+              const isSubdominant = selectedKeyData?.subdominantKey === k.note;
+              const isRelated = isDominant || isSubdominant;
 
               return (
                 <button
                   key={k.note}
-                  className="absolute"
+                  className="absolute group/key"
                   style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
                   onClick={() => setSelectedKey(k.note)}
                 >
                   <div className={cn(
-                    "w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all duration-300",
+                    "w-14 h-14 rounded-xl flex flex-col items-center justify-center transition-all duration-300 relative",
                     isActive 
-                      ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] scale-110" 
-                      : "bg-white/[0.02] border border-white/5 text-muted-foreground hover:border-white/20 hover:text-white"
+                      ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-125 z-10" 
+                      : isRelated
+                      ? "bg-blue-500/20 border-2 border-blue-400/40 text-white hover:border-blue-300 scale-105"
+                      : "bg-white/[0.02] border border-white/5 text-muted-foreground hover:border-white/20 hover:text-white hover:scale-110"
                   )}>
-                    <span className="text-sm font-medium">{k.note}</span>
-                    {k.sharps > 0 && <span className="text-[8px] opacity-60">{k.sharps}</span>}
-                    {k.flats > 0 && <span className="text-[8px] opacity-60">{k.flats}</span>}
+                    <span className="text-base font-semibold">{k.note}</span>
+                    {showRelativeMinor && (
+                      <span className="text-[9px] opacity-70">{k.relativeMinor}</span>
+                    )}
+                    {!showRelativeMinor && (k.sharps > 0 || k.flats > 0) && (
+                      <span className="text-[8px] opacity-60">
+                        {k.sharps > 0 ? `${k.sharps}♯` : `${k.flats}♭`}
+                      </span>
+                    )}
                   </div>
+                  {isActive && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] text-white bg-black/80 px-2 py-1 rounded opacity-0 group-hover/key:opacity-100 transition-opacity">
+                      Click others to see relationships
+                    </div>
+                  )}
                 </button>
               );
             })}
           </div>
 
           {/* Guidelines */}
-          <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+          <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-6">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest">
               <Info className="w-3 h-3" />
-              Harmonic Navigation
+              Quick Guide
             </div>
-            <div className="grid grid-cols-2 gap-4 text-[11px] text-muted-foreground leading-relaxed">
-              <p> Clockwise rotation adds sharps, moving toward dominant keys.</p>
-              <p> Counter-clockwise rotation adds flats, moving toward subdominant keys.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-white"></div>
+                  <span className="text-xs text-muted-foreground">Selected Key</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full border-2 border-blue-400/40 bg-blue-500/20"></div>
+                  <span className="text-xs text-muted-foreground">Related Keys (Dom/Sub)</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-[11px] text-muted-foreground leading-relaxed">
+                <p>• Move clockwise (+5th) to add sharps</p>
+                <p>• Move counter-clockwise (+4th) to add flats</p>
+                <p>• Adjacent keys share 6 out of 7 notes</p>
+              </div>
             </div>
           </div>
         </div>
@@ -186,9 +265,12 @@ const CircleOfFifths = () => {
                   {selectedKeyData.diatonicChords.map((chord, index) => {
                     const deg = ["I", "ii", "iii", "IV", "V", "vi", "vii"];
                     return (
-                      <div key={index} className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.02]">
-                        <span className="text-sm font-mono text-white">{chord}</span>
-                        <span className="text-[10px] text-muted-foreground font-semibold">{deg[index]}</span>
+                      <div key={index} className="flex flex-col gap-2 mb-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white tracking-widest uppercase">{deg[index]}</span>
+                          <span className="text-sm text-white font-medium">{chord}</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">Function: <span className="font-medium text-white">{deg[index]}</span></div>
                       </div>
                     );
                   })}
