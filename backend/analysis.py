@@ -181,7 +181,9 @@ def _segment_chords(
     beats_per_bar: int = 4,
 ) -> List[dict]:
     # Smooth chroma with a median filter to remove noise/transients
-    chroma = librosa.util.median_filter(chroma, size=7, axis=1)
+    # Use scipy's median_filter since librosa.util.median_filter was removed
+    from scipy.ndimage import median_filter
+    chroma = median_filter(chroma, size=(1, 7))
 
     # If we lack reliable beats, fall back to ~0.5s windows
     if beats is None or len(beats) < 2:
