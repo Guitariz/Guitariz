@@ -8,6 +8,14 @@ import librosa
 import numpy as np
 import soundfile as sf
 
+# Import ML-based chord detection
+try:
+    from chord_ml import detect_chords_ml, simplify_chord_label
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    print("⚠️  ML chord detection not available")
+
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
 MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
@@ -410,57 +418,69 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     if y.size == 0:
         return {"tempo": 0, "key": "C", "scale": "major", "chords": []}
 
-    # Separate harmonic and percussive
-    y_harmonic = librosa.effects.hpss(y)[0]
-
     hop_length = 512
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length)
     
-    # Use Chroma CQT on harmonic signal
-    chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length)
-    
-    # Smooth chroma across time to reduce noise
-    chroma = librosa.util.normalize(chroma, axis=0) # Normalize each frame
-    
-    # Apply NNLS decomposition to reduce transients (handle API changes)
-    try:
-        # Try newer librosa API first (0.10.0+)
-        from sklearn.decomposition import NMF
-        nmf = NMF(n_components=12, init='random', random_state=0, max_iter=200)
-        chroma = nmf.fit_transform(chroma.T).T
-    except:
+    # Try ML-based chord detection first (much more accurate)
+    ml_chords = None
+    if ML_AVAILABLE:
+        print("🤖 Using ML-based chord detection...")
         try:
-            # Fallback to older librosa decompose API
-            chroma = librosa.decompose.nnls(chroma, np.eye(12))[0]
-        except:
-            # If both fail, skip this step
-            pass
+            ml_chords = detect_chords_ml(y, sr)
+            if ml_chords:
+                print(f"✅ ML detected {len(ml_chords)} chord segments")
+        except Exception as e:
+            print(f"⚠️  ML detection failed: {e}, falling back to basic method")
     
-    # Re-normalize after processing
-    chroma = librosa.util.normalize(chroma, axis=0)
-
+    # Separate harmonic for tempo/key analysis
+    y_harmonic = librosa.effects.hpss(y)[0]
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length)
+    chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length)
     key, scale = _estimate_key(chroma)
     meter = _estimate_meter(y, sr, tempo)
     
-    # If beat tracking returned nothing, create artificial beats
-    if beat_frames is None or len(beat_frames) < 2:
-        # Roughly 2 segments per second
-        beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
+    # If ML detection succeeded, use those chords
+    if ml_chords:
+        chords = ml_chords
+        # Simplify for simpleChords output
+        simple_chords = [{**seg, "chord": simplify_chord_label(seg["chord"])} for seg in ml_chords]
+    else:
+        # Fall back to traditional chromagram-based detection
+        print("📊 Using traditional chromagram-based detection...")
+        
+        # Smooth chroma across time to reduce noise
+        chroma = librosa.util.normalize(chroma, axis=0)
+        
+        # Apply NNLS decomposition to reduce transients (handle API changes)
+        try:
+            from sklearn.decomposition import NMF
+            nmf = NMF(n_components=12, init='random', random_state=0, max_iter=200)
+            chroma = nmf.fit_transform(chroma.T).T
+        except:
+            try:
+                chroma = librosa.decompose.nnls(chroma, np.eye(12))[0]
+            except:
+                pass
+        
+        chroma = librosa.util.normalize(chroma, axis=0)
+        
+        # If beat tracking returned nothing, create artificial beats
+        if beat_frames is None or len(beat_frames) < 2:
+            beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
 
-    # Precise chords (smaller windows)
-    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, beats_per_bar=2)
-    
-    # Simple chords (larger windows or smoothed)
-    simple_chords_raw = []
-    for c in chords:
-        simple_chords_raw.append({
-            **c,
-            "chord": _simplify_chord(c["chord"])
-        })
+        # Precise chords (smaller windows)
+        chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, beats_per_bar=2)
+        
+        # Simple chords (larger windows or smoothed)
+        simple_chords = []
+        for c in chords:
+            simple_chords.append({
+                **c,
+                "chord": _simplify_chord(c["chord"])
+            })
     
     # Merge consecutive identical chords and smooth
     merged_precise = _smooth_chords(chords, min_duration=0.2)
-    merged_simple = _smooth_chords(simple_chords_raw, min_duration=0.8) # More aggressive smoothing for simple
+    merged_simple = _smooth_chords(simple_chords, min_duration=0.8)
 
     return {
         "tempo": float(round(float(tempo), 2)),
