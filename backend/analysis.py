@@ -57,32 +57,36 @@ def _separate_vocals(audio_path: Path) -> Optional[Path]:
         from demucs.pretrained import get_model
         from demucs.apply import apply_model
         import torch
+        import gc
         
-        # Load pre-trained Demucs model (htdemucs is fast and good quality)
+        # Load pre-trained Demucs model
+        # Using htdemucs_ft for better quality if memory allows
         model = get_model("htdemucs")
-        model.cpu()  # Use CPU for compatibility
+        model.cpu() 
         model.eval()
         
         # Load audio
         wav, sr = librosa.load(audio_path, sr=44100, mono=False)
         if wav.ndim == 1:
-            wav = np.stack([wav, wav])  # Convert mono to stereo
+            wav = np.stack([wav, wav])
         
-        # Convert to torch tensor
         wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
         
-        # Apply separation
         with torch.no_grad():
             sources = apply_model(model, wav_tensor, device="cpu", shifts=1, split=True)
         
-        # Extract instrumental (all stems except vocals)
-        # Demucs outputs: [drums, bass, other, vocals]
-        stems = sources[0]  # Remove batch dimension
-        instrumental = stems[0] + stems[1] + stems[2]  # drums + bass + other
+        stems = sources[0]
+        instrumental = stems[0] + stems[1] + stems[2]
         
-        # Save instrumental to temp file
         output_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
         sf.write(output_path, instrumental.cpu().numpy().T, sr)
+        
+        # Free memory immediately
+        del model
+        del sources
+        del stems
+        del instrumental
+        gc.collect()
         
         return output_path
         

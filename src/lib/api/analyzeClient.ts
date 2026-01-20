@@ -16,6 +16,11 @@ const normalizeChords = (chords: any[], durationHint?: number): ChordSegment[] =
 };
 
 export async function analyzeRemote(file: File, endpoint: string = defaultEndpoint, separateVocals: boolean = false): Promise<AnalysisResult> {
+  // If we're in production and using a relative path (empty apiUrl), it will likely fail on Vercel
+  if (import.meta.env.PROD && !import.meta.env.VITE_API_URL && endpoint.startsWith("/api")) {
+    console.error("VITE_API_URL is missing in production. Remote analysis will likely fail.");
+  }
+
   const form = new FormData();
   form.append("file", file);
   form.append("separate_vocals", separateVocals.toString());

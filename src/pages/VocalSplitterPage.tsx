@@ -49,8 +49,13 @@ const VocalSplitterPage = () => {
       const formData = new FormData();
       formData.append("file", selectedFile);
       
-      // Use environment variable for API URL or default to relative path
       const apiUrl = import.meta.env.VITE_API_URL || "";
+      
+      // If we're in production and VITE_API_URL is missing, warn the user
+      if (import.meta.env.PROD && !apiUrl) {
+        throw new Error("API URL is not configured. Please set VITE_API_URL in your environment variables.");
+      }
+
       const endpoint = `${apiUrl}/api/separate`;
       
       // Call backend API for separation
