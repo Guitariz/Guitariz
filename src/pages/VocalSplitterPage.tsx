@@ -180,39 +180,51 @@ const VocalSplitterPage = () => {
       const vocalsAbs = new URL(data.vocalsUrl, apiUrl + "/").toString();
       const instrumentalAbs = new URL(data.instrumentalUrl, apiUrl + "/").toString();
 
+      // Mark as separated as soon as the backend responds with stem URLs.
+      // Fetching/decoding for preview can be slow in production (large WAVs),
+      // but downloads should be available immediately.
       setVocalsUrl(vocalsAbs);
       setInstrumentalUrl(instrumentalAbs);
-
-      // Load the separated audio files
-      const ctx = new AudioContext();
-      audioContextRef.current = ctx;
-
-      // Fetch and decode vocals
-      console.log("Fetching vocals…", vocalsAbs);
-      const vocalsResponse = await fetch(vocalsAbs);
-      if (!vocalsResponse.ok) throw new Error(`Failed to fetch vocals (HTTP ${vocalsResponse.status})`);
-      const vocalsArrayBuffer = await vocalsResponse.arrayBuffer();
-      const vocalsBuffer = await ctx.decodeAudioData(vocalsArrayBuffer);
-      setVocalsAudio(vocalsBuffer);
-
-      // Fetch and decode instrumental
-      console.log("Fetching instrumental…", instrumentalAbs);
-      const instrumentalResponse = await fetch(instrumentalAbs);
-      if (!instrumentalResponse.ok) throw new Error(`Failed to fetch instrumental (HTTP ${instrumentalResponse.status})`);
-      const instrumentalArrayBuffer = await instrumentalResponse.arrayBuffer();
-      const instrumentalBuffer = await ctx.decodeAudioData(instrumentalArrayBuffer);
-      setInstrumentalAudio(instrumentalBuffer);
-      
       setSeparated(true);
       offsetRef.current = 0;
       setCurrentTime(0);
+
       toast({
         title: "Separation complete",
-        description: "Vocals and instrumentals have been isolated successfully.",
+        description: "Stems are ready. Preview may take a bit to load depending on file size.",
       });
 
       // Background-friendly notification (best-effort)
       void notifyDone();
+
+      // Load the separated audio files for in-browser preview (best effort).
+      // If this fails, keep downloads available.
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+
+      try {
+        // Fetch and decode vocals
+        console.log("Fetching vocals…", vocalsAbs);
+        const vocalsResponse = await fetch(vocalsAbs);
+        if (!vocalsResponse.ok) throw new Error(`Failed to fetch vocals (HTTP ${vocalsResponse.status})`);
+        const vocalsArrayBuffer = await vocalsResponse.arrayBuffer();
+        const vocalsBuffer = await ctx.decodeAudioData(vocalsArrayBuffer);
+        setVocalsAudio(vocalsBuffer);
+
+        // Fetch and decode instrumental
+        console.log("Fetching instrumental…", instrumentalAbs);
+        const instrumentalResponse = await fetch(instrumentalAbs);
+        if (!instrumentalResponse.ok) throw new Error(`Failed to fetch instrumental (HTTP ${instrumentalResponse.status})`);
+        const instrumentalArrayBuffer = await instrumentalResponse.arrayBuffer();
+        const instrumentalBuffer = await ctx.decodeAudioData(instrumentalArrayBuffer);
+        setInstrumentalAudio(instrumentalBuffer);
+      } catch (e) {
+        console.error("Preview load failed (downloads still available):", e);
+        toast({
+          title: "Preview unavailable",
+          description: "Stems are ready to download, but the in-browser preview could not be prepared.",
+        });
+      }
     } catch (error) {
       console.error("Separation error:", error);
       
