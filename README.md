@@ -111,6 +111,13 @@ npm run preview
 npm run lint
 ```
 
+## Open Source & Maintainer
+
+Guitariz is **open source** (MIT licensed) and is **maintained by Abhinav Vaidya**.
+
+- Contributions are welcome via issues and pull requests.
+- Please keep changes focused and well-described so they can be reviewed/merged quickly.
+
 ## Contributing
 
 1. Fork the repo
@@ -122,6 +129,11 @@ npm run lint
 ## License
 
 MIT — see [`LICENSE`](./LICENSE).
+
+## Trademark
+
+“Guitariz” (name) and associated branding assets are maintained by the author.
+Forks are welcome, but please avoid implying endorsement or official affiliation without permission.
 
 ## Author
 

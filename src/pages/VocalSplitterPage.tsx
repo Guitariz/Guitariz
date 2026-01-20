@@ -132,20 +132,31 @@ const VocalSplitterPage = () => {
       const formData = new FormData();
       formData.append("file", selectedFile);
       
-      const apiUrl = import.meta.env.VITE_API_URL || "";
-      
+      const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+
       // If we're in production and VITE_API_URL is missing, warn the user
       if (import.meta.env.PROD && !apiUrl) {
         throw new Error("API URL is not configured. Please set VITE_API_URL in your environment variables.");
       }
 
+      // Avoid accidental double slashes when joining URLs
       const endpoint = `${apiUrl}/api/separate`;
-      
+
       // Call backend API for separation
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
       });
+
+      if (!response.ok) {
+        // Extra diagnostics for deployed environments
+        console.error("Vocal Splitter API error", {
+          endpoint,
+          status: response.status,
+          statusText: response.statusText,
+          apiUrl,
+        });
+      }
       
       if (!response.ok) {
         let errorText = "";
@@ -164,23 +175,30 @@ const VocalSplitterPage = () => {
       }
       
       const data = await response.json();
-      setVocalsUrl(`${apiUrl}${data.vocalsUrl}`);
-      setInstrumentalUrl(`${apiUrl}${data.instrumentalUrl}`);
-      
+
+      // Build absolute URLs robustly, regardless of whether backend returns relative or absolute links.
+      const vocalsAbs = new URL(data.vocalsUrl, apiUrl + "/").toString();
+      const instrumentalAbs = new URL(data.instrumentalUrl, apiUrl + "/").toString();
+
+      setVocalsUrl(vocalsAbs);
+      setInstrumentalUrl(instrumentalAbs);
+
       // Load the separated audio files
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
-      
+
       // Fetch and decode vocals
-      const vocalsResponse = await fetch(`${apiUrl}${data.vocalsUrl}`);
-      if (!vocalsResponse.ok) throw new Error("Failed to fetch vocals");
+      console.log("Fetching vocals…", vocalsAbs);
+      const vocalsResponse = await fetch(vocalsAbs);
+      if (!vocalsResponse.ok) throw new Error(`Failed to fetch vocals (HTTP ${vocalsResponse.status})`);
       const vocalsArrayBuffer = await vocalsResponse.arrayBuffer();
       const vocalsBuffer = await ctx.decodeAudioData(vocalsArrayBuffer);
       setVocalsAudio(vocalsBuffer);
-      
+
       // Fetch and decode instrumental
-      const instrumentalResponse = await fetch(`${apiUrl}${data.instrumentalUrl}`);
-      if (!instrumentalResponse.ok) throw new Error("Failed to fetch instrumental");
+      console.log("Fetching instrumental…", instrumentalAbs);
+      const instrumentalResponse = await fetch(instrumentalAbs);
+      if (!instrumentalResponse.ok) throw new Error(`Failed to fetch instrumental (HTTP ${instrumentalResponse.status})`);
       const instrumentalArrayBuffer = await instrumentalResponse.arrayBuffer();
       const instrumentalBuffer = await ctx.decodeAudioData(instrumentalArrayBuffer);
       setInstrumentalAudio(instrumentalBuffer);
