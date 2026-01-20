@@ -1,9 +1,7 @@
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Music, Scale, Hash, Music2, Activity, Info, Sparkles } from "lucide-react";
+import { Info, Music, Music2, Scale, Sparkles, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CIRCLE_KEYS = [
@@ -25,10 +23,140 @@ const CircleOfFifths = () => {
   const [selectedKey, setSelectedKey] = useState<string | null>("C");
   const [activeTab, setActiveTab] = useState("overview");
   const [showRelativeMinor, setShowRelativeMinor] = useState(false);
+  const [borrowedMode, setBorrowedMode] = useState<"minor" | "mixolydian">("minor");
 
   const selectedKeyData = useMemo(() => {
-    return CIRCLE_KEYS.find(key => key.note === selectedKey);
+    return CIRCLE_KEYS.find((key) => key.note === selectedKey);
   }, [selectedKey]);
+
+  const selectedPosition = selectedKeyData?.position ?? 0;
+
+  const getKeyByPosition = useMemo(() => {
+    return (pos: number) => {
+      const wrapped = ((pos % 12) + 12) % 12;
+      return CIRCLE_KEYS.find((k) => k.position === wrapped);
+    };
+  }, []);
+
+  const neighbors = useMemo(() => {
+    return {
+      clockwise: getKeyByPosition(selectedPosition + 1),
+      counterClockwise: getKeyByPosition(selectedPosition - 1),
+      opposite: getKeyByPosition(selectedPosition + 6),
+    };
+  }, [getKeyByPosition, selectedPosition]);
+
+  const diatonicFunctions = useMemo(() => {
+    if (!selectedKeyData) return null;
+
+    const roman = ["I", "ii", "iii", "IV", "V", "vi", "vii°"] as const;
+    const funcs = [
+      "Tonic",
+      "Predominant",
+      "Tonic",
+      "Predominant",
+      "Dominant",
+      "Tonic",
+      "Dominant",
+    ] as const;
+
+    return selectedKeyData.diatonicChords.map((ch, i) => ({
+      degree: roman[i],
+      chord: ch,
+      func: funcs[i],
+    }));
+  }, [selectedKeyData]);
+
+  const quickModulations = useMemo(() => {
+    if (!selectedKeyData) return [];
+
+    const tonic = selectedKeyData.diatonicChords[0];
+    const ii = selectedKeyData.diatonicChords[1];
+    const V = selectedKeyData.diatonicChords[4];
+
+    const cw = neighbors.clockwise;
+    const ccw = neighbors.counterClockwise;
+
+    const toCard = (target: typeof CIRCLE_KEYS[number] | undefined, label: string) => {
+      if (!target) return null;
+      const pivotCandidates = new Set<string>([
+        selectedKeyData.diatonicChords[0],
+        selectedKeyData.diatonicChords[3],
+        selectedKeyData.diatonicChords[5],
+        target.diatonicChords[0],
+        target.diatonicChords[3],
+        target.diatonicChords[5],
+      ]);
+
+      const pivot = [...pivotCandidates].find((c) =>
+        selectedKeyData.diatonicChords.includes(c) && target.diatonicChords.includes(c)
+      );
+
+      return {
+        label,
+        target: target.note,
+        desc: "Closest key on the wheel (shares 6/7 notes)",
+        pivot: pivot ?? "(no obvious pivot)",
+        example: [tonic, ii, V, pivot ?? tonic, target.diatonicChords[4], target.diatonicChords[0]].filter(Boolean),
+      };
+    };
+
+    return [
+      toCard(cw, "Clockwise (+5th)"),
+      toCard(ccw, "Counter-clockwise (+4th)"),
+      {
+        label: "Relative minor",
+        target: selectedKeyData.relativeMinor.replace("m", ""),
+        desc: "Same key signature, new tonal center",
+        pivot: selectedKeyData.diatonicChords[5],
+        example: [tonic, selectedKeyData.diatonicChords[5], selectedKeyData.diatonicChords[1], selectedKeyData.diatonicChords[4], tonic],
+      },
+    ].filter(Boolean) as Array<{
+      label: string;
+      target: string;
+      desc: string;
+      pivot: string;
+      example: string[];
+    }>;
+  }, [neighbors.clockwise, neighbors.counterClockwise, selectedKeyData]);
+
+  const appliedChords = useMemo(() => {
+    if (!selectedKeyData) return [];
+
+    const chordAt = (degreeIndex: number) => selectedKeyData.diatonicChords[degreeIndex];
+    const degNames = ["I", "ii", "iii", "IV", "V", "vi"];
+
+    // V/ii, V/iii, V/IV, V/V, V/vi are common in major.
+    const targets = [1, 2, 3, 4, 5];
+
+    return targets.map((idx) => ({
+      name: `V/${degNames[idx]}`,
+      resolvesTo: chordAt(idx),
+      hint: "Use the dominant of the target chord to intensify motion.",
+    }));
+  }, [selectedKeyData]);
+
+  const borrowedChords = useMemo(() => {
+    if (!selectedKeyData) return [];
+
+    // Keep this useful but not overly theoretical: common modal interchange in major.
+    // We don’t attempt full enharmonic spelling; we present functional targets.
+    if (borrowedMode === "minor") {
+      return [
+        { name: "iv", use: "Adds melancholy; great pre-dominant", example: "I – iv – V – I" },
+        { name: "bVII", use: "Rock/folk color; backdoor dominant flavor", example: "I – bVII – IV – I" },
+        { name: "bVI", use: "Cinematic lift; pairs well with bVII", example: "I – bVI – bVII – I" },
+        { name: "ii° (or iiø7)", use: "Dark predominant to V", example: "ii° – V – I" },
+      ];
+    }
+
+    // Mixolydian flavor: bVII is the classic move.
+    return [
+      { name: "bVII", use: "Mixolydian/rock cadence", example: "I – bVII – IV" },
+      { name: "v", use: "Soft dominant without leading tone", example: "IV – v – I" },
+      { name: "bIII", use: "Bright modal shift; common in pop", example: "I – bIII – IV" },
+    ];
+  }, [borrowedMode, selectedKeyData]);
 
   const commonProgressions = useMemo(() => {
     if (!selectedKeyData) return [];
@@ -44,12 +172,13 @@ const CircleOfFifths = () => {
   
   const getRelatedKeys = useMemo(() => {
     if (!selectedKeyData) return [];
-    const position = selectedKeyData.position;
     return {
-      dominant: CIRCLE_KEYS.find(k => k.note === selectedKeyData.dominantKey),
-      subdominant: CIRCLE_KEYS.find(k => k.note === selectedKeyData.subdominantKey),
-      relative: CIRCLE_KEYS.find(k => k.relativeMinor === selectedKeyData.relativeMinor || k.note === selectedKeyData.relativeMinor),
-      parallel: CIRCLE_KEYS.find(k => k.note === selectedKeyData.parallelKey)
+      dominant: CIRCLE_KEYS.find((k) => k.note === selectedKeyData.dominantKey),
+      subdominant: CIRCLE_KEYS.find((k) => k.note === selectedKeyData.subdominantKey),
+      relative: CIRCLE_KEYS.find(
+        (k) => k.relativeMinor === selectedKeyData.relativeMinor || k.note === selectedKeyData.relativeMinor
+      ),
+      parallel: CIRCLE_KEYS.find((k) => k.note === selectedKeyData.parallelKey),
     };
   }, [selectedKeyData]);
 
@@ -193,8 +322,8 @@ const CircleOfFifths = () => {
                 {[
                   { id: "overview", icon: Music },
                   { id: "scales", icon: Scale },
-                  { id: "chords", icon: Hash },
-                  { id: "progress", icon: Music2 }
+                  { id: "harmony", icon: Wand2 },
+                  { id: "progress", icon: Music2 },
                 ].map(({ id, icon: Icon }) => (
                   <TabsTrigger 
                     key={id} 
@@ -209,23 +338,45 @@ const CircleOfFifths = () => {
               <TabsContent value="overview" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Parallel Minor</div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Relative Minor</div>
                     <div className="text-lg font-light text-white">{selectedKeyData.relativeMinor}</div>
+                    <div className="text-[11px] text-muted-foreground mt-1">Same key signature</div>
                   </div>
                   <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Key Type</div>
-                    <div className="text-lg font-light text-white">Major</div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Key Signature</div>
+                    <div className="text-lg font-light text-white">
+                      {selectedKeyData.sharps > 0 && `${selectedKeyData.sharps}♯`}
+                      {selectedKeyData.flats > 0 && `${selectedKeyData.flats}♭`}
+                      {selectedKeyData.sharps === 0 && selectedKeyData.flats === 0 && "Natural"}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                      {selectedKeyData.keySignature.length ? selectedKeyData.keySignature.join(" ") : "No accidentals"}
+                    </div>
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[ 
+                    { label: "Clockwise", value: neighbors.clockwise?.note ?? "—", hint: "+5th (adds sharps)" },
+                    { label: "Counter", value: neighbors.counterClockwise?.note ?? "—", hint: "+4th (adds flats)" },
+                    { label: "Opposite", value: neighbors.opposite?.note ?? "—", hint: "tritone away" },
+                  ].map((x) => (
+                    <div key={x.label} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">{x.label}</div>
+                      <div className="text-lg font-light text-white">{x.value}</div>
+                      <div className="text-[11px] text-muted-foreground mt-1">{x.hint}</div>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="space-y-3">
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">Functional Keys</div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">Key Relationships</div>
                   <div className="grid grid-cols-1 gap-2">
                     {[
-                      { l: "Dominant", v: selectedKeyData.dominantKey },
-                      { l: "Subdominant", v: selectedKeyData.subdominantKey },
-                      { l: "Parallel", v: selectedKeyData.parallelKey }
-                    ].map(item => (
+                      { l: "Next key (brighter)", v: selectedKeyData.dominantKey },
+                      { l: "Next key (warmer)", v: selectedKeyData.subdominantKey },
+                      { l: "Same note, different mood", v: selectedKeyData.parallelKey },
+                    ].map((item) => (
                       <div key={item.l} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.01] border border-white/5">
                         <span className="text-xs text-muted-foreground">{item.l}</span>
                         <span className="text-sm text-white font-medium">{item.v}</span>
@@ -260,37 +411,166 @@ const CircleOfFifths = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="chords" className="mt-0 animate-in fade-in slide-in-from-bottom-2">
-                <div className="grid grid-cols-2 gap-3">
-                  {selectedKeyData.diatonicChords.map((chord, index) => {
-                    const deg = ["I", "ii", "iii", "IV", "V", "vi", "vii"];
-                    return (
-                      <div key={index} className="flex flex-col gap-2 mb-3 p-3 rounded-lg bg-white/[0.02] border border-white/5">
+              <TabsContent value="harmony" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                <div className="space-y-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">
+                    Chords that "belong" in this key
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {(diatonicFunctions ?? []).map((row, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col gap-2 p-3 rounded-lg bg-white/[0.02] border border-white/5"
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-white tracking-widest uppercase">{deg[index]}</span>
-                          <span className="text-sm text-white font-medium">{chord}</span>
+                          <span className="text-xs font-bold text-white tracking-widest uppercase">{row.degree}</span>
+                          <span className="text-sm text-white font-medium">{row.chord}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground">Function: <span className="font-medium text-white">{deg[index]}</span></div>
+                        <div className="text-[11px] text-muted-foreground flex items-center justify-between">
+                          <span>Role</span>
+                          <span
+                            className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full border",
+                              row.func === "Tonic"
+                                ? "bg-white/5 border-white/10 text-white"
+                                : row.func === "Dominant"
+                                  ? "bg-blue-500/10 border-blue-400/20 text-blue-100"
+                                  : "bg-emerald-500/10 border-emerald-400/20 text-emerald-100"
+                            )}
+                          >
+                            {row.func}
+                          </span>
+                        </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">
+                    Make a chord change feel stronger
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {appliedChords.map((a) => (
+                      <div key={a.name} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.01] border border-white/5">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="bg-white/5 text-white border border-white/10">
+                            {a.name.replace("V/", "Lead into ")}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">→</span>
+                          <span className="text-sm text-white font-medium">{a.resolvesTo}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground hidden md:block">A quick “setup” chord before it.</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-[11px] text-muted-foreground leading-relaxed px-1">
+                    Tip: these are optional “setup” moves that make the next chord feel more intentional. If it sounds too jazzy, skip it.
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Add a different mood</div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setBorrowedMode("minor")}
+                        className={cn(
+                          "text-[10px] px-2 py-1 rounded-lg border transition-colors",
+                          borrowedMode === "minor"
+                            ? "bg-white/10 border-white/15 text-white"
+                            : "bg-white/[0.02] border-white/5 text-muted-foreground hover:text-white"
+                        )}
+                      >
+                        Darker
+                      </button>
+                      <button
+                        onClick={() => setBorrowedMode("mixolydian")}
+                        className={cn(
+                          "text-[10px] px-2 py-1 rounded-lg border transition-colors",
+                          borrowedMode === "mixolydian"
+                            ? "bg-white/10 border-white/15 text-white"
+                            : "bg-white/[0.02] border-white/5 text-muted-foreground hover:text-white"
+                        )}
+                      >
+                        Rock / bluesy
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2">
+                    {borrowedChords.map((b) => (
+                      <div key={b.name} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-white font-medium tracking-tight">{b.name}</span>
+                          <span className="text-[10px] text-muted-foreground">color option</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground leading-relaxed">{b.use}</div>
+                        <div className="mt-3 text-[11px] text-white/90 font-mono bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                          {b.example}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">
+                    Easy ways to change key
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {quickModulations.map((m) => (
+                      <div key={m.label} className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-white font-medium">{m.label}</div>
+                          <button
+                            onClick={() => setSelectedKey(m.target)}
+                            className="text-[10px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white transition-colors"
+                            title="Jump to target key"
+                          >
+                            Go → {m.target}
+                          </button>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">{m.desc}</div>
+                        <div className="mt-3 flex flex-wrap gap-2 items-center">
+                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Common chord</span>
+                          <span className="text-[11px] font-mono text-white bg-white/5 border border-white/10 rounded px-2 py-1">
+                            {m.pivot}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {m.example.slice(0, 6).map((c, i) => (
+                            <span key={i} className="px-3 py-1 rounded bg-white/10 text-[11px] font-mono text-white">
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="progress" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-2">
                 {commonProgressions.map((p, i) => (
-                  <div key={i} className="p-5 rounded-xl border border-white/5 bg-white/[0.02] group hover:bg-white/[0.04] transition-all">
+                  <div
+                    key={i}
+                    className="p-5 rounded-xl border border-white/5 bg-white/[0.02] group hover:bg-white/[0.04] transition-all"
+                  >
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-xs font-bold text-white tracking-widest uppercase">{p.name}</span>
                       <span className="text-[10px] text-muted-foreground">{p.desc}</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {p.chords.map((c, ci) => (
                         <div key={ci} className="px-3 py-1 rounded bg-white/10 text-[11px] font-mono text-white">
                           {c}
                         </div>
                       ))}
                     </div>
+                    <div className="mt-3 text-[11px] text-muted-foreground">Examples: {p.examples}</div>
                   </div>
                 ))}
               </TabsContent>
