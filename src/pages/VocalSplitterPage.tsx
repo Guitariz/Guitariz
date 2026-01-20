@@ -43,6 +43,9 @@ const VocalSplitterPage = () => {
     instrumental: false,
   });
 
+  // Track the stem output format so downloads use the correct extension.
+  const [stemFormat, setStemFormat] = useState<"wav" | "mp3">("wav");
+
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
   const duration = useMemo(() => {
@@ -131,6 +134,9 @@ const VocalSplitterPage = () => {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      // Prefer MP3 for much faster transfers in production; WAV is still supported.
+      // Backend defaults to WAV if this field is omitted.
+      formData.append("format", "mp3");
       
       const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 
@@ -185,6 +191,7 @@ const VocalSplitterPage = () => {
       // but downloads should be available immediately.
       setVocalsUrl(vocalsAbs);
       setInstrumentalUrl(instrumentalAbs);
+      setStemFormat((data.format || "wav") === "mp3" ? "mp3" : "wav");
       setSeparated(true);
       offsetRef.current = 0;
       setCurrentTime(0);
@@ -389,7 +396,7 @@ const VocalSplitterPage = () => {
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `${selectedFile?.name.split(".")[0] || "audio"}_${type}.wav`;
+      a.download = `${selectedFile?.name.split(".")[0] || "audio"}_${type}.${stemFormat}`;
       a.click();
       URL.revokeObjectURL(downloadUrl);
 
