@@ -11,13 +11,34 @@ const Metronome = () => {
   const [timeSignature, setTimeSignature] = useState({ num: 4, den: 4 });
   const intervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
+  const tapTimesRef = useRef<number[]>([]);
+  const tappedBpmTimeoutRef = useRef<number | null>(null);
+  const [tappedBpm, setTappedBpm] = useState<number | null>(null);
+
+  const PRESETS = [
+    { label: 'Largo', bpm: 60 },
+    { label: 'Andante', bpm: 84 },
+    { label: 'Moderato', bpm: 108 },
+    { label: 'Allegro', bpm: 132 },
+    { label: 'Presto', bpm: 168 },
+  ];
 
   useEffect(() => {
-    const AudioContextClass = window.AudioContext || (window as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     audioContextRef.current = new AudioContextClass();
     return () => {
       if (audioContextRef.current) {
         audioContextRef.current.close();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (tappedBpmTimeoutRef.current) {
+        window.clearTimeout(tappedBpmTimeoutRef.current);
+        tappedBpmTimeoutRef.current = null;
       }
     };
   }, []);
@@ -36,7 +57,6 @@ const Metronome = () => {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    // Filtered, non-harsh frequencies
     oscillator.frequency.value = isAccent ? 1200 : 800;
     gainNode.gain.value = isAccent ? 0.2 : 0.1;
 
@@ -83,6 +103,70 @@ const Metronome = () => {
     setTimeSignature({ num: 4, den: 4 });
   };
 
+  const handleTapTempo = useCallback(() => {
+    const now = performance.now();
+    const times = tapTimesRef.current;
+
+    if (times.length === 0) {
+      times.push(now);
+      return;
+    }
+
+    const last = times[times.length - 1];
+    // If it's been a while since last tap, start over
+    if (now - last > 2000) {
+      tapTimesRef.current = [now];
+      return;
+    }
+
+    times.push(now);
+    // keep only the last 8 taps
+    if (times.length > 8) tapTimesRef.current = times.slice(times.length - 8);
+
+    const diffs: number[] = [];
+    for (let i = 1; i < tapTimesRef.current.length; i++) {
+      const d = tapTimesRef.current[i] - tapTimesRef.current[i - 1];
+      if (d > 60 && d < 2000) diffs.push(d);
+    }
+
+    if (diffs.length === 0) return;
+
+    // average interval in ms
+    const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+    const detected = Math.round(60000 / avg);
+    const clamped = Math.max(40, Math.min(280, detected));
+
+    setBpm(clamped);
+    setTappedBpm(clamped);
+
+    if (tappedBpmTimeoutRef.current) {
+      window.clearTimeout(tappedBpmTimeoutRef.current);
+    }
+    tappedBpmTimeoutRef.current = window.setTimeout(() => {
+      setTappedBpm(null);
+      tappedBpmTimeoutRef.current = null;
+    }, 2500);
+  }, []);
+
+  // allow tapping with spacebar (or 'T'), ignoring when typing in inputs
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        handleTapTempo();
+      }
+      if (e.key && e.key.toLowerCase() === 't') {
+        handleTapTempo();
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleTapTempo]);
+
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -97,6 +181,18 @@ const Metronome = () => {
               </span>
               <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground mt-4 font-medium">
                 Beats Per Minute
+              </div>
+              {tappedBpm !== null && (
+                <div className="mt-3 text-sm text-white/90 font-medium">
+                  Tapped: {tappedBpm} BPM
+                </div>
+              )}
+              <div className="mt-4 text-xs text-muted-foreground/60 flex items-center justify-center gap-2">
+                <span>Press</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/70 font-mono text-[10px]">Space</kbd>
+                <span>or</span>
+                <kbd className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/70 font-mono text-[10px]">T</kbd>
+                <span>to tap tempo</span>
               </div>
             </div>
           </div>
@@ -168,7 +264,15 @@ const Metronome = () => {
                 )}
                 {isPlaying ? "Stop" : "Start"}
               </Button>
-              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleTapTempo}
+                className="w-16 h-16 rounded-2xl border-white/5 bg-white/[0.02] text-muted-foreground hover:text-white"
+              >
+                <Activity className="w-5 h-5" />
+              </Button>
+
               <Button
                 variant="outline"
                 size="icon"
@@ -187,6 +291,7 @@ const Metronome = () => {
             <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
               Time Signature
             </h3>
+
             <div className="grid grid-cols-2 gap-3">
               {[
                 { num: 3, den: 4 },
@@ -218,13 +323,7 @@ const Metronome = () => {
               Presets
             </h3>
             <div className="space-y-2">
-              {[
-                { label: "Largo", bpm: 60 },
-                { label: "Andante", bpm: 84 },
-                { label: "Moderato", bpm: 108 },
-                { label: "Allegro", bpm: 132 },
-                { label: "Presto", bpm: 168 },
-              ].map((preset) => (
+              {PRESETS.map((preset) => (
                 <button
                   key={preset.label}
                   onClick={() => setBpm(preset.bpm)}
