@@ -21,7 +21,7 @@ app.add_middleware(
 
 
 @app.post("/api/analyze")
-async def analyze(file: UploadFile = File(...), separate_vocals: bool = False):
+async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False)):
     """Analyze audio file for chords.
     
     Args:
@@ -39,6 +39,16 @@ async def analyze(file: UploadFile = File(...), separate_vocals: bool = False):
 
     try:
         result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+        
+        # If vocal separation was used, store the instrumental file and return its URL
+        if "instrumentalPath" in result:
+            file_id = str(uuid.uuid4())
+            separated_files[file_id] = result["instrumentalPath"]
+            result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
+            print(f"Stored instrumental file with ID: {file_id}, URL: {result['instrumentalUrl']}")
+            del result["instrumentalPath"]  # Remove the local path from response
+        
+        print(f"Returning result with keys: {result.keys()}")
         return JSONResponse(result)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
@@ -156,6 +166,25 @@ async def separate_audio(
             tmp_path.unlink(missing_ok=True)
         except Exception:
             pass
+
+
+@app.get("/api/analyze/download/{file_id}/{filename}")
+async def download_instrumental(file_id: str, filename: str):
+    """Download instrumental track from chord analysis.
+    
+    Args:
+        file_id: File ID from analysis response
+        filename: Filename (for browser download naming)
+    """
+    if file_id not in separated_files:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_path = Path(separated_files[file_id])
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File no longer available")
+    
+    return FileResponse(file_path, media_type="audio/wav", filename=filename)
 
 
 @app.get("/api/separate/download/{session_id}/{track_type}")

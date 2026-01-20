@@ -43,7 +43,14 @@ export async function analyzeRemote(file: File, endpoint: string = defaultEndpoi
   const chords = normalizeChords(json.chords, json.duration);
   const simpleChords = json.simpleChords ? normalizeChords(json.simpleChords, json.duration) : [];
 
-  return { tempo, key, scale, meter, chords, simpleChords };
+  const result: AnalysisResult = { tempo, key, scale, meter, chords, simpleChords };
+  
+  // Include instrumentalUrl if present (when vocal separation was used)
+  if (json.instrumentalUrl) {
+    result.instrumentalUrl = json.instrumentalUrl;
+  }
+
+  return result;
 }
 
 export default analyzeRemote;

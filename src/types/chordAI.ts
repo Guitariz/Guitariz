@@ -12,4 +12,5 @@ export type AnalysisResult = {
   scale: string;
   chords: ChordSegment[];
   simpleChords: ChordSegment[];
+  instrumentalUrl?: string; // URL to instrumental track when vocal filter is used
 };

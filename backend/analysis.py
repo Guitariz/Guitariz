@@ -376,6 +376,7 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
         separate_vocals: If True, separate vocals from music before analysis (more accurate)
     """
     actual_path = file_path
+    separated_path = None
     
     # If vocal separation is requested, process the file first
     if separate_vocals:
@@ -398,13 +399,6 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
                 y, sr = librosa.load(tmp_wav.name, sr=22050, mono=True)
         except Exception as e:
             raise RuntimeError(f"Could not load audio file. Please ensure it is a valid audio format. (Error: {e})")
-    finally:
-        # Cleanup separated file if it was created
-        if separate_vocals and actual_path != file_path:
-            try:
-                actual_path.unlink(missing_ok=True)
-            except Exception:
-                pass
 
     if y.size == 0:
         return {"tempo": 0, "key": "C", "scale": "major", "chords": []}
@@ -443,7 +437,7 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     merged_precise = _smooth_chords(chords, min_duration=0.2)
     merged_simple = _smooth_chords(simple_chords, min_duration=0.8)
 
-    return {
+    result = {
         "tempo": float(round(float(tempo), 2)),
         "meter": meter,
         "key": key,
@@ -451,3 +445,9 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
         "chords": merged_precise,
         "simpleChords": merged_simple,
     }
+    
+    # Include separated track path if vocal separation was used
+    if separated_path:
+        result["instrumentalPath"] = str(separated_path)
+    
+    return result

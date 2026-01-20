@@ -8,7 +8,7 @@ export type AudioFileInfo = {
 };
 
 export type UseAudioPlayer = {
-  loadFile: (file: File) => Promise<void>;
+  loadFile: (file: File | null, buffer?: AudioBuffer) => Promise<void>;
   play: () => void;
   pause: () => void;
   seek: (time: number) => void;
@@ -97,6 +97,11 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     const ctx = audioCtxRef.current || new AudioContext();
     audioCtxRef.current = ctx;
 
+    // If we're at the end, reset to beginning
+    if (offsetRef.current >= duration) {
+      offsetRef.current = 0;
+    }
+
     teardownSource();
 
     const source = ctx.createBufferSource();
@@ -112,8 +117,12 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     setIsPlaying(true);
 
     source.onended = () => {
-      setIsPlaying(false);
-      offsetRef.current = duration;
+      // Only mark as ended if we actually played to the end (not stopped manually)
+      if (offsetRef.current + (ctx.currentTime - startTimeRef.current) >= duration - 0.1) {
+        setIsPlaying(false);
+        offsetRef.current = duration;
+        setCurrentTime(duration);
+      }
     };
   }, [audioBuffer, duration]);
 
@@ -123,26 +132,68 @@ export const useAudioPlayer = (): UseAudioPlayer => {
       const clamped = clamp(time, 0, duration);
       offsetRef.current = clamped;
       setCurrentTime(clamped);
+      
+      // If currently playing, restart playback from new position
       if (isPlaying) {
-        play();
+        teardownSource();
+        const ctx = audioCtxRef.current!;
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        const gain = gainRef.current || ctx.createGain();
+        gainRef.current = gain;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        
+        startTimeRef.current = ctx.currentTime;
+        source.start(0, offsetRef.current);
+        sourceRef.current = source;
+        
+        source.onended = () => {
+          if (offsetRef.current + (ctx.currentTime - startTimeRef.current) >= duration - 0.1) {
+            setIsPlaying(false);
+            offsetRef.current = duration;
+            setCurrentTime(duration);
+          }
+        };
       }
     },
-    [audioBuffer, duration, isPlaying, play],
+    [audioBuffer, duration, isPlaying],
   );
 
-  const loadFile = useCallback(async (file: File) => {
+  const loadFile = useCallback(async (file: File | null, buffer?: AudioBuffer) => {
     try {
       setError(null);
       stopRaf();
-      pause();
+      
+      // Stop any playing audio first
+      if (isPlaying) {
+        teardownSource();
+        setIsPlaying(false);
+      }
 
       const ctx = audioCtxRef.current || new AudioContext();
       audioCtxRef.current = ctx;
-      const arrayBuffer = await file.arrayBuffer();
-      const decoded = await ctx.decodeAudioData(arrayBuffer);
+      
+      let decoded: AudioBuffer;
+      let fileName = "instrumental.wav";
+      
+      // If buffer is provided directly, use it
+      if (buffer) {
+        decoded = buffer;
+        fileName = fileInfo?.name || "instrumental.wav";
+      } 
+      // Otherwise decode from file
+      else if (file) {
+        const arrayBuffer = await file.arrayBuffer();
+        decoded = await ctx.decodeAudioData(arrayBuffer);
+        fileName = file.name;
+      } else {
+        throw new Error("Either file or buffer must be provided");
+      }
+      
       setAudioBuffer(decoded);
       setDuration(decoded.duration);
-      setFileInfo({ name: file.name, duration: decoded.duration });
+      setFileInfo({ name: fileName, duration: decoded.duration });
       offsetRef.current = 0;
       setCurrentTime(0);
       setPeaks(computePeaks(decoded));
@@ -150,7 +201,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
       console.error(err);
       setError("Failed to load or decode audio.");
     }
-  }, [pause]);
+  }, [isPlaying, fileInfo]);
 
   useEffect(() => {
     if (isPlaying) {
