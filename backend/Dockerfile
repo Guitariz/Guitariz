@@ -1,10 +1,13 @@
 # Use an official Python runtime as a parent image
 FROM python:3.12-slim
 
-# Install system dependencies
+# Install system dependencies and build tools
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
+    build-essential \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a user to avoid running as root (required by Hugging Face)
