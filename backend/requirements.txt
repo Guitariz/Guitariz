@@ -2,7 +2,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.0
 librosa==0.10.2
-numpy<1.24.0  # madmom requires numpy<1.24 for deprecated aliases
+# numpy is installed separately in Dockerfile for madmom compatibility
 soundfile==0.12.1
 pydantic==2.6.0
 python-multipart==0.0.9
