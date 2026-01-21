@@ -9,7 +9,18 @@ import subprocess
 
 from analysis import analyze_file, separate_audio_full
 
-app = FastAPI(title="Chord AI Backend", version="0.1.0")
+# Try to import madmom, but don't fail if it's not available
+try:
+    from chord_madmom import analyze_file_madmom, MADMOM_AVAILABLE
+    if MADMOM_AVAILABLE:
+        print("[Startup] ✓ madmom engine available - fast analysis enabled (~5-10s)")
+    else:
+        print("[Startup] ℹ madmom library not installed - using librosa engine (~1-3min)")
+except ImportError:
+    MADMOM_AVAILABLE = False
+    print("[Startup] ℹ madmom module not found - using librosa engine only")
+
+app = FastAPI(title="Chord AI Backend", version="1.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,14 +32,15 @@ app.add_middleware(
 
 
 @app.post("/api/analyze")
-async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False)):
+async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
     """Analyze audio file for chords.
     
     Args:
         file: Audio file to analyze
-        separate_vocals: If True, separate vocals before analysis for better accuracy
+        separate_vocals: If True, separate vocals before analysis for better accuracy (slower)
+        use_madmom: If True, use fast madmom engine (~5-10s). If False, use librosa (slower but works with vocal separation)
     """
-    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals})")
+    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_madmom={use_madmom})")
     if not file.filename:
         raise HTTPException(status_code=400, detail="File required")
 
@@ -38,7 +50,21 @@ async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(Fal
         tmp_path = Path(tmp.name)
 
     try:
-        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+        # If vocal separation is requested, we must use the librosa engine
+        if separate_vocals:
+            print("[API] Vocal separation requested - using librosa engine")
+            result = analyze_file(tmp_path, separate_vocals=True)
+        elif use_madmom and MADMOM_AVAILABLE:
+            # Use madmom engine for fast analysis (no vocal separation)
+            print("[API] Using madmom engine (fast analysis)")
+            result = analyze_file_madmom(tmp_path)
+        else:
+            # Fall back to librosa engine
+            if use_madmom and not MADMOM_AVAILABLE:
+                print("[API] madmom requested but not available - using librosa engine")
+            else:
+                print("[API] Using librosa engine without vocal separation")
+            result = analyze_file(tmp_path, separate_vocals=False)
         
         # If vocal separation was used, store the instrumental file and return its URL
         if "instrumentalPath" in result:

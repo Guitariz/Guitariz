@@ -7,7 +7,7 @@ import AnalysisSummary from "@/components/chord-ai/AnalysisSummary";
 import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
-import { ChordSegment } from "@/types/chordAI";
+import { ChordSegment, AnalysisResult } from "@/types/chordAI";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download } from "lucide-react";

@@ -16,7 +16,8 @@ export const useChordAnalysis = (
   useRemote: boolean = true,
   separateVocals: boolean = false,
   cacheKey?: string, // File identifier for cache checking
-  cachedResult?: { result: any; instrumentalUrl?: string } // Cached result if available
+  cachedResult?: { result: any; instrumentalUrl?: string }, // Cached result if available
+  useMadmom: boolean = true // Use fast madmom engine by default
 ): UseChordAnalysisState => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -48,7 +49,7 @@ export const useChordAnalysis = (
         if (useRemote && file) {
           try {
             const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
-            const remote = await analyzeRemote(file, undefined, separateVocals);
+            const remote = await analyzeRemote(file, undefined, separateVocals, useMadmom);
             console.log("Analysis result:", remote);
             console.log("API URL:", apiUrl);
             if (!isCancelled) {

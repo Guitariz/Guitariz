@@ -15,7 +15,7 @@ const normalizeChords = (chords: any[], durationHint?: number): ChordSegment[] =
     .filter((c) => c.end > c.start);
 };
 
-export async function analyzeRemote(file: File, endpoint: string = defaultEndpoint, separateVocals: boolean = false): Promise<AnalysisResult> {
+export async function analyzeRemote(file: File, endpoint: string = defaultEndpoint, separateVocals: boolean = false, useMadmom: boolean = true): Promise<AnalysisResult> {
   // If we're in production and using a relative path (empty apiUrl), it will likely fail on Vercel
   if (import.meta.env.PROD && !import.meta.env.VITE_API_URL && endpoint.startsWith("/api")) {
     console.error("VITE_API_URL is missing in production. Remote analysis will likely fail.");
@@ -24,6 +24,7 @@ export async function analyzeRemote(file: File, endpoint: string = defaultEndpoi
   const form = new FormData();
   form.append("file", file);
   form.append("separate_vocals", separateVocals.toString());
+  form.append("use_madmom", useMadmom.toString());
 
   const res = await fetch(endpoint, {
     method: "POST",
