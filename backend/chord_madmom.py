@@ -38,8 +38,29 @@ for cache_dir in [CHORD_CACHE_DIR, KEY_CACHE_DIR, TEMPO_CACHE_DIR]:
 
 
 def _get_file_hash(file_path: Path) -> str:
-    """Generate MD5 hash of file path for caching."""
-    return hashlib.md5(str(file_path).encode()).hexdigest()
+    """Generate MD5 hash based on file content and size for robust caching."""
+    hasher = hashlib.md5()
+    try:
+        # Include file size in the hash
+        stats = file_path.stat()
+        hasher.update(str(stats.st_size).encode())
+        
+        # Hash the first 1MB of the file
+        with open(file_path, 'rb') as f:
+            chunk = f.read(1024 * 1024)
+            hasher.update(chunk)
+            
+            # If file is larger than 2MB, also hash the last chunk
+            if stats.st_size > 2 * 1024 * 1024:
+                f.seek(-1024 * 1024, 2)
+                chunk = f.read(1024 * 1024)
+                hasher.update(chunk)
+                
+        return hasher.hexdigest()
+    except Exception as e:
+        print(f"[madmom] Hashing failed: {e}")
+        # Fallback to name-based if content reading fails
+        return hashlib.md5(str(file_path.name).encode()).hexdigest()
 
 
 def _load_from_cache(cache_file: Path) -> Optional[any]:

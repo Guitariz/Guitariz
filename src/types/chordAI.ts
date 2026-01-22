@@ -12,5 +12,6 @@ export type AnalysisResult = {
   scale: string;
   chords: ChordSegment[];
   simpleChords: ChordSegment[];
+  duration?: number; // Duration of audio in seconds
   instrumentalUrl?: string; // URL to instrumental track when vocal filter is used
 };

@@ -29,10 +29,11 @@ const WaveformViewer = ({ peaks, duration, currentTime, chordSegments, onSeek }:
   );
 
   return (
-    <div className="relative w-full group/waveform select-none">
+    <div className="relative w-full h-[160px] group/waveform select-none">
       <svg
-        className="w-full rounded-2xl cursor-crosshair"
+        className="w-full h-full rounded-2xl cursor-crosshair"
         viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const clickX = e.clientX - rect.left;

@@ -1,11 +1,14 @@
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import tempfile
 import shutil
 import uuid
 import subprocess
+import time
+import os
+import threading
 
 from analysis import analyze_file, separate_audio_full
 
@@ -20,7 +23,55 @@ except ImportError:
     MADMOM_AVAILABLE = False
     print("[Startup] ℹ madmom module not found - using librosa engine only")
 
-app = FastAPI(title="Chord AI Backend", version="1.2.0")
+from contextlib import asynccontextmanager
+
+# Store separated audio files temporarily (in production, use S3/cloud storage)
+# Format: { id: {"paths": [path1, path2], "timestamp": float} }
+separated_files = {}
+
+def cleanup_loop():
+    """Background thread to clean up old files after 1 hour."""
+    while True:
+        try:
+            now = time.time()
+            to_delete = []
+            for fid, info in separated_files.items():
+                if now - info.get("timestamp", 0) > 3600: # 1 hour
+                    to_delete.append(fid)
+            
+            for fid in to_delete:
+                info = separated_files.pop(fid, {})
+                for p in info.get("paths", []):
+                    try:
+                        path = Path(p)
+                        if path.exists():
+                            path.unlink()
+                            print(f"[Cleanup] Deleted expired file: {path}")
+                    except Exception as e:
+                        print(f"[Cleanup] Error deleting {p}: {e}")
+        except Exception as e:
+            print(f"[Cleanup] Error in loop: {e}")
+        time.sleep(600) # Run every 10 minutes
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Preload models on startup
+    print("[Startup] Preloading models...")
+    try:
+        from analysis import _get_separator
+        # This will load the model into memory
+        _get_separator()
+        print("[Startup] ✓ Models preloaded and ready")
+    except Exception as e:
+        print(f"[Startup] ⚠️ Model preload failed: {e}")
+    
+    # Start cleanup thread
+    thread = threading.Thread(target=cleanup_loop, daemon=True)
+    thread.start()
+    print("[Startup] ✓ Cleanup thread started")
+    yield
+
+app = FastAPI(title="Chord AI Backend", version="1.3.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +83,7 @@ app.add_middleware(
 
 
 @app.post("/api/analyze")
-async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
+def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
     """Analyze audio file for chords.
     
     Args:
@@ -50,7 +101,10 @@ async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(Fal
         tmp_path = Path(tmp.name)
 
     try:
-        # If vocal separation is requested, we must use the librosa engine
+        # Check audio duration and loading are now handled robustly within analysis.py 
+        # using librosa.load(duration=300) to ensure CPU processing doesn't hang.
+        # This also bypasses Windows-specific ffmpeg binary issues for basic loading.
+
         if separate_vocals:
             print("[API] Vocal separation requested - using librosa engine")
             result = analyze_file(tmp_path, separate_vocals=True)
@@ -69,14 +123,20 @@ async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(Fal
         # If vocal separation was used, store the instrumental file and return its URL
         if "instrumentalPath" in result:
             file_id = str(uuid.uuid4())
-            separated_files[file_id] = result["instrumentalPath"]
+            path = result["instrumentalPath"]
+            separated_files[file_id] = {
+                "paths": [path],
+                "timestamp": time.time(),
+                "type": "analysis"
+            }
             result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
             print(f"Stored instrumental file with ID: {file_id}, URL: {result['instrumentalUrl']}")
             del result["instrumentalPath"]  # Remove the local path from response
         
         print(f"Returning result with keys: {result.keys()}")
         return JSONResponse(result)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc: 
+        print(f"[API] Analysis failed: {exc}")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
     finally:
         try:
@@ -85,12 +145,8 @@ async def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(Fal
             pass
 
 
-# Store separated audio files temporarily (in production, use S3/cloud storage)
-separated_files = {}
-
-
 @app.post("/api/separate")
-async def separate_audio(
+def separate_audio(
     file: UploadFile = File(...),
     format: str = Form("wav"),
 ):
@@ -119,6 +175,7 @@ async def separate_audio(
 
     try:
         # Perform full separation (writes WAV stems)
+        # Note: Analysis.py now handles truncation internally using librosa
         print(f"Starting separation for {file.filename}...")
         result = separate_audio_full(tmp_path)
 
@@ -170,7 +227,10 @@ async def separate_audio(
         separated_files[session_id] = {
             "vocals": str(vocals_path),
             "instrumental": str(instrumental_path),
+            "paths": [str(vocals_path), str(instrumental_path)],
             "format": format,
+            "timestamp": time.time(),
+            "type": "separation"
         }
 
         return JSONResponse(
@@ -205,7 +265,8 @@ async def download_instrumental(file_id: str, filename: str):
     if file_id not in separated_files:
         raise HTTPException(status_code=404, detail="File not found")
     
-    file_path = Path(separated_files[file_id])
+    info = separated_files[file_id]
+    file_path = Path(info["paths"][0])
     
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File no longer available")

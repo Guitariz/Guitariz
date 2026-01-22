@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -37,6 +37,7 @@ const VocalSplitterPage = () => {
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const [downloading, setDownloading] = useState<{ vocals: boolean; instrumental: boolean }>({
     vocals: false,
@@ -47,11 +48,6 @@ const VocalSplitterPage = () => {
   const [stemFormat, setStemFormat] = useState<"wav" | "mp3">("wav");
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-
-  const duration = useMemo(() => {
-    if (!vocalsAudio && !instrumentalAudio) return 0;
-    return Math.max(vocalsAudio?.duration ?? 0, instrumentalAudio?.duration ?? 0);
-  }, [instrumentalAudio, vocalsAudio]);
 
   const computePeaks = (audioBuffer: AudioBuffer, buckets = 400): number[] => {
     const channelData = audioBuffer.getChannelData(0);
@@ -69,6 +65,11 @@ const VocalSplitterPage = () => {
     return peaks;
   };
 
+  const duration = useMemo(() => {
+    if (!vocalsAudio && !instrumentalAudio) return 0;
+    return Math.max(vocalsAudio?.duration ?? 0, instrumentalAudio?.duration ?? 0);
+  }, [instrumentalAudio, vocalsAudio]);
+
   const vocalsPeaks = useMemo(() => (vocalsAudio ? computePeaks(vocalsAudio) : []), [vocalsAudio]);
   const instrumentalPeaks = useMemo(() => (instrumentalAudio ? computePeaks(instrumentalAudio) : []), [instrumentalAudio]);
 
@@ -79,13 +80,99 @@ const VocalSplitterPage = () => {
     }
   };
 
-  const updateClock = () => {
+  const updateClock = useCallback(() => {
+    if (!audioContextRef.current) return;
     const ctx = audioContextRef.current;
-    if (!ctx) return;
     const now = offsetRef.current + (isPlaying ? ctx.currentTime - startTimeRef.current : 0);
     setCurrentTime(clamp(now, 0, duration));
     rafRef.current = requestAnimationFrame(updateClock);
-  };
+  }, [duration, isPlaying]);
+
+  const teardownSources = useCallback(() => {
+    if (vocalsSourceRef.current) {
+      try { vocalsSourceRef.current.stop(0); } catch (e) { /* ignore */ }
+      vocalsSourceRef.current.disconnect();
+      vocalsSourceRef.current = null;
+    }
+    if (instrumentalSourceRef.current) {
+      try { instrumentalSourceRef.current.stop(0); } catch (e) { /* ignore */ }
+      instrumentalSourceRef.current.disconnect();
+      instrumentalSourceRef.current = null;
+    }
+  }, []);
+
+  const pause = useCallback(() => {
+    if (!isPlaying) return;
+    const ctx = audioContextRef.current;
+    if (!ctx) return;
+
+    const elapsed = ctx.currentTime - startTimeRef.current;
+    offsetRef.current = clamp(offsetRef.current + elapsed, 0, duration);
+    setCurrentTime(offsetRef.current);
+    teardownSources();
+    setIsPlaying(false);
+  }, [duration, isPlaying, teardownSources]);
+
+  const play = useCallback(async () => {
+    if (!vocalsAudio || !instrumentalAudio) return;
+    
+    const ctx = audioContextRef.current || new AudioContext();
+    audioContextRef.current = ctx;
+
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+
+    // If we're at the end, reset to beginning
+    if (offsetRef.current >= duration - 0.1) {
+      offsetRef.current = 0;
+    }
+
+    teardownSources();
+
+    const vSource = ctx.createBufferSource();
+    const iSource = ctx.createBufferSource();
+    vSource.buffer = vocalsAudio;
+    iSource.buffer = instrumentalAudio;
+
+    const vGain = vocalsGainRef.current || ctx.createGain();
+    const iGain = instrumentalGainRef.current || ctx.createGain();
+    vocalsGainRef.current = vGain;
+    instrumentalGainRef.current = iGain;
+    
+    vGain.gain.value = vocalsVolume / 100;
+    iGain.gain.value = instrumentalVolume / 100;
+
+    vSource.connect(vGain).connect(ctx.destination);
+    iSource.connect(iGain).connect(ctx.destination);
+
+    startTimeRef.current = ctx.currentTime;
+    vSource.start(0, offsetRef.current);
+    iSource.start(0, offsetRef.current);
+    
+    vocalsSourceRef.current = vSource;
+    instrumentalSourceRef.current = iSource;
+    setIsPlaying(true);
+
+    vSource.onended = () => {
+      // Only mark as ended if we actually played to the end (not stopped manually)
+      if (offsetRef.current + (ctx.currentTime - startTimeRef.current) >= duration - 0.1) {
+        setIsPlaying(false);
+        offsetRef.current = duration;
+        setCurrentTime(duration);
+      }
+    };
+  }, [vocalsAudio, instrumentalAudio, duration, vocalsVolume, instrumentalVolume, teardownSources]);
+
+  const seek = useCallback((time: number) => {
+    const clamped = clamp(time, 0, duration);
+    offsetRef.current = clamped;
+    setCurrentTime(clamped);
+    
+    if (isPlaying) {
+      play();
+    }
+  }, [duration, isPlaying, play]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -125,130 +212,90 @@ const VocalSplitterPage = () => {
   const processSeparation = async () => {
     if (!selectedFile) return;
 
-    toast({
-      title: "Splitting started",
-      description: "This can take a few minutes. You can keep this tab in the background - we’ll notify you when it’s done :))",
-    });
-
     setProcessing(true);
+    setUploadProgress(0);
+    
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      // Prefer MP3 for much faster transfers in production; WAV is still supported.
-      // Backend defaults to WAV if this field is omitted.
       formData.append("format", "mp3");
       
       const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
-
-      // If we're in production and VITE_API_URL is missing, warn the user
-      if (import.meta.env.PROD && !apiUrl) {
-        throw new Error("API URL is not configured. Please set VITE_API_URL in your environment variables.");
-      }
-
-      // Avoid accidental double slashes when joining URLs
       const endpoint = `${apiUrl}/api/separate`;
 
-      // Call backend API for separation
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
+      const result = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", endpoint);
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded * 100) / e.total));
+          }
+        });
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve(JSON.parse(xhr.responseText));
+            } catch (e) {
+              reject(new Error("Invalid response from server"));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.detail || `Separation failed (HTTP ${xhr.status})`));
+            } catch (e) {
+              reject(new Error(`Separation failed (HTTP ${xhr.status})`));
+            }
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error: Could not connect to backend."));
+        xhr.send(formData);
       });
 
-      if (!response.ok) {
-        // Extra diagnostics for deployed environments
-        console.error("Vocal Splitter API error", {
-          endpoint,
-          status: response.status,
-          statusText: response.statusText,
-          apiUrl,
-        });
-      }
-      
-      if (!response.ok) {
-        let errorText = "";
-        try {
-          const contentType = response.headers.get("content-type");
-          if (contentType?.includes("application/json")) {
-            const errorData = await response.json();
-            errorText = errorData.detail || errorData.message || JSON.stringify(errorData);
-          } else {
-            errorText = await response.text();
-          }
-        } catch (e) {
-          errorText = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorText || `Server returned ${response.status}`);
-      }
-      
-      const data = await response.json();
+      // Build absolute URLs robustly
+      const vocalsAbs = new URL(result.vocalsUrl, apiUrl + "/").toString();
+      const instrumentalAbs = new URL(result.instrumentalUrl, apiUrl + "/").toString();
 
-      // Build absolute URLs robustly, regardless of whether backend returns relative or absolute links.
-      const vocalsAbs = new URL(data.vocalsUrl, apiUrl + "/").toString();
-      const instrumentalAbs = new URL(data.instrumentalUrl, apiUrl + "/").toString();
-
-      // Mark as separated as soon as the backend responds with stem URLs.
-      // Fetching/decoding for preview can be slow in production (large WAVs),
-      // but downloads should be available immediately.
       setVocalsUrl(vocalsAbs);
       setInstrumentalUrl(instrumentalAbs);
-      setStemFormat((data.format || "wav") === "mp3" ? "mp3" : "wav");
+      setStemFormat((result.format || "wav") === "mp3" ? "mp3" : "wav");
       setSeparated(true);
+      setUploadProgress(null);
       offsetRef.current = 0;
       setCurrentTime(0);
 
       toast({
         title: "Separation complete",
-        description: "Stems are ready. Preview may take a bit to load depending on file size.",
+        description: "Stems are ready. Preview may take a bit to load.",
       });
 
-      // Background-friendly notification (best-effort)
       void notifyDone();
 
-      // Load the separated audio files for in-browser preview (best effort).
-      // If this fails, keep downloads available.
       const ctx = new AudioContext();
       audioContextRef.current = ctx;
 
       try {
-        // Fetch and decode vocals
-        console.log("Fetching vocals…", vocalsAbs);
         const vocalsResponse = await fetch(vocalsAbs);
-        if (!vocalsResponse.ok) throw new Error(`Failed to fetch vocals (HTTP ${vocalsResponse.status})`);
         const vocalsArrayBuffer = await vocalsResponse.arrayBuffer();
         const vocalsBuffer = await ctx.decodeAudioData(vocalsArrayBuffer);
         setVocalsAudio(vocalsBuffer);
 
-        // Fetch and decode instrumental
-        console.log("Fetching instrumental…", instrumentalAbs);
         const instrumentalResponse = await fetch(instrumentalAbs);
-        if (!instrumentalResponse.ok) throw new Error(`Failed to fetch instrumental (HTTP ${instrumentalResponse.status})`);
         const instrumentalArrayBuffer = await instrumentalResponse.arrayBuffer();
         const instrumentalBuffer = await ctx.decodeAudioData(instrumentalArrayBuffer);
         setInstrumentalAudio(instrumentalBuffer);
       } catch (e) {
-        console.error("Preview load failed (downloads still available):", e);
         toast({
           title: "Preview unavailable",
-          description: "Stems are ready to download, but the in-browser preview could not be prepared.",
+          description: "Stems are ready to download, but the preview could not be prepared.",
         });
       }
     } catch (error) {
-      console.error("Separation error:", error);
-      
+      setUploadProgress(null);
       let errorMessage = "Could not separate audio. Please try again.";
-      
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        errorMessage = "Backend server is not running. Please ensure the backend is deployed and accessible.";
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
-      // Log full error details to console for debugging
-      console.error("Full error details:", {
-        error,
-        message: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      if (error instanceof Error) errorMessage = error.message;
       
       toast({
         title: "Separation failed",
@@ -257,83 +304,6 @@ const VocalSplitterPage = () => {
       });
     } finally {
       setProcessing(false);
-    }
-  };
-
-  const stopPlayback = () => {
-    try {
-      vocalsSourceRef.current?.stop(0);
-    } catch (e) {
-      // ignore
-    }
-    try {
-      instrumentalSourceRef.current?.stop(0);
-    } catch (e) {
-      // ignore
-    }
-    vocalsSourceRef.current?.disconnect();
-    instrumentalSourceRef.current?.disconnect();
-    vocalsSourceRef.current = null;
-    instrumentalSourceRef.current = null;
-    setIsPlaying(false);
-  };
-
-  const startPlayback = () => {
-    if (!vocalsAudio || !instrumentalAudio || !audioContextRef.current) return;
-    const ctx = audioContextRef.current;
-
-    stopPlayback();
-
-    const vocalsSource = ctx.createBufferSource();
-    const instrumentalSource = ctx.createBufferSource();
-    vocalsSource.buffer = vocalsAudio;
-    instrumentalSource.buffer = instrumentalAudio;
-
-    const vocalsGain = vocalsGainRef.current || ctx.createGain();
-    const instrumentalGain = instrumentalGainRef.current || ctx.createGain();
-    vocalsGainRef.current = vocalsGain;
-    instrumentalGainRef.current = instrumentalGain;
-
-    vocalsGain.gain.value = vocalsVolume / 100;
-    instrumentalGain.gain.value = instrumentalVolume / 100;
-
-    vocalsSource.connect(vocalsGain).connect(ctx.destination);
-    instrumentalSource.connect(instrumentalGain).connect(ctx.destination);
-
-    vocalsSourceRef.current = vocalsSource;
-    instrumentalSourceRef.current = instrumentalSource;
-
-    startTimeRef.current = ctx.currentTime;
-    vocalsSource.start(0, offsetRef.current);
-    instrumentalSource.start(0, offsetRef.current);
-    setIsPlaying(true);
-
-    vocalsSource.onended = () => {
-      setIsPlaying(false);
-      offsetRef.current = duration;
-      setCurrentTime(duration);
-    };
-  };
-
-  const playPreview = () => {
-    if (!vocalsAudio || !instrumentalAudio || !audioContextRef.current) return;
-    if (isPlaying) {
-      const ctx = audioContextRef.current;
-      const elapsed = ctx.currentTime - startTimeRef.current;
-      offsetRef.current = clamp(offsetRef.current + elapsed, 0, duration);
-      setCurrentTime(offsetRef.current);
-      stopPlayback();
-      return;
-    }
-    startPlayback();
-  };
-
-  const seekPreview = (time: number) => {
-    const clamped = clamp(time, 0, duration);
-    offsetRef.current = clamped;
-    setCurrentTime(clamped);
-    if (isPlaying) {
-      startPlayback();
     }
   };
 
@@ -440,13 +410,12 @@ const VocalSplitterPage = () => {
   useEffect(() => {
     return () => {
       stopRaf();
-      stopPlayback();
+      teardownSources();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [teardownSources]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
@@ -540,7 +509,9 @@ const VocalSplitterPage = () => {
                     {processing ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Separating Audio… (this may take a few minutes)
+                        {uploadProgress !== null && uploadProgress < 100 
+                          ? `Uploading… ${uploadProgress}%` 
+                          : "Separating Audio… (this may take a few minutes)"}
                       </>
                     ) : (
                       <>
@@ -551,13 +522,29 @@ const VocalSplitterPage = () => {
                   </Button>
                 )}
 
+                {/* Upload Progress Bar */}
+                {processing && uploadProgress !== null && uploadProgress < 100 && (
+                  <div className="w-full space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Uploading to Server</span>
+                      <span className="text-[10px] text-blue-400 font-mono">{uploadProgress}%</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Controls */}
                 {separated && (
                   <div className="space-y-8">
                     {/* Preview + Seek */}
                     <div className="space-y-4">
                       <Button
-                        onClick={playPreview}
+                        onClick={isPlaying ? pause : play}
                         className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
                       >
                         {isPlaying ? "⏸ Pause Preview" : "▶ Play Preview"}
@@ -575,7 +562,7 @@ const VocalSplitterPage = () => {
                               duration={duration}
                               currentTime={currentTime}
                               chordSegments={[]}
-                              onSeek={seekPreview}
+                              onSeek={seek}
                             />
                           </div>
                         </div>
@@ -591,7 +578,7 @@ const VocalSplitterPage = () => {
                               duration={duration}
                               currentTime={currentTime}
                               chordSegments={[]}
-                              onSeek={seekPreview}
+                              onSeek={seek}
                             />
                           </div>
                         </div>

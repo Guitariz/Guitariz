@@ -7,6 +7,62 @@ from typing import List, Tuple, Optional
 import librosa
 import numpy as np
 import soundfile as sf
+import torch
+import gc
+
+# Configure torch for CPU efficiency
+import multiprocessing
+num_cores = min(multiprocessing.cpu_count(), 4)
+torch.set_num_threads(num_cores)
+
+# Global model cache to avoid reloading from disk on every request
+_DEMUCS_WRAPPER = None
+
+class DemucsSeparator:
+    def __init__(self, model_name="htdemucs"):
+        from demucs.pretrained import get_model
+        print(f"[Demucs] Loading model {model_name} into memory...")
+        self.model = get_model(model_name)
+        self.model.cpu()
+        self.model.eval()
+        self.samplerate = self.model.samplerate
+
+    def separate_audio_file(self, path):
+        import torchaudio
+        from demucs.apply import apply_model
+        
+        # Load with librosa to bypass torchaudio backend issues on Windows
+        # We process in chunks to stay within memory limits on CPU
+        print(f"[Demucs] Loading audio {Path(path).name}...")
+        y, sr = librosa.load(str(path), sr=self.samplerate, mono=False, duration=300) # Max 5 mins for web CPU
+        
+        if len(y.shape) == 1:
+            wav = torch.from_numpy(y).unsqueeze(0)
+        else:
+            wav = torch.from_numpy(y)
+
+        if wav.shape[0] > self.model.audio_channels:
+             wav = wav[:self.model.audio_channels]
+        elif wav.shape[0] < self.model.audio_channels:
+             wav = wav.repeat(self.model.audio_channels, 1)
+
+        # Standard demucs normalization 
+        ref = wav.mean(0)
+        wav = (wav - ref.mean()) / (ref.std() + 1e-8)
+        
+        print(f"[Demucs] Running inference on {wav.shape[1]/sr:.1f}s of audio (CPU)...")
+        with torch.no_grad():
+            # Use overlap=0.1 and shifts=0 for maximum speed on CPU
+            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
+        
+        sources = sources * ref.std() + ref.mean()
+        return sr, dict(zip(self.model.sources, sources))
+
+def _get_separator():
+    global _DEMUCS_WRAPPER
+    if _DEMUCS_WRAPPER is None:
+        _DEMUCS_WRAPPER = DemucsSeparator()
+    return _DEMUCS_WRAPPER
 
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
@@ -54,82 +110,46 @@ def _ffmpeg_to_wav(src: Path, dst: Path):
 def _separate_vocals(audio_path: Path) -> Optional[Path]:
     """Separate vocals from music using Demucs. Returns path to instrumental track."""
     try:
-        from demucs.pretrained import get_model
-        from demucs.apply import apply_model
-        import torch
-        import gc
+        wrapper = _get_separator()
+        sr, sources = wrapper.separate_audio_file(audio_path)
         
-        # Load pre-trained Demucs model
-        # Using htdemucs_ft for better quality if memory allows
-        model = get_model("htdemucs")
-        model.cpu() 
-        model.eval()
+        # Instrumental = drum + bass + other
+        instrumental = sources["drums"] + sources["bass"] + sources["other"]
         
-        # Load audio
-        wav, sr = librosa.load(audio_path, sr=44100, mono=False)
-        if wav.ndim == 1:
-            wav = np.stack([wav, wav])
-        
-        wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
-        
-        with torch.no_grad():
-            sources = apply_model(model, wav_tensor, device="cpu", shifts=1, split=True)
-        
-        stems = sources[0]
-        instrumental = stems[0] + stems[1] + stems[2]
+        # Convert to numpy for soundfile
+        instrumental_np = instrumental.cpu().numpy().T
         
         output_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
-        sf.write(output_path, instrumental.cpu().numpy().T, sr)
+        sf.write(str(output_path), instrumental_np, sr)
         
-        # Free memory immediately
-        del model
-        del sources
-        del stems
-        del instrumental
+        print(f"[Demucs] Done. Saved instrumental.")
         gc.collect()
-        
         return output_path
         
     except Exception as e:
         print(f"Vocal separation failed: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
 def separate_audio_full(audio_path: Path) -> Optional[dict]:
     """Separate audio into vocals and instrumental tracks. Returns paths to both."""
     try:
-        from demucs.pretrained import get_model
-        from demucs.apply import apply_model
-        import torch
+        wrapper = _get_separator()
+        sr, sources = wrapper.separate_audio_file(audio_path)
         
-        # Load pre-trained Demucs model
-        model = get_model("htdemucs")
-        model.cpu()
-        model.eval()
+        vocals = sources["vocals"].cpu().numpy().T
+        instrumental = (sources["drums"] + sources["bass"] + sources["other"]).cpu().numpy().T
         
-        # Load audio
-        wav, sr = librosa.load(audio_path, sr=44100, mono=False)
-        if wav.ndim == 1:
-            wav = np.stack([wav, wav])
-        
-        # Convert to torch tensor
-        wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
-        
-        # Apply separation
-        with torch.no_grad():
-            sources = apply_model(model, wav_tensor, device="cpu", shifts=1, split=True)
-        
-        # Extract stems: [drums, bass, other, vocals]
-        stems = sources[0]
-        vocals = stems[3]
-        instrumental = stems[0] + stems[1] + stems[2]
-        
-        # Save both tracks
         vocals_path = audio_path.parent / f"{audio_path.stem}_vocals.wav"
         instrumental_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
         
-        sf.write(vocals_path, vocals.cpu().numpy().T, sr)
-        sf.write(instrumental_path, instrumental.cpu().numpy().T, sr)
+        sf.write(str(vocals_path), vocals, sr)
+        sf.write(str(instrumental_path), instrumental, sr)
+        
+        print(f"[Demucs] Done. Stems saved.")
+        gc.collect()
         
         return {
             "vocals": vocals_path,
@@ -233,6 +253,10 @@ def _segment_chords(
 
 
 def _simplify_chord(chord_name: str) -> str:
+    """
+    Simplifies complex chords to their basic versions.
+    Keeping 7ths and sustained chords as they are musically distinct.
+    """
     if chord_name == "N.C.":
         return "N.C."
     
@@ -244,13 +268,24 @@ def _simplify_chord(chord_name: str) -> str:
         root = chord_name[0]
         suffix = chord_name[1:]
     
+    # Remove complex extensions while keeping the core flavor
+    # Mapping table for simplification
     if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
+        if "7" in suffix or "6" in suffix:
+            return f"{root}min7" # Group min7, m6 etc to min7
         return f"{root}min"
+    
     if suffix.startswith("dim"):
         return f"{root}dim"
     if suffix.startswith("aug"):
         return f"{root}aug"
-    # Treat sus2, sus4, 7, maj7, 6 etc as major for "simple" view
+    if "sus2" in suffix:
+        return f"{root}sus2"
+    if "sus4" in suffix:
+        return f"{root}sus4"
+    if "7" in suffix:
+        return f"{root}7"
+    
     return root
 
 
@@ -388,17 +423,23 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
         else:
             print("Vocal separation failed, using original audio")
     
-    # Try loading directly first (librosa + soundfile/audioread can handle many formats)
+    # Try loading directly first (librosa handles most formats including MP3)
     try:
-        y, sr = librosa.load(str(actual_path), sr=22050, mono=True)
-    except Exception:
+        # Limit to 5 minutes for CPU safety
+        print(f"[Analysis] Loading audio {actual_path.name} (max 300s)...")
+        y, sr = librosa.load(str(actual_path), sr=22050, mono=True, duration=300)
+    except Exception as e:
         # Fallback to ffmpeg only if direct load fails
+        print(f"[Analysis] Librosa load failed, trying ffmpeg fallback: {e}")
         try:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp_wav:
+                # We need to use shutil to write to the temp file if we want to bypass subprocess sometimes,
+                # but ffmpeg is still needed for this specific fallback.
                 _ffmpeg_to_wav(actual_path, Path(tmp_wav.name))
-                y, sr = librosa.load(tmp_wav.name, sr=22050, mono=True)
-        except Exception as e:
-            raise RuntimeError(f"Could not load audio file. Please ensure it is a valid audio format. (Error: {e})")
+                y, sr = librosa.load(tmp_wav.name, sr=22050, mono=True, duration=300)
+        except Exception as e2:
+            print(f"[Analysis] Critical failure: Could not load audio. {e2}")
+            raise RuntimeError(f"Could not load audio file. (Error: {e2})")
 
     if y.size == 0:
         return {"tempo": 0, "key": "C", "scale": "major", "chords": []}

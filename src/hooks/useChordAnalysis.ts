@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { analyzeTrack } from "@/lib/analyzeAudio";
 import { analyzeRemote } from "@/lib/api/analyzeClient";
 import { AnalysisResult } from "@/types/chordAI";
@@ -8,6 +8,7 @@ export type UseChordAnalysisState = {
   loading: boolean;
   error: string | null;
   instrumentalUrl?: string; // URL to instrumental track when vocal separation was used
+  uploadProgress?: number; // Upload progress percentage (0-100)
 };
 
 export const useChordAnalysis = (
@@ -23,11 +24,13 @@ export const useChordAnalysis = (
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | undefined>(undefined);
+  const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
+  const currentXhrRef = useRef<XMLHttpRequest | null>(null);
+  const requestIdRef = useRef<number>(0);
 
   useEffect(() => {
     // If we have a cached result for this file+settings combo, use it
     if (cachedResult && cacheKey) {
-      console.log("Using cached analysis result for key:", cacheKey);
       setResult(cachedResult.result);
       setInstrumentalUrl(cachedResult.instrumentalUrl);
       setLoading(false);
@@ -37,65 +40,92 @@ export const useChordAnalysis = (
 
     // Only run analysis when file changes
     if (!file) return;
-    let isCancelled = false;
+    
+    // Cancel previous request
+    if (currentXhrRef.current) {
+      currentXhrRef.current.abort();
+      currentXhrRef.current = null;
+    }
+    
+    // Generate unique ID for this request
+    const thisRequestId = ++requestIdRef.current;
 
     const run = async () => {
       try {
         setLoading(true);
         setError(null);
         setInstrumentalUrl(undefined);
+        setUploadProgress(0);
         
         // Prefer remote analysis when a file is available
         if (useRemote && file) {
           try {
             const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
-            const remote = await analyzeRemote(file, undefined, separateVocals, useMadmom);
-            console.log("Analysis result:", remote);
-            console.log("API URL:", apiUrl);
-            if (!isCancelled) {
+            const remote = await analyzeRemote(
+              file, 
+              undefined, 
+              separateVocals, 
+              useMadmom, 
+              (percent) => {
+                setUploadProgress(Math.round(percent));
+              },
+              (xhr) => {
+                // Store XHR so we can cancel it if needed
+                currentXhrRef.current = xhr;
+              }
+            );
+
+            // Only update if this is still the latest request
+            if (thisRequestId === requestIdRef.current) {
               setResult(remote);
+              setUploadProgress(undefined); // Clear progress when complete
+              currentXhrRef.current = null; // Clear XHR reference
               // If vocal separation was used, construct the full URL for the instrumental
               if (remote.instrumentalUrl) {
                 const fullUrl = apiUrl + remote.instrumentalUrl;
-                console.log("Setting instrumental URL:", fullUrl);
                 setInstrumentalUrl(fullUrl);
-              } else {
-                console.log("No instrumentalUrl in response");
               }
               return;
             }
           } catch (remoteErr) {
-            console.warn("Remote analysis failed, falling back to local", remoteErr);
+            setUploadProgress(undefined); // Clear progress on error
+            currentXhrRef.current = null; // Clear XHR reference
             // Fall back to local if remote fails
-            if (audioBuffer && !isCancelled) {
+            if (audioBuffer && thisRequestId === requestIdRef.current) {
               const local = await analyzeTrack(audioBuffer);
-              if (!isCancelled) setResult(local);
+              if (thisRequestId === requestIdRef.current) setResult(local);
             }
           }
         } else if (audioBuffer) {
           // Only use local analysis as fallback or if useRemote is false
           const local = await analyzeTrack(audioBuffer);
-          if (!isCancelled) setResult(local);
-        } else if (!isCancelled) {
+          if (thisRequestId === requestIdRef.current) setResult(local);
+        } else if (thisRequestId === requestIdRef.current) {
           setError("No audio available for analysis.");
         }
       } catch (err) {
-        console.error(err);
         const message = err instanceof Error ? err.message : "Analysis failed. Try another file.";
-        if (!isCancelled) setError(message);
+        if (thisRequestId === requestIdRef.current) {
+          setError(message);
+          setUploadProgress(undefined); // Clear progress on error
+          currentXhrRef.current = null; // Clear XHR reference
+        }
       } finally {
-        if (!isCancelled) setLoading(false);
+        if (thisRequestId === requestIdRef.current) {
+          setLoading(false);
+          setUploadProgress(undefined); // Clear progress when done
+          currentXhrRef.current = null; // Clear XHR reference
+        }
       }
     };
 
     run();
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [file, useRemote, separateVocals, cacheKey, cachedResult]);
+    // No cleanup needed - requestId comparison handles stale results
+    return () => {};
+  }, [file, useRemote, separateVocals, cacheKey, cachedResult, useMadmom]);
 
-  return { result, loading, error, instrumentalUrl };
+  return { result, loading, error, instrumentalUrl, uploadProgress };
 };
 
 export default useChordAnalysis;
