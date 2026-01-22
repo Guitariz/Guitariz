@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     print("[Startup] ✓ Cleanup thread started")
     yield
 
-app = FastAPI(title="Chord AI Backend", version="1.3.0", lifespan=lifespan)
+app = FastAPI(title="Chord AI Backend", version="1.3.2", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -89,7 +89,7 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
     Args:
         file: Audio file to analyze
         separate_vocals: If True, separate vocals before analysis for better accuracy (slower)
-        use_madmom: If True, use fast madmom engine (~5-10s). If False, use librosa (slower but works with vocal separation)
+        use_madmom: If True, use fast madmom engine. If False, use librosa (detailed analysis)
     """
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_madmom={use_madmom})")
     if not file.filename:
@@ -101,23 +101,22 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
         tmp_path = Path(tmp.name)
 
     try:
-        # Check audio duration and loading are now handled robustly within analysis.py 
-        # using librosa.load(duration=300) to ensure CPU processing doesn't hang.
-        # This also bypasses Windows-specific ffmpeg binary issues for basic loading.
-
-        if separate_vocals:
-            print("[API] Vocal separation requested - using librosa engine")
+        # The 'use_madmom' flag is the primary engine selector (Fast vs Detailed)
+        if not use_madmom:
+            # User wants MORE ACCURATE -> Force Librosa
+            print(f"[API] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
+            result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+        elif separate_vocals:
+            # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
+            print(f"[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
             result = analyze_file(tmp_path, separate_vocals=True)
-        elif use_madmom and MADMOM_AVAILABLE:
-            # Use madmom engine for fast analysis (no vocal separation)
-            print("[API] Using madmom engine (fast analysis)")
+        elif MADMOM_AVAILABLE:
+            # FAST -> Madmom
+            print(f"[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
             result = analyze_file_madmom(tmp_path)
         else:
-            # Fall back to librosa engine
-            if use_madmom and not MADMOM_AVAILABLE:
-                print("[API] madmom requested but not available - using librosa engine")
-            else:
-                print("[API] Using librosa engine without vocal separation")
+            # Fallback
+            print(f"[API] Engine: LIBROSA (Fallback) | Madmom not found")
             result = analyze_file(tmp_path, separate_vocals=False)
         
         # If vocal separation was used, store the instrumental file and return its URL

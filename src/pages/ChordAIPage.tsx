@@ -8,7 +8,7 @@ import AnalysisSummary from "@/components/chord-ai/AnalysisSummary";
 import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
-import { ChordSegment, AnalysisResult } from "@/types/chordAI";
+import { AnalysisResult } from "@/types/chordAI";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download } from "lucide-react";
@@ -30,6 +30,7 @@ const ChordAIPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSimple, setShowSimple] = useState(false);
   const [separateVocals, setSeparateVocals] = useState(false);
+  const [useMadmom, setUseMadmom] = useState(true);
   const [dragActive, setDragActive] = useState(false);
   const [loadedInstrumentalUrl, setLoadedInstrumentalUrl] = useState<string | null>(null);
   const [isInstrumentalLoaded, setIsInstrumentalLoaded] = useState(false);
@@ -38,16 +39,11 @@ const ChordAIPage = () => {
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
   
   // Cache for analysis results to avoid re-analyzing when toggling
-  const [cachedResults, setCachedResults] = useState<{
-    withVocalFilter?: { result: AnalysisResult; instrumentalUrl?: string };
-    withoutVocalFilter?: { result: AnalysisResult };
-  }>({});
+  const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
   const [currentFileId, setCurrentFileId] = useState<string | null>(null);
 
-  const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}` : undefined;
-  const cachedResult = currentFileId 
-    ? (separateVocals ? cachedResults.withVocalFilter : cachedResults.withoutVocalFilter)
-    : undefined;
+  const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${useMadmom}` : undefined;
+  const cachedResult = cacheKey ? cachedResults[cacheKey] : undefined;
 
   const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress } = useChordAnalysis(
     audioBuffer, 
@@ -55,31 +51,62 @@ const ChordAIPage = () => {
     true, 
     separateVocals,
     cacheKey,
-    cachedResult
+    cachedResult,
+    useMadmom
   );
 
   // 1. Initial File Analysis Toast
+  const hasCachedResult = !!cachedResult;
   useEffect(() => {
-    if (analysisLoading && !separateVocals && !cachedResults.withoutVocalFilter && currentFileId) {
-      toast({
-        title: "Analyzing audio",
-        description: "Generating harmonic map. This will only take some seconds.",
-      });
+    if (analysisLoading && !hasCachedResult && currentFileId) {
+      if (separateVocals) {
+        toast({
+          title: "Premium Analysis Engine ",
+          description: "Vocal filtering enabled. This uses the high-precision pipeline (~2-4 mins on CPU).",
+        });
+      } else {
+        toast({
+          title: useMadmom ? "Fast Analysis " : "Detailed Analysis",
+          description: useMadmom 
+            ? "Using Madmom engine for quick results (~30-60s)." 
+            : "Using Librosa engine for focused mapping (~2-3 min).",
+        });
+      }
     }
-  }, [analysisLoading, !!cachedResults.withoutVocalFilter, separateVocals, currentFileId]);
+  }, [analysisLoading, hasCachedResult, separateVocals, currentFileId, useMadmom, toast, cachedResult]);
 
-  // 2. Vocal Filter Start Toast (Triggered immediately on toggle if not cached)
+  // 2. Success Toasts & Caching
+  const lastNotifiedResultRef = useRef<string | null>(null);
   useEffect(() => {
-    if (separateVocals && !cachedResults.withVocalFilter && currentFileId) {
-      const hasOriginalChords = cachedResults.withoutVocalFilter?.result?.chords?.length;
-      toast({
-        title: "Vocal filter process is on :))",
-        description: hasOriginalChords 
-          ? "We're cleaning up the audio, but you can keep jamming with the original chords for now! It will take about 2-3 minutes to ready the instrumentals."
-          : "Isolating instrumentals and detecting chords. This will take about 2-3 minutes!",
-      });
+    if (result && !analysisLoading) {
+      // Cache the result
+      if (cacheKey && !cachedResults[cacheKey]) {
+        setCachedResults(prev => ({
+          ...prev,
+          [cacheKey]: { result, instrumentalUrl }
+        }));
+      }
+
+      // Notification logic
+      if (separateVocals && !instrumentalUrl) return; // Wait for the URL if we're in vocal mode
+      
+      const resKey = `${currentFileId}-${separateVocals}-${useMadmom}`;
+      if (lastNotifiedResultRef.current === resKey) return;
+      lastNotifiedResultRef.current = resKey;
+
+      if (separateVocals) {
+        toast({
+          title: "High-precision map ready! :))",
+          description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
+        });
+      } else {
+        toast({ 
+          title: useMadmom ? "Fast map ready :))" : "Detailed map ready :))", 
+          description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM` 
+        });
+      }
     }
-  }, [separateVocals, currentFileId, !!cachedResults.withVocalFilter]);
+  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, useMadmom, cacheKey, cachedResults, toast]);
 
   // 3. Notify on errors
   useEffect(() => {
@@ -92,41 +119,7 @@ const ChordAIPage = () => {
     }
   }, [analysisError, toast]);
 
-  // 4. Success Toasts & Caching
-  const lastNotifiedResultRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (result && !analysisLoading) {
-      // Cache the result
-      const key = separateVocals ? 'withVocalFilter' : 'withoutVocalFilter';
-      if (!cachedResults[key]) {
-        setCachedResults(prev => ({
-          ...prev,
-          [key]: { result, instrumentalUrl }
-        }));
-      }
-
-      // Notification logic
-      if (separateVocals && !instrumentalUrl) return; // Wait for the URL if we're in vocal mode
-      
-      const resultKey = `${currentFileId}-${separateVocals}`;
-      if (lastNotifiedResultRef.current === resultKey) return;
-      lastNotifiedResultRef.current = resultKey;
-
-      if (separateVocals) {
-        toast({
-          title: "Instrumental chords ready! :))",
-          description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
-        });
-      } else {
-        toast({ 
-          title: "Harmonic map ready :))", 
-          description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM` 
-        });
-      }
-    }
-  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, toast]);
-
-  // 5. Handle file recognition toasts (only for fresh uploads, not background switches)
+  // 4. Handle file recognition toasts (only for fresh uploads, not background switches)
   useEffect(() => {
     if (fileInfo && !analysisLoading && !isInstrumentalLoaded && !separateVocals && !result) {
       toast({
@@ -187,27 +180,17 @@ const ChordAIPage = () => {
     return base || [];
   }, [result, showSimple]);
 
-  const { currentChord, prevChord, nextChord } = useMemo(() => {
-    if (!currentChords.length) return { currentChord: undefined, prevChord: undefined, nextChord: undefined };
+  const { currentChord } = useMemo(() => {
+    if (!currentChords.length) return { currentChord: undefined };
     
     const activeIndex = currentChords.findIndex((seg) => currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1));
     
     if (activeIndex === -1) {
-      // If we're at the very beginning and no segment covers time 0
-      if (currentTime < currentChords[0]?.start) {
-        return { 
-          currentChord: undefined, 
-          prevChord: undefined, 
-          nextChord: currentChords[0] 
-        };
-      }
-      return { currentChord: undefined, prevChord: undefined, nextChord: undefined };
+      return { currentChord: undefined };
     }
     
     return {
-      currentChord: currentChords[activeIndex],
-      prevChord: activeIndex > 0 ? currentChords[activeIndex - 1] : undefined,
-      nextChord: activeIndex < currentChords.length - 1 ? currentChords[activeIndex + 1] : undefined
+      currentChord: currentChords[activeIndex]
     };
   }, [currentTime, currentChords]);
 
@@ -260,7 +243,25 @@ const ChordAIPage = () => {
               {/* Analysis Settings - Always visible */}
               <div className="flex items-center justify-end gap-3">
                 <div className={cn(
-                  "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all",
+                  "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
+                  analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
+                )}>
+                  <div className="flex flex-col items-end">
+                    <Label htmlFor="engine-switch-top" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
+                      More Accurate
+                    </Label>
+                    {analysisLoading && <span className="text-[8px] text-amber-500/80 font-bold uppercase tracking-widest leading-none">{useMadmom ? "Switching..." : "Tuning..."}</span>}
+                  </div>
+                  <Switch
+                    id="engine-switch-top"
+                    checked={!useMadmom}
+                    onCheckedChange={(checked) => setUseMadmom(!checked)}
+                    disabled={analysisLoading}
+                  />
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
                   analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
                 )}>
                   <div className="flex flex-col items-end">
@@ -278,14 +279,14 @@ const ChordAIPage = () => {
                 </div>
                 
                 <div className={cn(
-                  "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all",
+                  "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
                   analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
                 )}>
                   <div className="flex flex-col items-end">
                     <Label htmlFor="vocal-switch-top" className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold cursor-pointer">
                       Vocal Filter
                     </Label>
-                    {analysisLoading && <span className="text-[8px] text-amber-500/80 font-bold uppercase tracking-widest leading-none">Processing...</span>}
+                    {analysisLoading && <span className="text-[8px] text-amber-500/80 font-bold uppercase tracking-widest leading-none">Active</span>}
                   </div>
                   <Switch
                     id="vocal-switch-top"
