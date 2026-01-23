@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
 import { AnalysisResult } from "@/types/chordAI";
+import ChordDiagram from "@/components/chord/ChordDiagram";
+import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download } from "lucide-react";
@@ -202,6 +204,20 @@ const ChordAIPage = () => {
       currentChord: currentChords[activeIndex]
     };
   }, [currentTime, currentChords]);
+
+  const activeChordVoicing = useMemo(() => {
+    if (!currentChord) return null;
+    
+    // Normalize AI chord name for the library (e.g., Cmin -> Cm, C:maj -> C)
+    const normalized = currentChord.chord
+      .replace(":maj", "")
+      .replace("min7", "m7")
+      .replace("min", "m")
+      .replace(":", "");
+      
+    const found = findChordByName(normalized, chordLibraryData.roots);
+    return found?.variant.voicings[0] || null;
+  }, [currentChord]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
@@ -528,14 +544,31 @@ const ChordAIPage = () => {
                   confidence={0.96}
                 />
 
-                <div className="pt-6 border-t border-white/5 space-y-4">
-                   <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
-                   <div className="text-7xl font-light tracking-tighter text-white tabular-nums min-h-[1.2rem] transition-all duration-300">
-                     {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
+                <div className="pt-6 border-t border-white/5 space-y-6">
+                   <div className="space-y-4">
+                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
+                     <div className="flex items-end justify-between gap-4">
+                       <div className="text-7xl font-light tracking-tighter text-white tabular-nums min-h-[1.2rem] transition-all duration-300">
+                         {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
+                       </div>
+                       {currentChord && (
+                         <div className="text-[10px] text-muted-foreground/40 font-mono pb-2">
+                           ENDS AT {formatTime(currentChord.end || 0)}
+                         </div>
+                       )}
+                     </div>
                    </div>
-                   {currentChord && (
-                     <div className="text-[10px] text-muted-foreground/40 font-mono">
-                       ENDS AT {formatTime(currentChord.end || 0)}
+
+                   {currentChord && activeChordVoicing && (
+                     <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-4 flex justify-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+                       <div className="scale-90 origin-center">
+                         <ChordDiagram
+                           frets={activeChordVoicing.frets}
+                           fingers={activeChordVoicing.fingers}
+                           chordName={currentChord.chord}
+                           compact={true}
+                         />
+                       </div>
                      </div>
                    )}
                 </div>
