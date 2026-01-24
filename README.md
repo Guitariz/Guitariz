@@ -2,7 +2,7 @@
 
 Full-stack music learning web app featuring interactive guitar/piano tools and optional AI-assisted audio analysis (chord detection + vocal/instrumental separation).
 
-- Live demo: https://guitariz.vercel.app
+- Live demo: https://guitariz.studio
 - License: MIT
 
 ## Features
