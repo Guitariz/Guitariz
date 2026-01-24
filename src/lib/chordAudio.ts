@@ -362,7 +362,8 @@ const playSampledPiano = (
 export const playChord = (
   frets: number[], 
   volume: number = 0.3,
-  instrument: InstrumentType = 'piano'
+  instrument: InstrumentType = 'piano',
+  direction: 'down' | 'up' = 'down'
 ): void => {
   const ctx = initAudioContext();
   const now = ctx.currentTime;
@@ -382,7 +383,11 @@ export const playChord = (
     const pan = (stringIndex / 5) * 0.8 - 0.4;
     
     // Low strings play first in a standard downstrum (index 0 first)
-    const timeOffset = stringIndex * strumDelay;
+    // High strings play first in an upstrum (index 5 first)
+    const timeOffset = direction === 'down' 
+      ? stringIndex * strumDelay 
+      : (5 - stringIndex) * strumDelay;
+
     const playTime = now + timeOffset;
 
     if (instrument === 'piano') {

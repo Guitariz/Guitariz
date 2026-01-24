@@ -13,7 +13,7 @@ import { DEFAULT_KEYMAP, KeymapConfig } from "@/types/keyboardTypes";
 import { QWERTY_KEYMAP, AZERTY_KEYMAP, KeyboardPreset } from "@/types/pianoTypes";
 import { detectChords, fretboardNotesToMidi, midiToPitchClass, pitchClassToNote } from "@/lib/chordDetection";
 import { DetectionStrictness } from "@/types/chordDetectionTypes";
-import { playNote } from "@/lib/chordAudio";
+import { playNote, playChord } from "@/lib/chordAudio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -395,35 +395,28 @@ const Fretboard = () => {
     const pattern = getStrumPattern();
     if (pattern.length === 0) return;
 
-    pattern.forEach((noteData) => {
-      const jitter = Math.floor((Math.random() - 0.5) * 10); // +/-5ms humanization
-      const delay = Math.max(0, noteData.indexInStrum * strumSpeed + jitter);
-
-      setTimeout(() => {
-        const freq = getNoteFrequency(noteData.string, noteData.fret);
-        const velocity = getVelocity(noteData.indexInStrum, pattern.length);
-        playNote(freq, 1.8, velocity, 'piano');
-      }, delay);
+    // Convert pattern to a 6-fret array for playChord
+    const frets = [-1, -1, -1, -1, -1, -1];
+    pattern.forEach(p => {
+      frets[p.string] = p.fret;
     });
-  }, [getStrumPattern, getNoteFrequency, getVelocity, strumSpeed]);
+
+    // Use optimized playChord with arpeggiation and correct timing
+    playChord(frets, 0.45, 'piano', 'down');
+  }, [getStrumPattern]);
 
   const strumUp = useCallback(() => {
-    const downPattern = getStrumPattern();
-    if (downPattern.length === 0) return;
+    const pattern = getStrumPattern();
+    if (pattern.length === 0) return;
 
-    const upPattern = [...downPattern].reverse().map((n, idx) => ({ ...n, indexInStrum: idx }));
-
-    upPattern.forEach((noteData) => {
-      const jitter = Math.floor((Math.random() - 0.5) * 10); // +/-5ms humanization
-      const delay = Math.max(0, noteData.indexInStrum * strumSpeed + jitter);
-
-      setTimeout(() => {
-        const freq = getNoteFrequency(noteData.string, noteData.fret);
-        const velocity = getVelocity(noteData.indexInStrum, upPattern.length);
-        playNote(freq, 1.8, velocity, 'piano');
-      }, delay);
+    const frets = [-1, -1, -1, -1, -1, -1];
+    pattern.forEach(p => {
+      frets[p.string] = p.fret;
     });
-  }, [getStrumPattern, getNoteFrequency, getVelocity, strumSpeed]);
+
+    // Use optimized playChord for upstrum
+    playChord(frets, 0.45, 'piano', 'up');
+  }, [getStrumPattern]);
 
   // Allow Enter to strum highlighted frets when keyboard control is off
   useEffect(() => {

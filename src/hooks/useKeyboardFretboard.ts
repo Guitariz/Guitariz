@@ -5,9 +5,9 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { KeyboardFretboardOptions, FretPosition } from '@/types/keyboardTypes';
-import { playNote } from '@/lib/chordAudio';
+import { playNote, playChord } from '@/lib/chordAudio';
 
-const GUITAR_TUNING = [329.63, 246.94, 196.00, 146.83, 110.00, 82.41]; // E A D G B e
+const GUITAR_TUNING = [82.41, 110.00, 146.83, 196.00, 246.94, 329.63]; // E A D G B e (Low to High)
 
 const getNoteFrequency = (position: FretPosition): number => {
   const stringFreq = GUITAR_TUNING[position.string];
@@ -64,21 +64,24 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
 
     if (positions.length === 0) return;
 
-    // Play together for tighter chord (no arpeggiated sweep)
-    const sorted = [...positions].sort((a, b) => b.string - a.string);
-
-    sorted.forEach((position, index) => {
-      const freq = getNoteFrequency(position);
-      const velocity = getVelocity(index, sorted.length);
-      playNote(freq, 1.5, velocity, 'piano');
+    // Map positions to a chord array (6 strings)
+    const frets = [-1, -1, -1, -1, -1, -1];
+    positions.forEach(pos => {
+      // If multiple frets on one string, keep the highest (standard guitar behavior)
+      if (pos.fret > frets[pos.string]) {
+        frets[pos.string] = pos.fret;
+      }
     });
+
+    // Use the optimized playChord from chordAudio for that beautiful arpeggiated sound
+    playChord(frets, 0.45, 'piano');
 
     // After strumming, clear accumulated notes (for chord mode)
     setTimeout(() => {
       activeNotes.current.clear();
       pressedKeys.current.clear();
     }, 150);
-  }, [onStrumDown, getVelocity]);
+  }, [onStrumDown]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!enabled) return;
