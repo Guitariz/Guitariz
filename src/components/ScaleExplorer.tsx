@@ -238,7 +238,7 @@ const ScaleExplorer = () => {
   const filteredScales = useMemo(() => {
     let scales = Object.keys(currentScales);
     if (scaleSearchQuery.trim()) {
-      scales = scales.filter(scale => 
+      scales = scales.filter(scale =>
         scale.toLowerCase().includes(scaleSearchQuery.toLowerCase())
       );
     }
@@ -277,11 +277,10 @@ const ScaleExplorer = () => {
                   setScaleCategory("western");
                   setSelectedScale("Major (Ionian)");
                 }}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                  scaleCategory === "western" 
-                    ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "western"
+                    ? "bg-white/10 text-white shadow-sm border border-white/10"
                     : "text-muted-foreground hover:text-white"
-                }`}
+                  }`}
               >
                 Western
               </button>
@@ -290,11 +289,10 @@ const ScaleExplorer = () => {
                   setScaleCategory("raga");
                   setSelectedScale("Bhairav");
                 }}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                  scaleCategory === "raga" 
-                    ? "bg-white/10 text-white shadow-sm border border-white/10" 
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "raga"
+                    ? "bg-white/10 text-white shadow-sm border border-white/10"
                     : "text-muted-foreground hover:text-white"
-                }`}
+                  }`}
               >
                 Raga
               </button>
@@ -307,11 +305,10 @@ const ScaleExplorer = () => {
                   <button
                     key={note}
                     onClick={() => setRootNote(note)}
-                    className={`h-8 rounded-md text-[10px] font-mono transition-all border ${
-                      rootNote === note
+                    className={`h-8 rounded-md text-[10px] font-mono transition-all border ${rootNote === note
                         ? "bg-white text-black border-white"
                         : "bg-white/[0.02] border-white/5 text-muted-foreground hover:border-white/20 hover:text-white"
-                    }`}
+                      }`}
                   >
                     {note}
                   </button>
@@ -337,11 +334,10 @@ const ScaleExplorer = () => {
                     <button
                       key={scale}
                       onClick={() => setSelectedScale(scale)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
-                        selectedScale === scale
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${selectedScale === scale
                           ? "bg-white/10 border-white/10 text-white font-semibold shadow-sm"
                           : "border-transparent text-muted-foreground hover:bg-white/[0.03] hover:text-white"
-                      }`}
+                        }`}
                     >
                       {scale}
                     </button>
@@ -385,13 +381,12 @@ const ScaleExplorer = () => {
             </div>
             <div className="flex flex-wrap gap-2 md:max-w-[280px] justify-end">
               {getScaleNotes.map((note, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold border transition-all ${
-                    note === rootNote 
-                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]" 
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold border transition-all ${note === rootNote
+                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                       : "bg-white/[0.03] border-white/10 text-white"
-                  } ${lastPlayed === note ? "scale-110 ring-2 ring-primary border-primary" : ""}`}
+                    } ${lastPlayed === note ? "scale-110 ring-2 ring-primary border-primary" : ""}`}
                 >
                   {note}
                 </div>
@@ -401,15 +396,18 @@ const ScaleExplorer = () => {
         </div>
 
         <div className="glass-card rounded-[2rem] p-1 border-white/5 bg-black/40 shadow-2xl overflow-hidden">
-          <div className="p-6 pb-2 border-b border-white/5 flex items-center justify-between">
+          <div className="p-4 md:p-6 pb-2 border-b border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-secondary/10 rounded-lg">
                 <Guitar className="w-4 h-4 text-secondary" />
               </div>
               <h3 className="text-sm font-semibold text-white">Fretboard Mapping</h3>
             </div>
+            <span className="text-[10px] text-muted-foreground/60 md:hidden animate-pulse">
+              Scroll →
+            </span>
           </div>
-          <div className="p-8 overflow-x-auto scrollbar-hide">
+          <div className="p-4 md:p-8 overflow-x-auto scrollbar-hide">
             <div className="relative min-w-[700px] h-[340px] flex items-center justify-center">
               <div className="relative bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 shadow-inner">
                 <div className="relative" style={{ width: "560px", height: "200px" }}>
@@ -417,7 +415,7 @@ const ScaleExplorer = () => {
                     <div key={idx} className="absolute w-full h-[1px] bg-white/10" style={{ top: `${idx * 40}px` }} />
                   ))}
                   {Array.from({ length: 13 }, (_, idx) => (
-                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/40" : "bg-white/10"}`} style={{ left: `${idx * (560/13)}px` }}>
+                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/40" : "bg-white/10"}`} style={{ left: `${idx * (560 / 13)}px` }}>
                       {[3, 5, 7, 9, 12].includes(idx) && (
                         <div className="absolute left-1/2 -translate-x-1/2 -bottom-10 flex flex-col items-center gap-1 opacity-20">
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -437,7 +435,7 @@ const ScaleExplorer = () => {
                         <TooltipProvider key={`${sIdx}-${fIdx}`}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (560/13)}px`, top: `${sIdx * 40}px`, transform: "translate(-50%, -50%)" }}>
+                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (560 / 13)}px`, top: `${sIdx * 40}px`, transform: "translate(-50%, -50%)" }}>
                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[9px] border-2 transition-all ${note === rootNote ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-110" : "bg-black/80 text-white border-white/20"}`}>
                                   {note}
                                 </div>

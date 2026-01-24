@@ -11,7 +11,7 @@ const Metronome = () => {
   const [timeSignature, setTimeSignature] = useState({ num: 4, den: 4 });
   const intervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioBuffersRef = useRef<Map<string, AudioBuffer>>(new Map());
+
   const tapTimesRef = useRef<number[]>([]);
   const tappedBpmTimeoutRef = useRef<number | null>(null);
   const [tappedBpm, setTappedBpm] = useState<number | null>(null);
@@ -45,12 +45,12 @@ const Metronome = () => {
 
   const playClick = useCallback((isAccent: boolean) => {
     if (!audioContextRef.current) return;
-    
+
     const ctx = audioContextRef.current;
     if (ctx.state === "suspended") {
       ctx.resume();
     }
-    
+
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -207,8 +207,8 @@ const Metronome = () => {
                   i === 0 ? "w-8" : "w-4",
                   i === currentBeat && isPlaying
                     ? "bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-y-125"
-                    : i === 0 
-                      ? "bg-white/20" 
+                    : i === 0
+                      ? "bg-white/20"
                       : "bg-white/5"
                 )}
               />
@@ -217,33 +217,44 @@ const Metronome = () => {
 
           {/* Core Controls */}
           <div className="space-y-8">
-            <div className="flex items-center gap-4">
-              <Button
-                size="icon"
-                variant="outline"
-                className="w-16 h-16 rounded-2xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] shrink-0"
-                onClick={() => setBpm(b => Math.max(40, b - 1))}
-              >
-                <span className="text-xl">−</span>
-              </Button>
-              
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <div className="flex w-full md:w-auto gap-4">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] shrink-0"
+                  onClick={() => setBpm(b => Math.max(40, b - 1))}
+                >
+                  <span className="text-xl">−</span>
+                </Button>
+
+                <Slider
+                  value={[bpm]}
+                  onValueChange={(v) => setBpm(v[0])}
+                  min={40}
+                  max={280}
+                  step={1}
+                  className="flex-1 md:hidden"
+                />
+
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-2xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] shrink-0"
+                  onClick={() => setBpm(b => Math.min(280, b + 1))}
+                >
+                  <span className="text-xl">+</span>
+                </Button>
+              </div>
+
               <Slider
                 value={[bpm]}
                 onValueChange={(v) => setBpm(v[0])}
                 min={40}
                 max={280}
                 step={1}
-                className="flex-1"
+                className="hidden md:flex flex-1"
               />
-
-              <Button
-                size="icon"
-                variant="outline"
-                className="w-16 h-16 rounded-2xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] shrink-0"
-                onClick={() => setBpm(b => Math.min(280, b + 1))}
-              >
-                <span className="text-xl">+</span>
-              </Button>
             </div>
 
             <div className="flex gap-4">
@@ -252,8 +263,8 @@ const Metronome = () => {
                 onClick={togglePlay}
                 className={cn(
                   "flex-1 h-16 rounded-2xl text-lg font-medium transition-all duration-300",
-                  isPlaying 
-                    ? "bg-white text-black hover:bg-white/90" 
+                  isPlaying
+                    ? "bg-white text-black hover:bg-white/90"
                     : "bg-white/[0.05] border border-white/10 text-white hover:bg-white/[0.08]"
                 )}
               >

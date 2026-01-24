@@ -87,7 +87,7 @@ const ChordAIPage = () => {
   const [isLoadingInstrumental, setIsLoadingInstrumental] = useState(false);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
-  
+
   // Cache for analysis results to avoid re-analyzing when toggling
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
   const [currentFileId, setCurrentFileId] = useState<string | null>(null);
@@ -96,9 +96,9 @@ const ChordAIPage = () => {
   const cachedResult = cacheKey ? cachedResults[cacheKey] : undefined;
 
   const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress } = useChordAnalysis(
-    audioBuffer, 
-    selectedFile, 
-    true, 
+    audioBuffer,
+    selectedFile,
+    true,
     separateVocals,
     cacheKey,
     cachedResult,
@@ -117,8 +117,8 @@ const ChordAIPage = () => {
       } else {
         toast({
           title: useMadmom ? "Fast Analysis " : "Detailed Analysis",
-          description: useMadmom 
-            ? "Using Madmom engine for quick results (~30-60s)." 
+          description: useMadmom
+            ? "Using Madmom engine for quick results (~30-60s)."
             : "Using Librosa engine for focused mapping (~2-3 min).",
         });
       }
@@ -139,7 +139,7 @@ const ChordAIPage = () => {
 
       // Notification logic
       if (separateVocals && !instrumentalUrl) return; // Wait for the URL if we're in vocal mode
-      
+
       const resKey = `${currentFileId}-${separateVocals}-${useMadmom}`;
       if (lastNotifiedResultRef.current === resKey) return;
       lastNotifiedResultRef.current = resKey;
@@ -150,9 +150,9 @@ const ChordAIPage = () => {
           description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
         });
       } else {
-        toast({ 
-          title: useMadmom ? "Fast map ready :))" : "Detailed map ready :))", 
-          description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM` 
+        toast({
+          title: useMadmom ? "Fast map ready :))" : "Detailed map ready :))",
+          description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM`
         });
       }
     }
@@ -185,7 +185,7 @@ const ChordAIPage = () => {
       setLoadedInstrumentalUrl(instrumentalUrl);
       setIsLoadingInstrumental(true);
       setIsInstrumentalLoaded(false);
-      
+
       fetch(instrumentalUrl)
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -232,13 +232,13 @@ const ChordAIPage = () => {
 
   const { currentChord } = useMemo(() => {
     if (!currentChords.length) return { currentChord: undefined };
-    
+
     const activeIndex = currentChords.findIndex((seg) => currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1));
-    
+
     if (activeIndex === -1) {
       return { currentChord: undefined };
     }
-    
+
     return {
       currentChord: currentChords[activeIndex]
     };
@@ -246,14 +246,14 @@ const ChordAIPage = () => {
 
   const activeChordVoicing = useMemo(() => {
     if (!currentChord) return null;
-    
+
     // Normalize AI chord name for the library (e.g., Cmin -> Cm, C:maj -> C)
     const normalized = currentChord.chord
       .replace(":maj", "")
       .replace("min7", "m7")
       .replace("min", "m")
       .replace(":", "");
-      
+
     const found = findChordByName(normalized, chordLibraryData.roots);
     return found?.variant.voicings[0] || null;
   }, [currentChord]);
@@ -262,7 +262,7 @@ const ChordAIPage = () => {
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       {/* Structural Grain */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      
+
       <Navigation />
 
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
@@ -274,9 +274,9 @@ const ChordAIPage = () => {
                 <Bot className="w-3 h-3" />
                 <span>Neural Audio Transcription</span>
               </div>
-              
+
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-white">
+                <h1 className="text-4xl md:text-7xl font-light tracking-tighter text-white">
                   Chord <span className="text-muted-foreground font-thin">AI</span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed font-light">
@@ -289,9 +289,9 @@ const ChordAIPage = () => {
                 </div>
               </div>
             </div>
-            
+
             {!audioBuffer && (
-              <Button 
+              <Button
                 onClick={() => fileInputRef.current?.click()}
                 className="h-14 px-8 rounded-2xl bg-white text-black hover:bg-white/90 text-base font-semibold shadow-2xl"
               >
@@ -323,7 +323,7 @@ const ChordAIPage = () => {
                     disabled={analysisLoading}
                   />
                 </div>
-                
+
                 <div className={cn(
                   "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
                   analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
@@ -341,7 +341,7 @@ const ChordAIPage = () => {
                     disabled={analysisLoading}
                   />
                 </div>
-                
+
                 <div className={cn(
                   "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
                   analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
@@ -360,7 +360,7 @@ const ChordAIPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="glass-card rounded-[2.5rem] border border-white/5 bg-white/[0.015] backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] overflow-hidden min-h-[500px] flex flex-col transition-all">
                 {!audioBuffer ? (
                   <div
@@ -453,7 +453,7 @@ const ChordAIPage = () => {
                           {uploadProgress !== undefined && uploadProgress < 100 && (
                             <div className="flex items-center gap-2">
                               <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                                <div 
+                                <div
                                   className="h-full bg-blue-500 transition-all duration-300"
                                   style={{ width: `${uploadProgress}%` }}
                                 />
@@ -463,7 +463,7 @@ const ChordAIPage = () => {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         {/* Upload new file button */}
                         <Button
@@ -475,7 +475,7 @@ const ChordAIPage = () => {
                           <Upload className="w-3.5 h-3.5 mr-2" />
                           New File
                         </Button>
-                        
+
                         {/* Download instrumental button - show as soon as URL is available */}
                         {instrumentalUrl && (
                           <Button
@@ -576,7 +576,7 @@ const ChordAIPage = () => {
                   </div>
                   <h2 className="text-sm font-bold text-white uppercase tracking-widest">Global Analysis</h2>
                 </div>
-                
+
                 <AnalysisSummary
                   tempo={result?.tempo}
                   keySignature={result ? `${result.key} ${result.scale || ""}` : null}
@@ -584,32 +584,32 @@ const ChordAIPage = () => {
                 />
 
                 <div className="pt-6 border-t border-white/5 space-y-6">
-                   <div className="space-y-4">
-                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
-                     <div className="flex items-end justify-between gap-4">
-                       <div className="text-7xl font-light tracking-tighter text-white tabular-nums min-h-[1.2rem] transition-all duration-300">
-                         {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
-                       </div>
-                       {currentChord && (
-                         <div className="text-[10px] text-muted-foreground/40 font-mono pb-2">
-                           ENDS AT {formatTime(currentChord.end || 0)}
-                         </div>
-                       )}
-                     </div>
-                   </div>
+                  <div className="space-y-4">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
+                    <div className="flex items-end justify-between gap-4">
+                      <div className="text-7xl font-light tracking-tighter text-white tabular-nums min-h-[1.2rem] transition-all duration-300">
+                        {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
+                      </div>
+                      {currentChord && (
+                        <div className="text-[10px] text-muted-foreground/40 font-mono pb-2">
+                          ENDS AT {formatTime(currentChord.end || 0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                   {currentChord && activeChordVoicing && (
-                     <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-4 flex justify-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
-                       <div className="scale-90 origin-center">
-                         <ChordDiagram
-                           frets={activeChordVoicing.frets}
-                           fingers={activeChordVoicing.fingers}
-                           chordName={currentChord.chord}
-                           compact={true}
-                         />
-                       </div>
-                     </div>
-                   )}
+                  {currentChord && activeChordVoicing && (
+                    <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-4 flex justify-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+                      <div className="scale-90 origin-center">
+                        <ChordDiagram
+                          frets={activeChordVoicing.frets}
+                          fingers={activeChordVoicing.fingers}
+                          chordName={currentChord.chord}
+                          compact={true}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

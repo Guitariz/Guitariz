@@ -1,6 +1,6 @@
 import Navigation from "@/components/Navigation";
 import CircleOfFifths from "@/components/CircleOfFifths";
-import { Disc, Music, Bot, Layers } from "lucide-react";
+import { Disc, Layers } from "lucide-react";
 import { useEffect } from "react";
 
 const TheoryPage = () => {
@@ -20,9 +20,9 @@ const TheoryPage = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background grain effect */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      
+
       <Navigation />
-      
+
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
@@ -33,7 +33,7 @@ const TheoryPage = () => {
               </span>
               <span>Harmonic Analysis</span>
             </div>
-            
+
             <header className="space-y-2">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
                 Circle of <span className="text-muted-foreground">Fifths</span>
@@ -45,7 +45,7 @@ const TheoryPage = () => {
           </div>
         </div>
 
-        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-xl shadow-2xl overflow-hidden p-8">
+        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-xl shadow-2xl overflow-hidden p-4 md:p-8">
           <CircleOfFifths />
         </div>
 
