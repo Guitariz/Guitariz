@@ -1,0 +1,20 @@
+{
+    "short_name": "Guitariz",
+    "name": "Guitariz - Chord AI, Fretboard & Music Theory Toolkit",
+    "icons": [
+        {
+            "src": "logo.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "logo.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#060606",
+    "background_color": "#060606"
+}
