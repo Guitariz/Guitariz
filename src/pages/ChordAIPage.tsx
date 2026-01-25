@@ -306,7 +306,7 @@ const ChordAIPage = () => {
             {/* Main Engine Room */}
             <div className="lg:col-span-8 space-y-8">
               {/* Analysis Settings - Always visible */}
-              <div className="flex items-center justify-end gap-3">
+              <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
                 <div className={cn(
                   "flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5 transition-all text-right",
                   analysisLoading ? "opacity-40 cursor-not-allowed border-amber-500/20" : "opacity-100"
