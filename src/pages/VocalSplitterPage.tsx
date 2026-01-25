@@ -7,7 +7,6 @@ import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import { Wand2, Upload, Mic, Music2, Download, Loader2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import GuitarizLoader from "@/components/ui/loader";
 
 const VocalSplitterPage = () => {
   useEffect(() => {
@@ -24,20 +23,20 @@ const VocalSplitterPage = () => {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
-
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [separated, setSeparated] = useState(false);
   const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(null);
-
+  
   const [vocalsVolume, setVocalsVolume] = useState(100);
   const [instrumentalVolume, setInstrumentalVolume] = useState(100);
-
+  
   const [vocalsAudio, setVocalsAudio] = useState<AudioBuffer | null>(null);
   const [instrumentalAudio, setInstrumentalAudio] = useState<AudioBuffer | null>(null);
-
+  
   const audioContextRef = useRef<AudioContext | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -128,7 +127,7 @@ const VocalSplitterPage = () => {
 
   const play = useCallback(async () => {
     if (!vocalsAudio || !instrumentalAudio) return;
-
+    
     const ctx = audioContextRef.current || new AudioContext();
     audioContextRef.current = ctx;
 
@@ -152,7 +151,7 @@ const VocalSplitterPage = () => {
     const iGain = instrumentalGainRef.current || ctx.createGain();
     vocalsGainRef.current = vGain;
     instrumentalGainRef.current = iGain;
-
+    
     vGain.gain.value = vocalsVolume / 100;
     iGain.gain.value = instrumentalVolume / 100;
 
@@ -162,7 +161,7 @@ const VocalSplitterPage = () => {
     startTimeRef.current = ctx.currentTime;
     vSource.start(0, offsetRef.current);
     iSource.start(0, offsetRef.current);
-
+    
     vocalsSourceRef.current = vSource;
     instrumentalSourceRef.current = iSource;
     setIsPlaying(true);
@@ -181,7 +180,7 @@ const VocalSplitterPage = () => {
     const clamped = clamp(time, 0, duration);
     offsetRef.current = clamped;
     setCurrentTime(clamped);
-
+    
     if (isPlaying) {
       play();
     }
@@ -227,12 +226,12 @@ const VocalSplitterPage = () => {
 
     setProcessing(true);
     setUploadProgress(0);
-
+    
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("format", "mp3");
-
+      
       const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
       const endpoint = `${apiUrl}/api/separate`;
 
@@ -309,7 +308,7 @@ const VocalSplitterPage = () => {
       setUploadProgress(null);
       let errorMessage = "Could not separate audio. Please try again.";
       if (error instanceof Error) errorMessage = error.message;
-
+      
       toast({
         title: "Separation failed",
         description: errorMessage,
@@ -433,7 +432,7 @@ const VocalSplitterPage = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-
+      
       <Navigation />
 
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
@@ -444,7 +443,7 @@ const VocalSplitterPage = () => {
               <Wand2 className="w-3 h-3" />
               <span>AI-Powered Source Separation</span>
             </div>
-
+            
             <div className="space-y-4">
               <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-white">
                 Vocal <span className="text-muted-foreground font-thin">Splitter</span>
@@ -517,17 +516,15 @@ const VocalSplitterPage = () => {
                   <Button
                     onClick={processSeparation}
                     disabled={processing}
-                    className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold relative overflow-hidden"
+                    className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
                   >
                     {processing ? (
-                      <div className="flex items-center gap-3">
-                        <GuitarizLoader size="sm" />
-                        <span className="animate-pulse">
-                          {uploadProgress !== null && uploadProgress < 100
-                            ? `Uploading… ${uploadProgress}%`
-                            : "Separating Sources…"}
-                        </span>
-                      </div>
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        {uploadProgress !== null && uploadProgress < 100 
+                          ? `Uploading… ${uploadProgress}%` 
+                          : "Separating Audio… (this may take a few minutes)"}
+                      </>
                     ) : (
                       <>
                         <Wand2 className="w-5 h-5 mr-2" />
@@ -541,7 +538,7 @@ const VocalSplitterPage = () => {
                 {processing && uploadProgress !== null && uploadProgress < 100 && (
                   <div className="w-full space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div
+                      <div 
                         className="h-full bg-blue-500 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                         style={{ width: `${uploadProgress}%` }}
                       />
