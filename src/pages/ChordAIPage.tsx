@@ -15,7 +15,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
 
 const formatTime = (seconds: number) => {
@@ -277,10 +276,10 @@ const ChordAIPage = () => {
 
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-7xl font-light tracking-tighter text-white">
-                  Chord <span className="text-muted-foreground font-thin">AI</span>
+                  Chord AI <span className="text-muted-foreground font-thin">Free</span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed font-light">
-                  Decode the architecture of any song. Our neural engine extracts harmonic progressions, tempo clusters, and scale maps from raw audio. <span className="text-white/40">Enable "Vocal Filter" for better chord accuracy on songs with vocals.</span>
+                  Decode the architecture of any song using our <strong>Chord AI Free</strong> engine. Extract harmonic progressions, tempo clusters, and scale maps from raw audio instantly. <span className="text-white/40">Enable "Vocal Filter" for better chord accuracy on songs with vocals.</span>
                 </p>
                 <div className="mt-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 max-w-2xl">
                   <p className="text-xs text-amber-200/90">
