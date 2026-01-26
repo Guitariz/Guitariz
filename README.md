@@ -1,142 +1,122 @@
-# Guitariz
+<div align="center">
+  <img src="public/logo.svg" alt="Guitariz Logo" width="120" height="120" />
+  <h1>Guitariz Studio</h1>
+  <p><strong>The ultimate interactive workbench for guitarists, songwriters, and music theory students.</strong></p>
 
-Full-stack music learning web app featuring interactive guitar/piano tools and optional AI-assisted audio analysis (chord detection + vocal/instrumental separation).
+  [![Version](https://img.shields.io/badge/version-1.6.1-blue.svg?style=for-the-badge)](https://github.com/abhi9vaidya/guitariz)
+  [![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)](./LICENSE)
+  [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
-- Live demo: https://guitariz.studio
-- License: MIT
+  [**Live Demo**](https://guitariz.studio) • [**Report Bug**](https://github.com/abhi9vaidya/guitariz/issues) • [**Request Feature**](https://github.com/abhi9vaidya/guitariz/issues)
+</div>
 
-## Features
+---
 
-### Interactive learning tools (frontend)
-- **Guitar Fretboard**: play notes with mouse/keyboard and get real-time chord detection.
-- **Piano Keyboard**: 88-key piano with keyboard controls.
-- **Chord Explorer**: chord voicings + diagrams.
-- **Scale Explorer**: visualize scale patterns.
-- **Circle of Fifths**: explore key relationships.
-- **Metronome**: 40–300 BPM with multiple time signatures.
-- **Responsive UI** and **persisted settings**.
+## 🎸 Overview
 
-### AI features (optional backend)
-- **Chord AI**: upload audio (`.mp3`, `.wav`, `.m4a`) and get chord timeline, key, and tempo.
-- **Vocal / instrumental separation** (Demucs) to improve chord detection on dense mixes.
+**Guitariz** is a high-performance, full-stack music platform designed to bridge the gap between theory and practice. Whether you're decoding a complex solo or exploring new harmonic landscapes, Guitariz provides the tools to visualize, analyze, and play with precision.
 
-> Note: AI features require running the Python backend. The frontend can still run standalone.
+### Why Guitariz?
+- **Low-Latency Audio**: Built on the Web Audio API for an immediate, tactile playing experience.
+- **AI-Powered Insights**: Integrated source separation and chord detection.
+- **Academic Rigor**: Comprehensive mapping of Western and Eastern musical systems.
+- **Studio Aesthetics**: A premium, motion-heavy dark UI designed for focus.
 
-## Tech Stack
+---
 
-**Frontend**
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui + Radix UI
+## ✨ Key Features
 
-**Backend (optional)**
-- FastAPI + Uvicorn
-- Librosa (audio analysis)
-- Demucs + PyTorch (vocal separation)
+### 🛠️ Interactive Instrument Engine
+- **Virtual Fretboard & Piano**: High-fidelity sound engines with multi-octave support and real-time interval labeling.
+- **Smart Chord Detection**: Instantly identifies any group of notes played across the instruments.
+- **Modal Explorer**: Visualize every musical scale, from standard Major/Minor to complex Eastern Ragas.
+- **Precision Metronome**: Sample-accurate timing (40–300 BPM) with visual pulse cues and tap-tempo.
 
-## Project Structure
+### 🧠 AI-Powered Song Analysis
+- **Vocal/Instrumental Splitter**: Leverages SOTA models (Demucs) to isolate stems for karaoke or transcription.
+- **Chord AI Timeline**: Automatically detect chords, key, and tempo from any uploaded audio file.
+- **High-Fidelity Waveform Preview**: Interactive seeking and synchronized playback for analysis.
 
-```text
-.
-├── src/                  # React app
-├── public/               # Static assets
-├── backend/              # FastAPI service for AI features
-└── VOCAL_SEPARATION.md   # Deep-dive on the separation pipeline
-```
+---
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1) Frontend
+### Frontend Development
+
+Ensure you have [Node.js](https://nodejs.org/) installed.
 
 ```bash
+# Clone the repository
 git clone https://github.com/abhi9vaidya/guitariz.git
 cd guitariz
+
+# Install dependencies
 npm install
+
+# Start the development server
 npm run dev
 ```
 
-Then open the URL shown in the terminal (usually `http://localhost:5173`).
+### AI Backend (Optional)
 
-### 2) Backend (for AI features)
-
-**Requirements**
-- Python **3.12+**
-- **FFmpeg** installed and available on your PATH
+The backend enables Demucs stem separation and advanced ML chord analysis.
 
 ```bash
 cd backend
+
+# Setup virtual environment
 python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Windows
-.venv\Scripts\activate
-
-# macOS/Linux
-# source .venv/bin/activate
-
+# Install requirements & start
 pip install -r requirements.txt
-python -m uvicorn main:app --port 8001
+python main.py
 ```
 
-Backend endpoint:
-- `http://localhost:8001/api/analyze`
+---
 
-## Configuration
+## 🛠️ Tech Stack
 
-### Frontend → Backend endpoint
+| Frontend | Backend | DevOps |
+| :--- | :--- | :--- |
+| **Framework**: React 18 (Vite) | **API**: FastAPI (Python) | **Deployment**: Vercel (FE) |
+| **Logic**: TypeScript | **ML**: PyTorch + Demucs | **CI/CD**: GitHub Actions |
+| **Styling**: Tailwind CSS | **Audio**: Librosa + Madmom | **Linting**: ESLint + Ruff |
+| **Motion**: Framer Motion | **Server**: Uvicorn | **Standard**: shadcn/ui |
 
-Set this environment variable for the frontend:
+---
 
-```bash
-# in a .env.local at repo root
-VITE_CHORD_AI_API=http://localhost:8001/api/analyze
-```
+## 🗺️ Project Roadmap
+- [x] Version 1.6.1: Full Linting Compliance & Performance Audit.
+- [ ] Adaptive MIDI Input Support.
+- [ ] User Cloud Profiles for Saved Chords/Scales.
+- [ ] Mobile PWA Optimization.
 
-If not set, the app falls back to a local (less accurate) analysis path.
+---
 
-## Deployment
+## 🤝 Contributing
 
-- The frontend is suitable for static hosting (Vercel, Netlify, etc.).
-- The AI backend is **not** compatible with Vercel Serverless due to Demucs/PyTorch resource requirements.
-  Host `backend/` on a VM/container platform (Render/Railway/Fly.io/VPS) and point `VITE_CHORD_AI_API` to it.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-## Development
+1. Fork the Project.
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
-Common scripts:
+---
 
-```bash
-npm run dev
-npm run build
-npm run preview
-npm run lint
-```
+## 📄 License
 
-## Open Source & Maintainer
+Distributed under the MIT License. See `LICENSE` for more information.
 
-Guitariz is **open source** (MIT licensed) and is **maintained by Abhinav Vaidya**.
+## 👥 Author
 
-- Contributions are welcome via issues and pull requests.
-- Please keep changes focused and well-described so they can be reviewed/merged quickly.
+**Abhinav Vaidya**  
+- GitHub: [@abhi9vaidya](https://github.com/abhi9vaidya)  
+- Project Link: [Guitariz Studio](https://guitariz.studio)
 
-## Contributing
-
-1. Fork the repo
-2. Create a branch: `git checkout -b feature/my-feature`
-3. Commit: `git commit -m "Add my feature"`
-4. Push: `git push origin feature/my-feature`
-5. Open a Pull Request
-
-## License
-
-MIT — see [`LICENSE`](./LICENSE).
-
-## Trademark
-
-“Guitariz” (name) and associated branding assets are maintained by the author.
-Forks are welcome, but please avoid implying endorsement or official affiliation without permission.
-
-## Author
-
-Abhinav Vaidya
-- GitHub: https://github.com/abhi9vaidya
-- Repo: https://github.com/abhi9vaidya/guitariz
+<div align="center">
+  <p>Built for musicians everywhere :))</p>
+</div>
