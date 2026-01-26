@@ -44,7 +44,7 @@ def test_chord_analysis():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Chord AI works!")
+            print("✅ Chord AI works!")
             print(f"   Tempo: {result.get('tempo')} BPM")
             print(f"   Key: {result.get('key')} {result.get('scale')}")
             print(f"   Chords detected: {len(result.get('chords', []))}")
@@ -79,7 +79,7 @@ def test_vocal_separation():
         
         if response.status_code == 200:
             result = response.json()
-            print(f"✅ Vocal Splitter works!")
+            print("✅ Vocal Splitter works!")
             print(f"   Session ID: {result.get('session_id')}")
             print(f"   Format: {result.get('format')}")
             print(f"   Vocals URL: {result.get('vocalsUrl')}")
@@ -126,7 +126,7 @@ def main():
     print("\n" + "=" * 60)
     print("Test Summary:")
     print("=" * 60)
-    print(f"✅ Backend Running: Yes")
+    print("✅ Backend Running: Yes")
     print(f"{'✅' if chord_works else '❌'} Chord AI: {'Working' if chord_works else 'Failed'}")
     print(f"{'✅' if vocal_works else '❌'} Vocal Splitter: {'Working' if vocal_works else 'Failed'}")
     print()

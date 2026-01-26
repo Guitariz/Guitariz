@@ -1,16 +1,16 @@
 import Navigation from "@/components/Navigation";
 import Metronome from "@/components/Metronome";
-import { Timer, Zap, Activity } from "lucide-react";
+import { Timer, Zap } from "lucide-react";
 import { useEffect } from "react";
 
 const MetronomePage = () => {
   useEffect(() => {
     document.title = "Precision Metronome | Guitariz - Pro Rhythm Tools";
-    let canonical = document.querySelector('link[rel="canonical"]');
+    const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) {
       canonical.setAttribute("href", "https://guitariz.studio/metronome");
     }
-    let metaDesc = document.querySelector('meta[name="description"]');
+    const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       metaDesc.setAttribute("content", "Professional grade metronome with sample-accurate playback. Support for poly-meters, tap-tempo, and visual pulse feedback.");
     }
@@ -20,9 +20,9 @@ const MetronomePage = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background grain effect */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      
+
       <Navigation />
-      
+
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
@@ -33,7 +33,7 @@ const MetronomePage = () => {
               </span>
               <span>Temporal Precision</span>
             </div>
-            
+
             <header className="space-y-2">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
                 Pulse <span className="text-muted-foreground">Engine</span>

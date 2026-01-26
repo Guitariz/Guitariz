@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 const Index = lazy(() => import("./pages/Index"));
 const FretboardPage = lazy(() => import("./pages/FretboardPage"));
@@ -32,83 +32,81 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <Index />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/fretboard"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <FretboardPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/chords"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <ChordsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/scales"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <ScalesPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/metronome"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <MetronomePage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/chord-ai"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <ChordAIPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/vocal-splitter"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <VocalSplitterPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/theory"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <TheoryPage />
-              </Suspense>
-            }
-          />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route
-            path="*"
-            element={
-              <Suspense fallback={<RouteFallback />}>
-                <NotFound />
-              </Suspense>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <Index />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/fretboard"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <FretboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/chords"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ChordsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/scales"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ScalesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/metronome"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <MetronomePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/chord-ai"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ChordAIPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/vocal-splitter"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <VocalSplitterPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/theory"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <TheoryPage />
+            </Suspense>
+          }
+        />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <NotFound />
+            </Suspense>
+          }
+        />
+      </Routes>
     </TooltipProvider>
   </QueryClientProvider>
 );

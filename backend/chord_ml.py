@@ -4,9 +4,7 @@ This module provides more accurate chord recognition compared to template matchi
 """
 
 import numpy as np
-from pathlib import Path
-from typing import List, Dict, Optional
-import librosa
+from typing import List, Dict
 
 
 def detect_chords_ml(y: np.ndarray, sr: int) -> List[Dict]:

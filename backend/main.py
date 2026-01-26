@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 import tempfile
@@ -108,15 +108,15 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
             result = analyze_file(tmp_path, separate_vocals=separate_vocals)
         elif separate_vocals:
             # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
-            print(f"[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
+            print("[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
             result = analyze_file(tmp_path, separate_vocals=True)
         elif MADMOM_AVAILABLE:
             # FAST -> Madmom
-            print(f"[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
+            print("[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
             result = analyze_file_madmom(tmp_path)
         else:
             # Fallback
-            print(f"[API] Engine: LIBROSA (Fallback) | Madmom not found")
+            print("[API] Engine: LIBROSA (Fallback) | Madmom not found")
             result = analyze_file(tmp_path, separate_vocals=False)
         
         # If vocal separation was used, store the instrumental file and return its URL

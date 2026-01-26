@@ -1,6 +1,5 @@
 import subprocess
 import tempfile
-import os
 from pathlib import Path
 from typing import List, Tuple, Optional
 
@@ -28,7 +27,6 @@ class DemucsSeparator:
         self.samplerate = self.model.samplerate
 
     def separate_audio_file(self, path):
-        import torchaudio
         from demucs.apply import apply_model
         
         # Load with librosa to bypass torchaudio backend issues on Windows
@@ -122,7 +120,7 @@ def _separate_vocals(audio_path: Path) -> Optional[Path]:
         output_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
         sf.write(str(output_path), instrumental_np, sr)
         
-        print(f"[Demucs] Done. Saved instrumental.")
+        print("[Demucs] Done. Saved instrumental.")
         gc.collect()
         return output_path
         
@@ -148,7 +146,7 @@ def separate_audio_full(audio_path: Path) -> Optional[dict]:
         sf.write(str(vocals_path), vocals, sr)
         sf.write(str(instrumental_path), instrumental, sr)
         
-        print(f"[Demucs] Done. Stems saved.")
+        print("[Demucs] Done. Stems saved.")
         gc.collect()
         
         return {

@@ -24,7 +24,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
   const [activeNotes, setActiveNotes] = useState<Map<number, string>>(new Map());
   const [octaveShift, setOctaveShift] = useState<number>(0);
   const [sustained, setSustained] = useState<boolean>(false);
-  
+
   const pressedKeys = useRef<Set<string>>(new Set());
   const sustainedNotes = useRef<Set<number>>(new Set());
   const keyDebounce = useRef<Map<string, number>>(new Map());
@@ -39,7 +39,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
     setActiveNotes(prev => new Map(prev).set(midiNote, key));
     playMidiNote(midiNote, velocity);
     onNoteOn?.(midiNote, velocity);
-    
+
     if (sustained) {
       sustainedNotes.current.add(midiNote);
     }
@@ -51,7 +51,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
       sustainedNotes.current.add(midiNote);
       return;
     }
-    
+
     setActiveNotes(prev => {
       const next = new Map(prev);
       next.delete(midiNote);
@@ -88,7 +88,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!enabled) return;
-    
+
     // Ignore if focused in input fields
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
@@ -96,7 +96,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
     }
 
     const key = e.key.toLowerCase();
-    
+
     // Prevent Enter from scrolling or triggering default actions
     if (e.key === 'Enter' || e.code === 'Enter') {
       e.preventDefault();
@@ -116,7 +116,7 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
       setOctaveShift(prev => Math.min(prev + 1, 2));
       return;
     }
-    
+
     if (key === keymap.octaveDown.toLowerCase()) {
       e.preventDefault();
       setOctaveShift(prev => Math.max(prev - 1, -2));
@@ -136,47 +136,47 @@ export const usePianoKeyboard = (options: PianoKeyboardOptions) => {
     const mapping = keymap.keys.find(m => m.key.toLowerCase() === key);
     if (mapping) {
       e.preventDefault();
-      
+
       if (pressedKeys.current.has(key)) return; // Already pressed
-      
+
       pressedKeys.current.add(key);
-      
+
       // Apply octave shift
       const shiftedMidiNote = mapping.midiNote + (octaveShift * 12);
-      
+
       // Ensure MIDI note is in valid range (0-127)
       if (shiftedMidiNote >= 0 && shiftedMidiNote <= 127) {
         handleNoteOn(shiftedMidiNote, key, 0.5);
       }
     }
-  }, [enabled, keymap, octaveShift, handleNoteOn, onSustainChange]);
+  }, [enabled, keymap, octaveShift, handleNoteOn, setSustainState]);
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (!enabled) return;
-    
+
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
       return;
     }
 
     const key = e.key.toLowerCase();
-    
+
     // Sustain key release ends pedal
     if (key === keymap.sustain) {
       setSustainState(false);
       return;
     }
-    
+
     const mapping = keymap.keys.find(m => m.key.toLowerCase() === key);
     if (mapping) {
       pressedKeys.current.delete(key);
-      
+
       const shiftedMidiNote = mapping.midiNote + (octaveShift * 12);
       if (shiftedMidiNote >= 0 && shiftedMidiNote <= 127) {
         handleNoteOff(shiftedMidiNote);
       }
     }
-  }, [enabled, keymap, octaveShift, handleNoteOff]);
+  }, [enabled, keymap, octaveShift, handleNoteOff, setSustainState]);
 
   useEffect(() => {
     if (!enabled) {

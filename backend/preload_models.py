@@ -2,7 +2,6 @@
 Preload Demucs models during container startup to avoid first-request delays.
 This script downloads and caches the models before the API server starts.
 """
-import os
 import sys
 
 def preload_demucs():

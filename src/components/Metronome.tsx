@@ -25,7 +25,7 @@ const Metronome = () => {
   ];
 
   useEffect(() => {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audioContextRef.current = new AudioContextClass();
     return () => {
       if (audioContextRef.current) {

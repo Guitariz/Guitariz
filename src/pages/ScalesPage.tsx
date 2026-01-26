@@ -6,11 +6,11 @@ import { useEffect } from "react";
 const ScalesPage = () => {
   useEffect(() => {
     document.title = "Scale Explorer | Guitariz - Musical Modes & Intervals";
-    let canonical = document.querySelector('link[rel="canonical"]');
+    const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) {
       canonical.setAttribute("href", "https://guitariz.studio/scales");
     }
-    let metaDesc = document.querySelector('meta[name="description"]');
+    const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
       metaDesc.setAttribute("content", "Visualize musical scales and modal relationships. Map intervals to the circle of fifths or directly to the interactive fretboard.");
     }
@@ -20,9 +20,9 @@ const ScalesPage = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background grain effect */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      
+
       <Navigation />
-      
+
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
@@ -33,7 +33,7 @@ const ScalesPage = () => {
               </span>
               <span>Modal Synthesis</span>
             </div>
-            
+
             <header className="space-y-2">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
                 Scale <span className="text-muted-foreground">Explorer</span>
@@ -61,12 +61,12 @@ const ScalesPage = () => {
             <p className="text-xs text-muted-foreground">Hear the unique tension and resolution of every mode.</p>
           </div>
           <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
-             <Layers className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-accent transition-colors" />
+            <Layers className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-accent transition-colors" />
             <h3 className="text-white font-medium mb-1">Global Modes</h3>
             <p className="text-xs text-muted-foreground">From Western Major to Eastern Ragas and beyond.</p>
           </div>
-           <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
-             <Bot className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-white transition-colors" />
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+            <Bot className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-white transition-colors" />
             <h3 className="text-white font-medium mb-1">Fretboard Sync</h3>
             <p className="text-xs text-muted-foreground">Map any selected scale directly to the guitar neck.</p>
           </div>

@@ -18,8 +18,6 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
   const {
     enabled,
     keymap,
-    strumSpeed = 30,
-    velocityProfile = 'exponential',
     chordMode = false,
     onNoteOn,
     onNoteOff,
@@ -29,30 +27,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
   const pressedKeys = useRef<Set<string>>(new Set());
   const activeNotes = useRef<Map<string, FretPosition>>(new Map());
   const octaveShift = useRef<number>(0);
-  const strumSpeedRef = useRef(strumSpeed);
-  const velocityProfileRef = useRef(velocityProfile);
   const enabledRef = useRef(enabled);
-
-  // Keep refs in sync with props
-  useEffect(() => {
-    strumSpeedRef.current = strumSpeed;
-    velocityProfileRef.current = velocityProfile;
-    enabledRef.current = enabled;
-  }, [strumSpeed, velocityProfile, enabled]);
-
-  const getVelocity = useCallback((index: number, total: number): number => {
-    const position = index / Math.max(total - 1, 1);
-
-    switch (velocityProfileRef.current) {
-      case 'linear':
-        return 0.2 + position * 0.3;
-      case 'exponential':
-        return 0.2 + Math.pow(position, 1.5) * 0.3;
-      case 'uniform':
-      default:
-        return 0.3;
-    }
-  }, []);
 
   const strumDown = useCallback(() => {
     if (!enabledRef.current) return;
@@ -118,7 +93,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
     const noteMapping = keymap.notes.find(m => m.key === key);
     if (noteMapping) {
       e.preventDefault();
-      
+
       if (chordMode) {
         // In chord mode, accumulate notes and wait for Enter
         const fret = noteMapping.position.fret + octaveShift.current * 12;
@@ -149,10 +124,10 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
     }
 
     const key = e.key.toLowerCase();
-    
+
     // In chord mode, don't clear notes on key release - they stay until strum
     if (chordMode) return;
-    
+
     // In normal mode, clear note from active notes when key is released
     const noteMapping = keymap.notes.find(m => m.key === key);
     if (noteMapping) {
@@ -162,7 +137,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
       pressedKeys.current.delete(key);
       onNoteOff?.(noteMapping.note, position);
     }
-  }, [enabled, keymap, chordMode]);
+  }, [enabled, keymap, chordMode, onNoteOff]);
 
   useEffect(() => {
     if (!enabled) {

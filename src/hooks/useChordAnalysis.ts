@@ -17,7 +17,7 @@ export const useChordAnalysis = (
   useRemote: boolean = true,
   separateVocals: boolean = false,
   cacheKey?: string, // File identifier for cache checking
-  cachedResult?: { result: any; instrumentalUrl?: string }, // Cached result if available
+  cachedResult?: { result: AnalysisResult | null; instrumentalUrl?: string }, // Cached result if available
   useMadmom: boolean = true // Use fast madmom engine by default
 ): UseChordAnalysisState => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -40,13 +40,13 @@ export const useChordAnalysis = (
 
     // Only run analysis when file changes
     if (!file) return;
-    
+
     // Cancel previous request
     if (currentXhrRef.current) {
       currentXhrRef.current.abort();
       currentXhrRef.current = null;
     }
-    
+
     // Generate unique ID for this request
     const thisRequestId = ++requestIdRef.current;
 
@@ -56,16 +56,16 @@ export const useChordAnalysis = (
         setError(null);
         setInstrumentalUrl(undefined);
         setUploadProgress(0);
-        
+
         // Prefer remote analysis when a file is available
         if (useRemote && file) {
           try {
             const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
             const remote = await analyzeRemote(
-              file, 
-              undefined, 
-              separateVocals, 
-              useMadmom, 
+              file,
+              undefined,
+              separateVocals,
+              useMadmom,
               (percent) => {
                 setUploadProgress(Math.round(percent));
               },
@@ -122,8 +122,8 @@ export const useChordAnalysis = (
     run();
 
     // No cleanup needed - requestId comparison handles stale results
-    return () => {};
-  }, [file, useRemote, separateVocals, cacheKey, cachedResult, useMadmom]);
+    return () => { };
+  }, [file, useRemote, separateVocals, cacheKey, cachedResult, useMadmom, audioBuffer]);
 
   return { result, loading, error, instrumentalUrl, uploadProgress };
 };

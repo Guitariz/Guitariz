@@ -28,8 +28,8 @@ const computePeaks = (audioBuffer: AudioBuffer, buckets = 400): Peaks => {
   const blockSize = Math.max(1, Math.floor(channelData.length / buckets));
   const peaks: number[] = [];
   for (let i = 0; i < buckets; i += 1) {
-    let start = i * blockSize;
-    let end = Math.min(start + blockSize, channelData.length);
+    const start = i * blockSize;
+    const end = Math.min(start + blockSize, channelData.length);
     let max = 0;
     for (let j = start; j < end; j += 1) {
       max = Math.max(max, Math.abs(channelData[j]));
@@ -132,7 +132,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
       const clamped = clamp(time, 0, duration);
       offsetRef.current = clamped;
       setCurrentTime(clamped);
-      
+
       // If currently playing, restart playback from new position
       if (isPlaying) {
         teardownSource();
@@ -143,11 +143,11 @@ export const useAudioPlayer = (): UseAudioPlayer => {
         gainRef.current = gain;
         source.connect(gain);
         gain.connect(ctx.destination);
-        
+
         startTimeRef.current = ctx.currentTime;
         source.start(0, offsetRef.current);
         sourceRef.current = source;
-        
+
         source.onended = () => {
           if (offsetRef.current + (ctx.currentTime - startTimeRef.current) >= duration - 0.1) {
             setIsPlaying(false);
@@ -164,7 +164,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     try {
       setError(null);
       stopRaf();
-      
+
       // Stop any playing audio first
       if (isPlaying) {
         teardownSource();
@@ -173,15 +173,15 @@ export const useAudioPlayer = (): UseAudioPlayer => {
 
       const ctx = audioCtxRef.current || new AudioContext();
       audioCtxRef.current = ctx;
-      
+
       let decoded: AudioBuffer;
       let fileName = "instrumental.wav";
-      
+
       // If buffer is provided directly, use it
       if (buffer) {
         decoded = buffer;
         fileName = fileInfo?.name || "instrumental.wav";
-      } 
+      }
       // Otherwise decode from file
       else if (file) {
         const arrayBuffer = await file.arrayBuffer();
@@ -190,7 +190,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
       } else {
         throw new Error("Either file or buffer must be provided");
       }
-      
+
       setAudioBuffer(decoded);
       setDuration(decoded.duration);
       setFileInfo({ name: fileName, duration: decoded.duration });

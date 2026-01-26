@@ -47,18 +47,18 @@ const REMOTE_PIANO_SAMPLE_SET = [
 // Initialize audio context on first user interaction
 const initAudioContext = (): AudioContext => {
   if (audioContext) return audioContext;
-  
+
   if (typeof window === 'undefined') {
     throw new Error('Audio context requires browser environment');
   }
 
-  audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  
+  audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+
   // Resume audio context if suspended (required by some browsers)
   if (audioContext.state === 'suspended') {
     audioContext.resume();
   }
-  
+
   return audioContext;
 };
 
@@ -123,14 +123,14 @@ const createPluckedString = (
   startTime: number = ctx.currentTime
 ) => {
   const now = startTime;
-  
+
   // Pluck: use even shorter noise for cleaner transients
-  const burstLength = 0.01; 
+  const burstLength = 0.01;
   const sampleRate = ctx.sampleRate;
   const burstBuffer = ctx.createBuffer(1, Math.floor(sampleRate * burstLength), sampleRate);
   const data = burstBuffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / data.length); 
+    data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
   }
 
   const noise = ctx.createBufferSource();
@@ -163,7 +163,7 @@ const createPluckedString = (
   delay.connect(damp);
   damp.connect(feedback);
   feedback.connect(delay);
-  
+
   damp.connect(gain);
   gain.connect(panner);
   panner.connect(ctx.destination);
@@ -171,17 +171,6 @@ const createPluckedString = (
   noise.start(now);
 };
 
-const createSaturator = (ctx: AudioContext, amount: number) => {
-  const shaper = ctx.createWaveShaper();
-  const curve = new Float32Array(44100);
-  for (let i = 0; i < curve.length; i++) {
-    const x = (i / (curve.length - 1)) * 2 - 1;
-    curve[i] = Math.tanh(x * amount);
-  }
-  shaper.curve = curve;
-  shaper.oversample = '4x';
-  return shaper;
-};
 
 const createPianoTone = (
   ctx: AudioContext,
@@ -258,7 +247,7 @@ const createPianoTone = (
 
   // ADSR-like envelope
   masterGain.gain.setValueAtTime(0, now);
-  masterGain.gain.linearRampToValueAtTime(volume, now + 0.015); 
+  masterGain.gain.linearRampToValueAtTime(volume, now + 0.015);
   masterGain.gain.exponentialRampToValueAtTime(volume * 0.5, now + 0.3);
   masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
@@ -360,7 +349,7 @@ const playSampledPiano = (
 };
 
 export const playChord = (
-  frets: number[], 
+  frets: number[],
   volume: number = 0.3,
   instrument: InstrumentType = 'piano',
   direction: 'down' | 'up' = 'down'
@@ -381,11 +370,11 @@ export const playChord = (
     const noteFreq = stringFreq * Math.pow(2, fret / 12);
     // Spread stereo slightly per string (-0.4 ... 0.4)
     const pan = (stringIndex / 5) * 0.8 - 0.4;
-    
+
     // Low strings play first in a standard downstrum (index 0 first)
     // High strings play first in an upstrum (index 5 first)
-    const timeOffset = direction === 'down' 
-      ? stringIndex * strumDelay 
+    const timeOffset = direction === 'down'
+      ? stringIndex * strumDelay
       : (5 - stringIndex) * strumDelay;
 
     const playTime = now + timeOffset;
@@ -393,8 +382,8 @@ export const playChord = (
     if (instrument === 'piano') {
       const clampedDuration = 2.8;
       // Scale volume: lower notes are louder naturally on piano, but we balance for polyphony
-      const noteVolume = Math.min(volume * 0.75, 0.45); 
-      
+      const noteVolume = Math.min(volume * 0.75, 0.45);
+
       const usedSample = playSampledPiano(
         ctx,
         noteFreq,

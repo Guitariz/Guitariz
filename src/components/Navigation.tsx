@@ -6,26 +6,22 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const Navigation = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
+    if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone) {
       setIsInstalled(true);
-      setIsChecking(false);
       return;
     }
 
-    const handler = (e: any) => {
-
+    const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as unknown);
       setIsInstallable(true);
-      setIsChecking(false);
     };
 
     const installedHandler = () => {
@@ -43,9 +39,8 @@ const Navigation = () => {
     // Shorter timeout - if no prompt after 2 seconds, assume not available
     const timer = setTimeout(() => {
       if (!deferredPrompt) {
-
+        setIsInstallable(false);
       }
-      setIsChecking(false);
     }, 2000);
 
     return () => {
@@ -68,8 +63,8 @@ const Navigation = () => {
     if (deferredPrompt) {
       try {
 
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        (deferredPrompt as { prompt: () => Promise<void> }).prompt();
+        const { outcome } = await (deferredPrompt as { userChoice: Promise<{ outcome: string }> }).userChoice;
 
 
         if (outcome === "accepted") {
