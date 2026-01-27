@@ -1,30 +1,15 @@
 import Navigation from "@/components/Navigation";
 import CircleOfFifths from "@/components/CircleOfFifths";
 import { Disc, Layers } from "lucide-react";
-import { useEffect } from "react";
+
+import { usePageMetadata } from "@/hooks/usePageMetadata";
 
 const TheoryPage = () => {
-  useEffect(() => {
-    document.title = "Interactive Circle of Fifths | Guitariz - Free Music Theory Lab";
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical) {
-      canonical.setAttribute("href", "https://guitariz.studio/theory");
-    }
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute("content", "Master music theory with our interactive Circle of Fifths. Free harmonic analysis: visualize key relationships, chord families, and modulation.");
-    }
-
-    // JSON-LD Structured Data
-    const ldId = 'ld-theory-page';
-    let ld = document.getElementById(ldId) as HTMLScriptElement | null;
-    if (!ld) {
-      ld = document.createElement('script');
-      ld.type = 'application/ld+json';
-      ld.id = ldId;
-      document.head.appendChild(ld);
-    }
-    ld.textContent = JSON.stringify({
+  usePageMetadata({
+    title: "Interactive Circle of Fifths | Guitariz - Free Music Theory Lab",
+    description: "Master music theory with our interactive Circle of Fifths. Free harmonic analysis: visualize key relationships, chord families, and modulation.",
+    canonicalUrl: "https://guitariz.studio/theory",
+    jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "Guitariz Theory Lab",
@@ -33,8 +18,8 @@ const TheoryPage = () => {
       "description": "Interactive music theory tools featuring the Circle of Fifths.",
       "url": "https://guitariz.studio/theory",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-    });
-  }, []);
+    }
+  });
 
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">

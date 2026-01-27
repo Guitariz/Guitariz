@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Music2, Layers, Disc, Music, BookOpen, Bot, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
 import Footer from "@/components/Footer";
+import { usePageMetadata } from "@/hooks/usePageMetadata";
 
 
 const toolCards = [
@@ -18,13 +18,19 @@ const toolCards = [
 ];
 
 const Index = () => {
-  useEffect(() => {
-    document.title = "Chord AI Free & Music Theory Studio | Guitariz";
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "The best Chord AI Free: Extract chords, tempo, and scales from any song. Guitariz is your high-fidelity technical suite for the modern guitarist.");
+  usePageMetadata({
+    title: "Chord AI Free & Music Theory Studio | Guitariz",
+    description: "The best Chord AI Free: Extract chords, tempo, and scales from any song. Guitariz is your high-fidelity technical suite for the modern guitarist.",
+    canonicalUrl: "https://guitariz.studio",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Guitariz Studio",
+      "description": "Professional music theory and AI analysis tools for musicians.",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any"
     }
-  }, []);
+  });
 
   return (
     <div className="min-h-screen relative bg-transparent overflow-x-hidden selection:bg-white/10">

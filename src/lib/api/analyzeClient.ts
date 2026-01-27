@@ -16,9 +16,9 @@ const normalizeChords = (chords: Record<string, unknown>[], durationHint?: numbe
 };
 
 export async function analyzeRemote(
-  file: File,
-  endpoint: string = defaultEndpoint,
-  separateVocals: boolean = false,
+  file: File, 
+  endpoint: string = defaultEndpoint, 
+  separateVocals: boolean = false, 
   useMadmom: boolean = true,
   onUploadProgress?: (percent: number) => void,
   onXhrCreated?: (xhr: XMLHttpRequest) => void
@@ -43,20 +43,20 @@ export async function analyzeRemote(
   if (onUploadProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-
+      
       // Notify parent about XHR creation so it can be cancelled if needed
       if (onXhrCreated) {
         onXhrCreated(xhr);
       }
-
+      
       // Timeout: 5 minutes - Hugging Face can be slow, especially on free tier
       const timeoutMs = 300000; // 5 minutes
       xhr.timeout = timeoutMs;
-
+      
       xhr.addEventListener('timeout', () => {
         reject(new Error(`Request timeout - analysis took longer than ${timeoutMs / 1000}s`));
       });
-
+      
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
           const percentComplete = (e.loaded / e.total) * 100;
@@ -74,7 +74,7 @@ export async function analyzeRemote(
             const meter = typeof json.meter === "number" ? json.meter : 4;
             const chords = normalizeChords(json.chords, json.duration);
             const simpleChords = json.simpleChords ? normalizeChords(json.simpleChords, json.duration) : [];
-
+            
             const result = {
               tempo,
               key,
@@ -127,7 +127,7 @@ export async function analyzeRemote(
   const simpleChords = json.simpleChords ? normalizeChords(json.simpleChords, json.duration) : [];
 
   const result: AnalysisResult = { tempo, key, scale, meter, chords, simpleChords };
-
+  
   // Include instrumentalUrl if present (when vocal separation was used)
   if (json.instrumentalUrl) {
     result.instrumentalUrl = json.instrumentalUrl;

@@ -7,7 +7,7 @@
   <p><em>The Next-Generation Digital Workbench for Modern Musicians</em></p>
 
   <p align="center">
-    <img src="https://img.shields.io/badge/Release-v1.6.33-4A90E2?style=for-the-badge&logo=github" alt="Release" />
+    <img src="https://img.shields.io/badge/Release-v1.6.36-4A90E2?style=for-the-badge&logo=github" alt="Release" />
     <img src="https://img.shields.io/badge/License-MIT-45B8D1?style=for-the-badge" alt="License" />
     <img src="https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react" alt="React" />
     <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript" alt="TS" />

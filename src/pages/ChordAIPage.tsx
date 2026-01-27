@@ -9,11 +9,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
 import { AnalysisResult } from "@/types/chordAI";
+import { usePageMetadata } from "@/hooks/usePageMetadata";
 import ChordDiagram from "@/components/chord/ChordDiagram";
 import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download } from "lucide-react";
+import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
 
@@ -27,54 +29,21 @@ const formatTime = (seconds: number) => {
 const ChordAIPage = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
+  const { history, saveToHistory, clearHistory, removeFromHistory } = useAnalysisHistory();
 
-  useEffect(() => {
-    document.title = "Chord AI Free - Neural Audio Transcription & Harmonic Mapping | Guitariz";
-    // Also meta description if possible
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", "The best Chord AI Free: Extract chords, tempo, and scales from any audio file using neural networks. High-precision harmonic transcription with no subscription.");
+  usePageMetadata({
+    title: "Chord AI Free - Neural Audio Transcription & Harmonic Mapping | Guitariz",
+    description: "The best Chord AI Free: Extract chords, tempo, and scales from any audio file using neural networks. High-precision harmonic transcription with no subscription.",
+    canonicalUrl: "https://guitariz.studio/chord-ai",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Chord AI - Guitariz",
+      "url": "https://guitariz.studio/chord-ai",
+      "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
+      "inLanguage": "en-US"
     }
-    // Canonical link for this route (preferred domain)
-    try {
-      const canonicalHref = "https://guitariz.studio/chord-ai";
-      let canonical = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
-      if (!canonical) {
-        canonical = document.createElement('link');
-        canonical.setAttribute('rel', 'canonical');
-        document.head.appendChild(canonical);
-      }
-      canonical.href = canonicalHref;
-
-      // og:url for social previews
-      let ogUrl = document.querySelector('meta[property="og:url"]') as HTMLMetaElement | null;
-      if (!ogUrl) {
-        ogUrl = document.createElement('meta');
-        ogUrl.setAttribute('property', 'og:url');
-        document.head.appendChild(ogUrl);
-      }
-      ogUrl.content = canonicalHref;
-
-      // Page JSON-LD (WebPage)
-      const ldId = 'ld-chordai-page';
-      const existingLd = document.getElementById(ldId);
-      if (existingLd) existingLd.remove();
-      const ld = document.createElement('script');
-      ld.type = 'application/ld+json';
-      ld.id = ldId;
-      ld.text = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Chord AI - Guitariz",
-        "url": canonicalHref,
-        "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
-        "inLanguage": "en-US"
-      });
-      document.head.appendChild(ld);
-    } catch (e) {
-      // noop
-    }
-  }, []);
+  });
 
   const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo } =
     useAudioPlayer();
@@ -88,6 +57,7 @@ const ChordAIPage = () => {
   const [isLoadingInstrumental, setIsLoadingInstrumental] = useState(false);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
+  const [historyFileName, setHistoryFileName] = useState<string | null>(null);
 
   // Cache for analysis results to avoid re-analyzing when toggling
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
@@ -105,6 +75,16 @@ const ChordAIPage = () => {
     cachedResult,
     useMadmom
   );
+
+  const effectiveDuration = useMemo(() => {
+    if (duration > 0) return duration;
+    if (result?.chords?.length) {
+      return result.chords[result.chords.length - 1].end;
+    }
+    return 0;
+  }, [duration, result]);
+
+  const effectiveFileName = fileInfo?.name || historyFileName;
 
   // 1. Initial File Analysis Toast
   const hasCachedResult = !!cachedResult;
@@ -136,6 +116,17 @@ const ChordAIPage = () => {
           ...prev,
           [cacheKey]: { result, instrumentalUrl }
         }));
+
+        // Also save to global history if it's a new file analysis
+        if (fileInfo && !hasCachedResult) {
+          saveToHistory({
+            fileName: fileInfo.name,
+            result,
+            instrumentalUrl,
+            useMadmom,
+            separateVocals
+          });
+        }
       }
 
       // Notification logic
@@ -157,7 +148,7 @@ const ChordAIPage = () => {
         });
       }
     }
-  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, useMadmom, cacheKey, cachedResults, toast]);
+  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, useMadmom, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory]);
 
   // 3. Notify on errors
   useEffect(() => {
@@ -361,7 +352,38 @@ const ChordAIPage = () => {
               </div>
 
               <div className="glass-card rounded-[2.5rem] border border-white/5 bg-white/[0.015] backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] overflow-hidden min-h-[500px] flex flex-col transition-all">
-                {!audioBuffer ? (
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="audio/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // If we have a result but no audio, we are likely restoring audio for a history item
+                      const isRestoring = !!result && !audioBuffer;
+                      
+                      const fileId = `${file.name}-${file.size}-${file.lastModified}`;
+                      
+                      setSelectedFile(file);
+                      setOriginalFile(file);
+                      
+                      if (!isRestoring) {
+                        setCurrentFileId(fileId);
+                        setCachedResults({}); // Clear cache for new file
+                        setLoadedInstrumentalUrl(null);
+                        setIsInstrumentalLoaded(false);
+                        setWasVocalFilterOn(false);
+                        setHistoryFileName(null);
+                      }
+                      
+                      loadFile(file);
+                    }
+                    // Reset value so the same file can be selected again
+                    e.target.value = '';
+                  }}
+                />
+                {!audioBuffer && !result ? (
                   <div
                     className={cn(
                       "flex-1 m-4 border-2 border-dashed rounded-[2rem] transition-all flex flex-col items-center justify-center p-12 text-center",
@@ -388,26 +410,6 @@ const ChordAIPage = () => {
                     }}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="audio/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const fileId = `${file.name}-${file.size}-${file.lastModified}`;
-                          setSelectedFile(file);
-                          setOriginalFile(file);
-                          setCurrentFileId(fileId);
-                          setCachedResults({}); // Clear cache for new file
-                          setLoadedInstrumentalUrl(null);
-                          setIsInstrumentalLoaded(false);
-                          setWasVocalFilterOn(false);
-                          loadFile(file);
-                        }
-                      }}
-                    />
                     <div className="w-24 h-24 bg-white/[0.03] rounded-full flex items-center justify-center mb-8 border border-white/5">
                       <Wand2 className="w-10 h-10 text-muted-foreground" />
                     </div>
@@ -417,23 +419,42 @@ const ChordAIPage = () => {
                     </p>
                     <p className="text-xs text-muted-foreground/60 font-mono">
                       Maximum file size: 15MB
-                    </p>
+                   </p>
                   </div>
                 ) : (
                   <div className="p-10 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    {/* History Restore Warning */}
+                    {!audioBuffer && result && (
+                      <div className="px-6 py-4 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in zoom-in-95 duration-500">
+                        <div className="flex items-center gap-3">
+                          <Activity className="w-5 h-5 text-amber-400" />
+                          <p className="text-sm text-amber-200/80 font-medium">Loaded from history. Upload original audio to listen and sync with waveform.</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-none h-8 whitespace-nowrap"
+                        >
+                          <Upload className="w-3.5 h-3.5 mr-2" />
+                          Restore Audio
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Controls Interface */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-6">
                         <Button
                           size="icon"
-                          className="w-16 h-16 rounded-3xl bg-white text-black hover:scale-105 active:scale-95 transition-all"
+                          className="w-16 h-16 rounded-3xl bg-white text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={isPlaying ? pause : play}
+                          disabled={!audioBuffer}
                         >
                           {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6 ml-1" />}
                         </Button>
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
-                            <div className="text-base font-medium text-white tracking-tight">{fileInfo?.name}</div>
+                            <div className="text-base font-medium text-white tracking-tight">{effectiveFileName}</div>
                             {isInstrumentalLoaded && (
                               <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold uppercase tracking-wider">
                                 Instrumental
@@ -446,7 +467,7 @@ const ChordAIPage = () => {
                             )}
                           </div>
                           <div className="text-xs text-muted-foreground font-mono tracking-wider">
-                            {formatTime(currentTime)} <span className="opacity-30">/</span> {formatTime(duration)}
+                            {formatTime(currentTime)} <span className="opacity-30">/</span> {formatTime(effectiveDuration)}
                           </div>
                           {/* Upload Progress Indicator */}
                           {uploadProgress !== undefined && uploadProgress < 100 && (
@@ -502,10 +523,15 @@ const ChordAIPage = () => {
                           <Activity className="w-3 h-3" />
                           Spectral Waveform
                         </div>
-                        <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-2 overflow-hidden">
+                        <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-2 overflow-hidden relative">
+                          {!audioBuffer && (
+                            <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-8 text-center">
+                              <p className="text-xs text-white/60 font-medium">Waveform visualization requires audio file upload.</p>
+                            </div>
+                          )}
                           <WaveformViewer
                             peaks={peaks || []}
-                            duration={duration}
+                            duration={effectiveDuration}
                             currentTime={currentTime}
                             chordSegments={currentChords}
                             onSeek={seek}
@@ -599,6 +625,89 @@ const ChordAIPage = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/5 space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/5">
+                      <History className="w-4 h-4 text-white" />
+                    </div>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-widest">Recent History</h2>
+                  </div>
+                  {history.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                      onClick={clearHistory}
+                      title="Clear all history"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {history.length === 0 ? (
+                  <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-2xl bg-white/[0.01]">
+                    <p className="text-xs text-muted-foreground font-light mb-1">No previous analyses</p>
+                    <p className="text-[10px] text-muted-foreground/40 italic px-4">Upload a file to start tracking your studio sessions.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
+                    {history.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="group relative p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all cursor-pointer"
+                        onClick={() => {
+                          // Load from history logic
+                          setCachedResults(prev => ({
+                            ...prev,
+                            [`${entry.fileName}-${entry.separateVocals}-${entry.useMadmom}`]: {
+                              result: entry.result,
+                              instrumentalUrl: entry.instrumentalUrl
+                            }
+                          }));
+                          setCurrentFileId(entry.fileName); // Using filename as ID for history items
+                          setHistoryFileName(entry.fileName);
+                          setSeparateVocals(entry.separateVocals);
+                          setUseMadmom(entry.useMadmom);
+
+                          toast({
+                            title: "History item loaded",
+                            description: `Restored analysis for ${entry.fileName}`,
+                          });
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1 overflow-hidden">
+                            <div className="text-xs font-medium text-white truncate">{entry.fileName}</div>
+                            <div className="flex items-center gap-2 text-[9px] text-muted-foreground uppercase tracking-wider font-bold">
+                              <span>{entry.result.key} {entry.result.scale}</span>
+                              <span>•</span>
+                              <span>{Math.round(entry.result.tempo || 0)} BPM</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 -mt-1 -mr-1 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFromHistory(entry.id);
+                            }}
+                          >
+                            <History className="w-3 h-3 group-hover:hidden" />
+                            <Trash2 className="w-3 h-3 hidden group-hover:block" />
+                          </Button>
+                        </div>
+                        <div className="mt-2 text-[8px] text-muted-foreground/40 italic">
+                          Analyzed {new Date(entry.timestamp).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="p-8 rounded-[2rem] border border-white/5 bg-white/[0.01] space-y-5">

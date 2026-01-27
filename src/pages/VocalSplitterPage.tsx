@@ -7,58 +7,41 @@ import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import { Wand2, Upload, Mic, Music2, Download, Loader2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
-import { motion } from "framer-motion";
-import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
+import { usePageMetadata } from "@/hooks/usePageMetadata";
 
 const VocalSplitterPage = () => {
-  useEffect(() => {
-    document.title = "Free AI Vocal Splitter | Guitariz - Stem Separation & Karaoke";
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical) {
-      canonical.setAttribute("href", "https://guitariz.studio/vocal-splitter");
-    }
-    const metaDesc = document.querySelector('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute("content", "Free Vocal Splitter: Separate vocals and instrumentals with advanced AI. High-fidelity stem extraction for karaoke, practice, and remixing.");
-    }
-
-    // JSON-LD Structured Data
-    const ldId = 'ld-vocal-splitter-page';
-    let ld = document.getElementById(ldId) as HTMLScriptElement | null;
-    if (!ld) {
-      ld = document.createElement('script');
-      ld.type = 'application/ld+json';
-      ld.id = ldId;
-      document.head.appendChild(ld);
-    }
-    ld.textContent = JSON.stringify({
+  usePageMetadata({
+    title: "AI Vocal Splitter | Guitariz - Stem Separation",
+    description: "Separate vocals from any song using advanced AI. High-quality stem extraction for karaoke, remixing, and practice.",
+    canonicalUrl: "https://guitariz.studio/vocal-splitter",
+    jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "Guitariz Vocal Splitter",
-      "applicationCategory": "MusicApplication",
+      "applicationCategory": "MultimediaApplication",
       "operatingSystem": "Web",
-      "description": "AI-powered vocal and instrumental separation tool.",
+      "description": "High-quality AI stem extraction for karaoke and remixing.",
       "url": "https://guitariz.studio/vocal-splitter",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-    });
-  }, []);
+    }
+  });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
-
+  
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [separated, setSeparated] = useState(false);
   const [vocalsUrl, setVocalsUrl] = useState<string | null>(null);
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | null>(null);
-
+  
   const [vocalsVolume, setVocalsVolume] = useState(100);
   const [instrumentalVolume, setInstrumentalVolume] = useState(100);
-
+  
   const [vocalsAudio, setVocalsAudio] = useState<AudioBuffer | null>(null);
   const [instrumentalAudio, setInstrumentalAudio] = useState<AudioBuffer | null>(null);
-
+  
   const audioContextRef = useRef<AudioContext | null>(null);
   const vocalsSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const instrumentalSourceRef = useRef<AudioBufferSourceNode | null>(null);
@@ -149,7 +132,7 @@ const VocalSplitterPage = () => {
 
   const play = useCallback(async () => {
     if (!vocalsAudio || !instrumentalAudio) return;
-
+    
     const ctx = audioContextRef.current || new AudioContext();
     audioContextRef.current = ctx;
 
@@ -173,7 +156,7 @@ const VocalSplitterPage = () => {
     const iGain = instrumentalGainRef.current || ctx.createGain();
     vocalsGainRef.current = vGain;
     instrumentalGainRef.current = iGain;
-
+    
     vGain.gain.value = vocalsVolume / 100;
     iGain.gain.value = instrumentalVolume / 100;
 
@@ -183,7 +166,7 @@ const VocalSplitterPage = () => {
     startTimeRef.current = ctx.currentTime;
     vSource.start(0, offsetRef.current);
     iSource.start(0, offsetRef.current);
-
+    
     vocalsSourceRef.current = vSource;
     instrumentalSourceRef.current = iSource;
     setIsPlaying(true);
@@ -202,7 +185,7 @@ const VocalSplitterPage = () => {
     const clamped = clamp(time, 0, duration);
     offsetRef.current = clamped;
     setCurrentTime(clamped);
-
+    
     if (isPlaying) {
       play();
     }
@@ -248,12 +231,12 @@ const VocalSplitterPage = () => {
 
     setProcessing(true);
     setUploadProgress(0);
-
+    
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("format", "mp3");
-
+      
       const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
       const endpoint = `${apiUrl}/api/separate`;
 
@@ -330,7 +313,7 @@ const VocalSplitterPage = () => {
       setUploadProgress(null);
       let errorMessage = "Could not separate audio. Please try again.";
       if (error instanceof Error) errorMessage = error.message;
-
+      
       toast({
         title: "Separation failed",
         description: errorMessage,
@@ -453,29 +436,8 @@ const VocalSplitterPage = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
-      {/* Premium Dynamic Background */}
-      <div className="mesh-container">
-        <div className="absolute inset-0 bg-[#060606]" />
-        <motion.div
-          animate={{
-            x: [0, 40, -20, 0],
-            y: [0, -20, 40, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="mesh-blob w-[500px] h-[500px] bg-indigo-500/5 top-[-5%] left-[-5%]"
-        />
-        <motion.div
-          animate={{
-            x: [0, -40, 20, 0],
-            y: [0, 40, -20, 0],
-          }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          className="mesh-blob w-[400px] h-[400px] bg-rose-500/5 bottom-[-5%] right-[-5%]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay" />
-      </div>
-
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+      
       <Navigation />
 
       <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
@@ -486,13 +448,13 @@ const VocalSplitterPage = () => {
               <Wand2 className="w-3 h-3" />
               <span>AI-Powered Source Separation</span>
             </div>
-
+            
             <div className="space-y-4">
-              <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-white font-display">
+              <h1 className="text-5xl md:text-7xl font-light tracking-tighter text-white">
                 Vocal <span className="text-muted-foreground font-thin">Splitter</span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
-                Separate vocals and instrumentals with precision. Adjust levels independently and export <span className="text-white/80">clean stems</span> for remixing or karaoke.
+                Separate vocals and instrumentals with precision. Adjust levels independently and export clean stems for remixing or karaoke.
               </p>
               <div className="mt-4 px-4 py-2 rounded-lg bg-white/[0.02] border border-white/5 max-w-2xl mx-auto">
                 <p className="text-xs text-muted-foreground">
@@ -556,24 +518,32 @@ const VocalSplitterPage = () => {
 
                 {/* Process Button */}
                 {!separated && (
-                  <div className="space-y-6">
-                    <Button
-                      onClick={processSeparation}
-                      disabled={processing}
-                      className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold shadow-2xl transition-all active:scale-[0.98]"
-                    >
-                      <Wand2 className="w-5 h-5 mr-2" />
-                      Separate Vocals & Instrumentals
-                    </Button>
-                    {processing && <ChordAISkeleton />}
-                  </div>
+                  <Button
+                    onClick={processSeparation}
+                    disabled={processing}
+                    className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
+                  >
+                    {processing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        {uploadProgress !== null && uploadProgress < 100 
+                          ? `Uploading… ${uploadProgress}%` 
+                          : "Separating Audio… (this may take a few minutes)"}
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-5 h-5 mr-2" />
+                        Separate Vocals & Instrumentals
+                      </>
+                    )}
+                  </Button>
                 )}
 
                 {/* Upload Progress Bar */}
                 {processing && uploadProgress !== null && uploadProgress < 100 && (
                   <div className="w-full space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div
+                      <div 
                         className="h-full bg-blue-500 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                         style={{ width: `${uploadProgress}%` }}
                       />

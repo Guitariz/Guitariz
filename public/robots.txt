@@ -1,7 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /backend/
-Crawl-delay: 10
 
 Sitemap: https://guitariz.studio/sitemap.xml
