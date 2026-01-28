@@ -47,7 +47,7 @@ const ChordAIPage = () => {
     }
   });
 
-  const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose } =
+  const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose, tempo, setTempo } =
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSimple, setShowSimple] = useState(false);
@@ -494,29 +494,55 @@ const ChordAIPage = () => {
                         </div>
                       </div>
 
-                      {/* Transposition Control */}
-                      <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
-                        <div className="flex flex-col items-center gap-1 min-w-[3rem]">
-                          <Label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
-                            Transpose
-                          </Label>
-                          <span className={cn(
-                            "text-xs font-mono font-bold",
-                            transpose > 0 ? "text-green-400" : transpose < 0 ? "text-red-400" : "text-white"
-                          )}>
-                            {transpose > 0 ? "+" : ""}{transpose}
-                          </span>
+                      {/* Audio Controls */}
+                      <div className="flex items-center gap-4">
+                        {/* Transposition Control */}
+                        <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
+                          <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+                            <Label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
+                              Transpose
+                            </Label>
+                            <span className={cn(
+                              "text-xs font-mono font-bold",
+                              transpose > 0 ? "text-green-400" : transpose < 0 ? "text-red-400" : "text-white"
+                            )}>
+                              {transpose > 0 ? "+" : ""}{transpose}
+                            </span>
+                          </div>
+                          <div className="w-24">
+                            <Slider
+                              defaultValue={[0]}
+                              value={[transpose]}
+                              min={-6}
+                              max={6}
+                              step={1}
+                              onValueChange={(vals) => setTranspose(vals[0])}
+                              className="cursor-pointer"
+                            />
+                          </div>
                         </div>
-                        <div className="w-24">
-                          <Slider
-                            defaultValue={[0]}
-                            value={[transpose]}
-                            min={-12}
-                            max={12}
-                            step={1}
-                            onValueChange={(vals) => setTranspose(vals[0])}
-                            className="cursor-pointer"
-                          />
+
+                        {/* Tempo Control */}
+                        <div className="flex items-center gap-4 px-4 py-2 rounded-2xl bg-white/[0.03] border border-white/5">
+                          <div className="flex flex-col items-center gap-1 min-w-[3rem]">
+                            <Label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
+                              Tempo
+                            </Label>
+                            <span className="text-xs font-mono font-bold text-white">
+                              {tempo.toFixed(2)}x
+                            </span>
+                          </div>
+                          <div className="w-24">
+                            <Slider
+                              defaultValue={[1.0]}
+                              value={[tempo]}
+                              min={0.5}
+                              max={1.5}
+                              step={0.05}
+                              onValueChange={(vals) => setTempo(vals[0])}
+                              className="cursor-pointer"
+                            />
+                          </div>
                         </div>
                       </div>
 
