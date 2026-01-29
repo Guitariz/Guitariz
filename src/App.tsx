@@ -77,6 +77,16 @@ const App = () => {
               }
             />
             <Route
+              path="/fretboard/:root/:variant/:voicingIndex?"
+              element={
+                <Suspense fallback={<RouteFallback />}>
+                  <PageWrapper>
+                    <FretboardPage />
+                  </PageWrapper>
+                </Suspense>
+              }
+            />
+            <Route
               path="/chords"
               element={
                 <Suspense fallback={<RouteFallback />}>

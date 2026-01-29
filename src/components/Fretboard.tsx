@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Keyboard, Info, Music, Search } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import { Keyboard, Info, Music, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useKeyboardFretboard } from "@/hooks/useKeyboardFretboard";
 import { usePianoKeyboard } from "@/hooks/usePianoKeyboard";
@@ -17,7 +17,7 @@ import { playNote, playChord } from "@/lib/chordAudio";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from "framer-motion";
 
 const NOTES = ["E", "A", "D", "G", "B", "E"];
 const CHROMATIC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -57,9 +57,25 @@ interface FretNote {
 
 // Chord patterns: intervals from root
 
-const Fretboard = () => {
+type FretboardProps = {
+  initialChordVoicing?: number[] | null;
+};
+
+const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   const [highlightedNotes, setHighlightedNotes] = useState<FretNote[]>([]);
+  const [barreFret, setBarreFret] = useState(0);
+  const [isMeasured, setIsMeasured] = useState(false);
+  const barreX = useMotionValue(0);
+  const fretsContainerRef = useRef<HTMLDivElement>(null);
+  const fretsContainerWidthRef = useRef(0);
   const instrumentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (fretsContainerRef.current) {
+        fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
+        setIsMeasured(true);
+    }
+  }, []); // Only run once after mount, as pianoMode is undefined here
 
   // Motion values for 3D Tilt
   const x = useMotionValue(0);
@@ -300,6 +316,82 @@ const Fretboard = () => {
     const noteIndex = (openNoteIndex + fret) % 12;
     return CHROMATIC[noteIndex];
   };
+
+  const getNotesForFret = useCallback((fret: number): FretNote[] => {
+    return NOTES.map((_, stringIndex) => ({
+      string: stringIndex,
+      fret: fret,
+      note: getNoteAtFret(stringIndex, fret)
+    }));
+  }, [getNoteAtFret]);
+
+  const toggleFret = (fretToToggle: number) => {
+    const notesForFret = getNotesForFret(fretToToggle);
+
+    setHighlightedNotes(prev => {
+      const prevIdentifiers = new Set(prev.map(n => `${n.string}-${n.fret}`));
+      const notesForFretIdentifiers = notesForFret.map(n => `${n.string}-${n.fret}`);
+
+      const allNotesOnFretSelected = notesForFretIdentifiers.every(id => prevIdentifiers.has(id));
+
+      if (allNotesOnFretSelected) {
+        // Deselect all notes on this fret
+        const notesForFretSet = new Set(notesForFretIdentifiers);
+        return prev.filter(n => !notesForFretSet.has(`${n.string}-${n.fret}`));
+      } else {
+        // Select all notes on this fret, ensuring no duplicates are added to the overall state
+        const notesToAdd = notesForFret.filter(note =>
+          !prev.some(n => n.string === note.string && n.fret === note.fret)
+        );
+        return [...prev, ...notesToAdd];
+      }
+    });
+  };
+
+  // Link drag position to barre fret state
+  useEffect(() => {
+    const unsubscribe = barreX.onChange(latestX => {
+        if (fretsContainerWidthRef.current > 0) {
+            const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+            const handleCenter = latestX + (28 / 2); // 28px is handle width, find center
+            const currentFret = Math.max(0, Math.min(FRETS, Math.floor(handleCenter / fretPlusNutWidth)));
+            setBarreFret(currentFret);
+        }
+    });
+    return () => unsubscribe();
+  }, [barreX]);
+
+  const handleDragEnd = () => {
+      if (fretsContainerWidthRef.current > 0) {
+          const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+          const targetX = barreFret * fretPlusNutWidth;
+          animate(barreX, targetX, { type: 'spring', stiffness: 500, damping: 30 });
+      }
+  };
+
+  const handleTap = () => {
+      toggleFret(barreFret);
+  };
+
+  // When a chord voicing is provided (e.g. from the Chords page),
+  // pre-populate the highlighted notes on the fretboard so the shape
+  // is immediately visualized for the user.
+  // Also ensure we're in guitar mode (not piano mode) when a chord is passed.
+  useEffect(() => {
+    if (!initialChordVoicing || initialChordVoicing.length !== NOTES.length) return;
+
+    // Force guitar mode when a chord is provided
+    setPianoMode(false);
+
+    const next: FretNote[] = [];
+    initialChordVoicing.forEach((fret, stringIndex) => {
+      if (fret < 0) return;
+      const note = getNoteAtFret(stringIndex, fret);
+      next.push({ string: stringIndex, fret, note });
+    });
+
+    setHighlightedNotes(next);
+  }, [initialChordVoicing]);
 
   const isNoteHighlighted = (stringIndex: number, fret: number): boolean => {
     return highlightedNotes.some(
@@ -744,6 +836,34 @@ const Fretboard = () => {
 
                   {/* Fretboard */}
                   <div className="space-y-4 mt-8">
+                    {/* Draggable Barre Tool Row */}
+                    <div className="flex items-center gap-2 h-10 -mb-4">
+                        <div className="w-10 shrink-0" /> {/* Spacer */}
+                        <div className="relative flex-1 h-full flex">
+                            {/* Invisible snap points */}
+                            {Array.from({ length: FRETS + 1 }).map((_, i) => (
+                                <div key={i} className="flex-1" />
+                            ))}
+                            {/* Visual indicator bar that follows the handle */}
+                            <motion.div
+                                className="absolute top-0 h-full w-1 bg-primary/50 rounded-full pointer-events-none z-20"
+                                style={{ x: barreX }}
+                            />
+                            {/* Draggable Handle */}
+                            <motion.div
+                                className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-black/40 border-2 border-dashed border-white/20 hover:border-primary hover:bg-primary/10 transition-colors text-white/50 hover:text-primary cursor-grab active:cursor-grabbing z-30"
+                                style={{ x: barreX }}
+                                drag={isMeasured ? "x" : false}
+                                dragConstraints={isMeasured ? { left: 0, right: fretsContainerWidthRef.current - 28 } : { left: 0, right: 0 }}
+                                dragElastic={0.1}
+                                onDragEnd={handleDragEnd}
+                                onTap={handleTap}
+                            >
+                                <X className="w-3 h-3" />
+                            </motion.div>
+                        </div>
+                    </div>
+
                     {NOTES.map((openNote, stringIndex) => (
                       <div key={stringIndex} className="flex items-center gap-2">
                         {/* Open string note */}
@@ -752,7 +872,7 @@ const Fretboard = () => {
                         </div>
 
                         {/* Frets */}
-                        <div className="flex-1 flex items-center relative h-10">
+                        <div ref={stringIndex === 0 ? fretsContainerRef : null} className="flex-1 flex items-center relative h-10">
                           {/* String line */}
                           <div
                             className="absolute left-0 right-0 h-[1.5px] bg-white/10"

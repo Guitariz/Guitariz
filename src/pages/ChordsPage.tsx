@@ -1,7 +1,20 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import RootChordLibrary from "@/components/RootChordLibrary";
 import { BookOpen, Music, Layers, Bot } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+
+interface SelectedChord {
+  root: string;
+  variantName: string;
+  displayName: string;
+  intervals: string;
+  voicingFrets: number[];
+  voicingIndex: number;
+}
 
 const ChordsPage = () => {
   usePageMetadata({
@@ -19,6 +32,35 @@ const ChordsPage = () => {
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
   });
+
+  const [selectedChord, setSelectedChord] = useState<SelectedChord | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Show toast when chord is selected
+  useEffect(() => {
+    if (selectedChord) {
+      const handleClick = () => {
+        const encodedRoot = encodeURIComponent(selectedChord.root);
+        const encodedVariant = encodeURIComponent(selectedChord.variantName);
+        navigate(`/fretboard/${encodedRoot}/${encodedVariant}/${selectedChord.voicingIndex}`);
+      };
+
+      toast({
+        title: `${selectedChord.displayName} selected`,
+        description: `Click "Open on Fretboard" to view this chord on the fretboard.`,
+        action: (
+          <Button
+            onClick={handleClick}
+            className="bg-white text-black hover:bg-white/90"
+          >
+            Open on Fretboard
+          </Button>
+        ),
+      });
+    }
+  }, [selectedChord, navigate, toast]);
+
 
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
@@ -48,7 +90,9 @@ const ChordsPage = () => {
         </div>
 
         <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-xl shadow-2xl overflow-hidden p-1">
-          <RootChordLibrary />
+          <RootChordLibrary
+            onChordSelect={(chord) => setSelectedChord(chord)}
+          />
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

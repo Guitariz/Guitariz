@@ -16,7 +16,20 @@ const CHROMATIC_ROOTS = [
   "F#/Gb", "G", "G#/Ab", "A", "A#/Bb", "B"
 ] as const;
 
-const RootChordLibrary = () => {
+interface SelectedChord {
+  root: string;
+  variantName: string;
+  displayName: string;
+  intervals: string;
+  voicingFrets: number[];
+  voicingIndex: number;
+}
+
+interface RootChordLibraryProps {
+  onChordSelect?: (chord: SelectedChord) => void;
+}
+
+const RootChordLibrary = ({ onChordSelect }: RootChordLibraryProps) => {
   const [selectedRoot, setSelectedRoot] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -210,6 +223,7 @@ const RootChordLibrary = () => {
                       key={variant.name}
                       variant={variant}
                       rootNote={selectedRootData.root}
+                      onSelect={onChordSelect}
                     />
                   ))}
                 </Suspense>

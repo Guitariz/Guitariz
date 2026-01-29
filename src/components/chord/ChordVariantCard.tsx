@@ -7,9 +7,17 @@ import { playChord } from "@/lib/chordAudio";
 interface ChordVariantCardProps {
   variant: ChordVariant;
   rootNote: string;
+  onSelect?: (chord: {
+    root: string;
+    variantName: string;
+    displayName: string;
+    intervals: string;
+    voicingFrets: number[];
+    voicingIndex: number;
+  }) => void;
 }
 
-const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => {
+const ChordVariantCard = memo(({ variant, rootNote, onSelect }: ChordVariantCardProps) => {
   const [currentVoicingIndex, setCurrentVoicingIndex] = useState(0);
 
   const currentVoicing = variant.voicings[currentVoicingIndex];
@@ -43,8 +51,55 @@ const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => 
     [rootNote, variant.name]
   );
 
+  const handleSelect = useCallback(() => {
+    if (!onSelect || !currentVoicing) return;
+    onSelect({
+      root: rootNote,
+      variantName: variant.name,
+      displayName: chordDisplayName,
+      intervals: variant.intervals,
+      voicingFrets: currentVoicing.frets,
+      voicingIndex: currentVoicingIndex,
+    });
+  }, [onSelect, currentVoicing, rootNote, variant.name, chordDisplayName, variant.intervals, currentVoicingIndex]);
+
+  const handlePlayClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handlePlayChord();
+    },
+    [handlePlayChord]
+  );
+
+  const handlePrevClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      prevVoicing();
+    },
+    [prevVoicing]
+  );
+
+  const handleNextClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      nextVoicing();
+    },
+    [nextVoicing]
+  );
+
   return (
-    <div className="group relative flex flex-col p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300">
+    <div
+      className="group relative flex flex-col p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300 cursor-pointer"
+      onClick={handleSelect}
+      role={onSelect ? "button" : undefined}
+      tabIndex={onSelect ? 0 : -1}
+      onKeyDown={onSelect ? (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleSelect();
+        }
+      } : undefined}
+    >
       <div className="flex justify-between items-start mb-6">
         <div className="space-y-1">
           <h3 className="text-2xl font-black text-white tracking-tighter group-hover:text-primary transition-colors">
@@ -61,7 +116,7 @@ const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => 
             </span>
           )}
           <button
-            onClick={handlePlayChord}
+            onClick={handlePlayClick}
             className="p-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
             aria-label="Play chord"
           >
@@ -84,7 +139,7 @@ const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => 
           {/* Voicing navigation */}
           <div className="w-full flex items-center justify-between gap-2 mt-auto">
              <button
-                onClick={prevVoicing}
+               onClick={handlePrevClick}
                 disabled={!hasMultipleVoicings}
                 className={`p-1.5 rounded-lg border transition-all ${
                   !hasMultipleVoicings 
@@ -102,7 +157,7 @@ const ChordVariantCard = memo(({ variant, rootNote }: ChordVariantCardProps) => 
               </div>
 
               <button
-                onClick={nextVoicing}
+                onClick={handleNextClick}
                 disabled={!hasMultipleVoicings}
                 className={`p-1.5 rounded-lg border transition-all ${
                   !hasMultipleVoicings 
