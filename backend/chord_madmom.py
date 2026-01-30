@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
+import numpy as np
 
 # Try to import madmom, but don't fail if it's not available
 try:
@@ -83,10 +84,10 @@ def _save_to_cache(cache_file: Path, data: any) -> None:
         pass
 
 
-def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str]]:
+def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str, float]]:
     """
     Detect chords using madmom's CNN + CRF approach.
-    Returns: List of (start_time, end_time, chord_label) tuples
+    Returns: List of (start_time, end_time, chord_label, confidence) tuples
     """
     if not MADMOM_AVAILABLE:
         raise ImportError("madmom is not installed")
@@ -97,7 +98,7 @@ def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str]]:
     cached = _load_from_cache(cache_file)
     
     if cached is not None:
-        return [(c[0], c[1], c[2]) for c in cached]
+        return [(c[0], c[1], c[2], c[3]) for c in cached]
     
     # Process with madmom
     print(f"[madmom] Detecting chords for {file_path.name}...")
@@ -107,14 +108,41 @@ def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str]]:
     feats = feat_processor(str(file_path))
     chords = recog_processor(feats)
     
-    # Format chords: convert :maj to empty, :min to m
+    # Compute confidence from feature strength
+    # feats is a 2D array: [time, chord_classes]
+    fps = 10  # madmom's default frames per second
+    
+    # Format chords: convert :maj to empty, :min to m, and add confidence
     formatted_chords = []
-    for start_time, end_time, chord_label in chords:
+    for idx, (start_time, end_time, chord_label) in enumerate(chords):
+        # Calculate confidence from feature activations in this time segment
+        start_frame = int(start_time * fps)
+        end_frame = int(end_time * fps)
+        
+        if start_frame < len(feats) and end_frame <= len(feats):
+            segment_feats = feats[start_frame:end_frame]
+            if len(segment_feats) > 0:
+                # Max activation in the segment indicates confidence
+                max_activation = float(segment_feats.max())
+                # Average of top activations
+                mean_top = float(np.mean(np.sort(segment_feats.flatten())[-10:]))
+                # Combine both for confidence (0.7-0.98 range for detected chords)
+                confidence = min(0.98, 0.70 + (max_activation * 0.15) + (mean_top * 0.13))
+            else:
+                confidence = 0.75  # Default if can't compute
+        else:
+            confidence = 0.75  # Default for edge cases
+        
+        # Lower confidence for N.C. (no chord) segments
+        if chord_label == "N" or "X" in chord_label:
+            confidence *= 0.6
+        
         if ":maj" in chord_label:
             chord_label = chord_label.replace(":maj", "")
         elif ":min" in chord_label:
             chord_label = chord_label.replace(":min", "m")
-        formatted_chords.append((float(start_time), float(end_time), chord_label))
+        
+        formatted_chords.append((float(start_time), float(end_time), chord_label, confidence))
     
     # Save to cache
     _save_to_cache(cache_file, formatted_chords)
@@ -243,13 +271,13 @@ def analyze_file_madmom(file_path: Path) -> Dict:
     formatted_chords = []
     simple_chords = []
     
-    for start, end, chord_label in chords:
+    for start, end, chord_label, confidence in chords:
         # Full chord
         formatted_chords.append({
             "start": start,
             "end": end,
             "chord": chord_label,
-            "confidence": 0.95  # madmom is generally very confident
+            "confidence": confidence
         })
         
         # Simple chord (strip extensions)
@@ -258,7 +286,7 @@ def analyze_file_madmom(file_path: Path) -> Dict:
             "start": start,
             "end": end,
             "chord": simple_label,
-            "confidence": 0.95
+            "confidence": confidence
         })
     
     # Merge consecutive identical chords

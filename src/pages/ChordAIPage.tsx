@@ -5,6 +5,7 @@ import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import ChordTimeline from "@/components/chord-ai/ChordTimeline";
 import HorizontalChordTape from "@/components/chord-ai/HorizontalChordTape";
 import AnalysisSummary from "@/components/chord-ai/AnalysisSummary";
+import ConfidenceSummary from "@/components/chord-ai/ConfidenceSummary";
 import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
@@ -660,6 +661,14 @@ const ChordAIPage = () => {
                   keySignature={result ? `${transposeKey(result.key, transpose)} ${result.scale || ""}` : null}
                   confidence={0.96}
                 />
+
+                {/* Confidence-Guided UI */}
+                {currentChords.length > 0 && (
+                  <ConfidenceSummary
+                    segments={currentChords}
+                    onSeek={seek}
+                  />
+                )}
 
                 <div className="pt-6 border-t border-white/5 space-y-6">
                   <div className="space-y-4">
