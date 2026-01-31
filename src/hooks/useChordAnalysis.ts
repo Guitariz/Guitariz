@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { analyzeTrack } from "@/lib/analyzeAudio";
 import { analyzeRemote } from "@/lib/api/analyzeClient";
 import { getCachedAnalysis, setCachedAnalysis, isExpired } from "@/lib/analysisCache";
+import { computeAudioCacheKey, getCachedAudio, setCachedAudio, cacheUrlResponse } from "@/lib/audioCache";
 import { AnalysisResult } from "@/types/chordAI";
 
 export type UseChordAnalysisState = {
@@ -45,6 +46,8 @@ export const useChordAnalysis = (
 
     const resolvedKey = computeKey();
 
+    let fileToUpload: File | undefined = file ?? undefined;
+
     // If we have a cached result passed in props or in IndexedDB, use it
     (async () => {
       if (cachedResult && cacheKey) {
@@ -55,31 +58,46 @@ export const useChordAnalysis = (
         return;
       }
 
-        if (resolvedKey && typeof indexedDB !== "undefined") {
-          try {
-            const cached = await getCachedAnalysis(resolvedKey);
-            if (cached && !isExpired(cached)) {
-              setResult(cached.result as AnalysisResult);
-              setInstrumentalUrl(cached.instrumentalUrl);
-              setLoading(false);
-              setError(null);
-              return;
-            }
-          } catch (err) {
-            console.warn("useChordAnalysis: cache read error", err);
+      if (resolvedKey && typeof indexedDB !== "undefined") {
+        try {
+          const cached = await getCachedAnalysis(resolvedKey);
+          if (cached && !isExpired(cached)) {
+            setResult(cached.result as AnalysisResult);
+            setInstrumentalUrl(cached.instrumentalUrl);
+            setLoading(false);
+            setError(null);
+            return;
           }
+        } catch (err) {
+          console.warn("useChordAnalysis: cache read error", err);
         }
+      }
+
+      // If audio Cache Storage has the original file, we can reuse it to avoid re-upload
+      if (resolvedKey && 'caches' in window && file) {
+        try {
+          const audioKey = await computeAudioCacheKey(file);
+          const cachedBlob = await getCachedAudio(audioKey);
+          if (cachedBlob) {
+            // Construct a File so analyzeRemote receives same API
+            const cachedFile = new File([cachedBlob], file.name, { type: cachedBlob.type });
+            fileToUpload = cachedFile as File;
+          }
+        } catch (err) {
+          console.warn('useChordAnalysis: audio cache read error', err);
+        }
+      }
     })();
 
     // Only run analysis when file changes
     if (!file) return;
-    
+
     // Cancel previous request
     if (currentXhrRef.current) {
       currentXhrRef.current.abort();
       currentXhrRef.current = null;
     }
-    
+
     // Generate unique ID for this request
     const thisRequestId = ++requestIdRef.current;
 
@@ -89,16 +107,16 @@ export const useChordAnalysis = (
         setError(null);
         setInstrumentalUrl(undefined);
         setUploadProgress(0);
-        
+
         // Prefer remote analysis when a file is available
-        if (useRemote && file) {
+        if (useRemote && fileToUpload) {
           try {
             const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
             const remote = await analyzeRemote(
-              file, 
-              undefined, 
-              separateVocals, 
-              useMadmom, 
+              fileToUpload!,
+              undefined,
+              separateVocals,
+              useMadmom,
               (percent) => {
                 setUploadProgress(Math.round(percent));
               },
@@ -125,6 +143,26 @@ export const useChordAnalysis = (
                   await setCachedAnalysis(resolvedKey, { result: remote, instrumentalUrl: remote.instrumentalUrl });
                 } catch (e) {
                   console.warn("useChordAnalysis: cache write error", e);
+                }
+              }
+
+              // cache audio blobs: original file + instrumental (if available)
+              if (resolvedKey && file) {
+                try {
+                  const audioKey = await computeAudioCacheKey(file);
+                  // set original file into Cache Storage
+                  await setCachedAudio(audioKey, file);
+                } catch (err) {
+                  console.warn('useChordAnalysis: set audio cache error', err);
+                }
+              }
+
+              if (remote.instrumentalUrl && resolvedKey) {
+                try {
+                  const instrumentalKey = `${resolvedKey}::instrumental`;
+                  await cacheUrlResponse(instrumentalKey, apiUrl + remote.instrumentalUrl);
+                } catch (err) {
+                  console.warn('useChordAnalysis: cache instrumental error', err);
                 }
               }
 
