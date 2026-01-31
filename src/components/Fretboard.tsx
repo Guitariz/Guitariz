@@ -278,12 +278,12 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
     return { candidates, midiNotes, noteNames };
   }, [highlightedNotes, pianoNotes, pianoMode, detectionStrictness, maxCandidates]);
 
-  const getNoteAtFret = (stringIndex: number, fret: number): string => {
+  const getNoteAtFret = useCallback((stringIndex: number, fret: number): string => {
     const openNote = NOTES[stringIndex];
     const openNoteIndex = CHROMATIC.indexOf(openNote);
     const noteIndex = (openNoteIndex + fret) % 12;
     return CHROMATIC[noteIndex];
-  };
+  }, []);
 
   const getNotesForFret = useCallback((fret: number): FretNote[] => {
     return NOTES.map((_, stringIndex) => ({
@@ -359,7 +359,7 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
     });
 
     setHighlightedNotes(next);
-  }, [initialChordVoicing]);
+  }, [initialChordVoicing, getNoteAtFret]);
 
   const isNoteHighlighted = (stringIndex: number, fret: number): boolean => {
     return highlightedNotes.some(

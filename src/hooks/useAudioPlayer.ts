@@ -145,7 +145,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
         setCurrentTime(duration);
       }
     };
-  }, [audioBuffer, duration, transpose]);
+  }, [audioBuffer, duration, transpose, tempo]);
 
   const seek = useCallback(
     (time: number) => {
@@ -180,7 +180,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
         };
       }
     },
-    [audioBuffer, duration, isPlaying, transpose],
+    [audioBuffer, duration, isPlaying, transpose, tempo],
   );
 
   const loadFile = useCallback(async (file: File | null, buffer?: AudioBuffer) => {
