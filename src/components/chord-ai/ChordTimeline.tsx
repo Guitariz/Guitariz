@@ -83,7 +83,7 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
         {segments.map((seg, idx) => {
           const isActive = currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1);
           const progress = isActive && seg.end ? ((currentTime - seg.start) / (seg.end - seg.start)) * 100 : 0;
-          const confidence = seg.confidence ?? 0.94;
+          const confidence = seg.confidence ?? 0.75;
           const confLevel = getConfidenceLevel(confidence);
           const Icon = confLevel.icon;
           

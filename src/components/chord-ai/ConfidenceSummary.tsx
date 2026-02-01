@@ -19,15 +19,15 @@ const formatTime = (seconds: number) => {
 const ConfidenceSummary = ({ segments, onSeek }: ConfidenceSummaryProps) => {
   // Calculate statistics
   const totalSegments = segments.length;
-  const lowConfidence = segments.filter(s => (s.confidence || 0.94) < 0.70);
+  const lowConfidence = segments.filter(s => (s.confidence ?? 0.75) < 0.70);
   const mediumConfidence = segments.filter(s => {
-    const c = s.confidence || 0.94;
+    const c = s.confidence ?? 0.75;
     return c >= 0.70 && c < 0.85;
   });
-  const highConfidence = segments.filter(s => (s.confidence || 0.94) >= 0.85);
+  const highConfidence = segments.filter(s => (s.confidence ?? 0.75) >= 0.85);
   
   const avgConfidence = segments.length > 0 
-    ? segments.reduce((sum, s) => sum + (s.confidence || 0.94), 0) / segments.length 
+    ? segments.reduce((sum, s) => sum + (s.confidence ?? 0.75), 0) / segments.length 
     : 0;
 
   // Overall quality rating

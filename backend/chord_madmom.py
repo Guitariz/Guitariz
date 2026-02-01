@@ -119,30 +119,32 @@ def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str, float
         start_frame = int(start_time * fps)
         end_frame = int(end_time * fps)
         
-        if start_frame < len(feats) and end_frame <= len(feats):
+        confidence = 0.75  # Default confidence
+        
+        if start_frame < len(feats) and end_frame <= len(feats) and end_frame > start_frame:
             segment_feats = feats[start_frame:end_frame]
             if len(segment_feats) > 0:
                 # Max activation in the segment indicates confidence
-                max_activation = float(segment_feats.max())
-                # Average of top activations
-                mean_top = float(np.mean(np.sort(segment_feats.flatten())[-10:]))
-                # Combine both for confidence (0.7-0.98 range for detected chords)
-                confidence = min(0.98, 0.70 + (max_activation * 0.15) + (mean_top * 0.13))
-            else:
-                confidence = 0.75  # Default if can't compute
-        else:
-            confidence = 0.75  # Default for edge cases
+                max_activation = float(np.max(segment_feats))
+                # Mean of top 20% activations for robustness
+                flat = segment_feats.flatten()
+                top_k = max(1, len(flat) // 5)  # Top 20%
+                mean_top = float(np.mean(np.partition(flat, -top_k)[-top_k:]))
+                
+                # Combine both for confidence (0.65-0.95 range for better spread)
+                confidence = 0.65 + (max_activation * 0.15) + (mean_top * 0.15)
+                confidence = float(np.clip(confidence, 0.65, 0.95))
         
         # Lower confidence for N.C. (no chord) segments
         if chord_label == "N" or "X" in chord_label:
-            confidence *= 0.6
+            confidence = min(confidence * 0.6, 0.55)
         
         if ":maj" in chord_label:
             chord_label = chord_label.replace(":maj", "")
         elif ":min" in chord_label:
             chord_label = chord_label.replace(":min", "m")
         
-        formatted_chords.append((float(start_time), float(end_time), chord_label, confidence))
+        formatted_chords.append((float(start_time), float(end_time), chord_label, float(confidence)))
     
     # Save to cache
     _save_to_cache(cache_file, formatted_chords)
@@ -337,16 +339,27 @@ def _merge_consecutive(chords: List[Dict]) -> List[Dict]:
     
     merged = []
     current = chords[0].copy()
+    current_group = [chords[0]]
     
     for i in range(1, len(chords)):
         if chords[i]["chord"] == current["chord"]:
             # Extend current chord
             current["end"] = chords[i]["end"]
-            current["confidence"] = max(current["confidence"], chords[i]["confidence"])
+            current_group.append(chords[i])
+            # Use weighted average confidence based on duration
+            total_duration = sum(c["end"] - c["start"] for c in current_group)
+            if total_duration > 0:
+                current["confidence"] = sum(
+                    c["confidence"] * (c["end"] - c["start"]) / total_duration 
+                    for c in current_group
+                )
+            else:
+                current["confidence"] = max(c["confidence"] for c in current_group)
         else:
             # Save current and start new
             merged.append(current)
             current = chords[i].copy()
+            current_group = [chords[i]]
     
     merged.append(current)
     return merged
