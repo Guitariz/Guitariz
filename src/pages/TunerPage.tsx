@@ -1,4 +1,4 @@
-import Navigation from "@/components/Navigation";
+
 import { Tuner } from "@/components/Tuner";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import { GaugeCircle } from "lucide-react";
@@ -28,9 +28,9 @@ const TunerPage = () => {
             <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
             <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-            <Navigation />
 
-            <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
+
+            <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
                 <div className="max-w-4xl mx-auto">
                     {/* Breadcrumb */}
                     <Breadcrumb items={[

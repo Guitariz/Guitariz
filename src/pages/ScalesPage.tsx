@@ -1,4 +1,4 @@
-import Navigation from "@/components/Navigation";
+
 import ScaleExplorer from "@/components/ScaleExplorer";
 import { Disc, Music, Bot, Layers } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
@@ -23,9 +23,9 @@ const ScalesPage = () => {
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
 
-      <Navigation />
 
-      <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
+
+      <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium tracking-wider uppercase">

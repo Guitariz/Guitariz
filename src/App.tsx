@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { Routes, Route, useLocation } from "react-router-dom";
+import { GlobalMenu } from "@/components/GlobalMenu";
 
 const Index = lazy(() => import("./pages/Index"));
 const FretboardPage = lazy(() => import("./pages/FretboardPage"));
@@ -15,6 +16,7 @@ const ChordAIPage = lazy(() => import("./pages/ChordAIPage"));
 const VocalSplitterPage = lazy(() => import("./pages/VocalSplitterPage"));
 const TheoryPage = lazy(() => import("./pages/TheoryPage"));
 const TunerPage = lazy(() => import("./pages/TunerPage"));
+const EarTrainingPage = lazy(() => import("./pages/EarTrainingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import GuitarizLoader from "@/components/ui/loader";
@@ -46,6 +48,9 @@ const App = () => {
       <Analytics />
       <SpeedInsights />
       <TooltipProvider>
+        {/* Global Sliding Menu */}
+        <GlobalMenu />
+
         {/* Premium Deep Black Foundation with Subtle Texture */}
         <div className="fixed inset-0 z-[-1] bg-[#020202]">
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
@@ -153,6 +158,16 @@ const App = () => {
                 <Suspense fallback={<RouteFallback />}>
                   <PageWrapper>
                     <TunerPage />
+                  </PageWrapper>
+                </Suspense>
+              }
+            />
+            <Route
+              path="/ear-training"
+              element={
+                <Suspense fallback={<RouteFallback />}>
+                  <PageWrapper>
+                    <EarTrainingPage />
                   </PageWrapper>
                 </Suspense>
               }

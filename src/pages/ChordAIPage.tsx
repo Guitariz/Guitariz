@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Navigation from "@/components/Navigation";
+
 import { Button } from "@/components/ui/button";
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import ChordTimeline from "@/components/chord-ai/ChordTimeline";
@@ -224,10 +224,10 @@ const ChordAIPage = () => {
     if (!result) return [];
     const base = showSimple && result.simpleChords ? result.simpleChords : result.chords;
     if (!base) return [];
-    
+
     // Apply transposition
     if (transpose === 0) return base;
-    
+
     return base.map(seg => ({
       ...seg,
       chord: transposeChord(seg.chord, transpose)
@@ -265,11 +265,11 @@ const ChordAIPage = () => {
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
 
-      <Navigation />
 
-      <main className="container mx-auto px-4 md:px-6 pt-24 md:pt-32 pb-16 relative z-10">
+
+      <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Breadcrumb */}
           <Breadcrumb items={[
             { name: "Home", url: "https://guitariz.studio/" },
@@ -381,12 +381,12 @@ const ChordAIPage = () => {
                     if (file) {
                       // If we have a result but no audio, we are likely restoring audio for a history item
                       const isRestoring = !!result && !audioBuffer;
-                      
+
                       const fileId = `${file.name}-${file.size}-${file.lastModified}`;
-                      
+
                       setSelectedFile(file);
                       setOriginalFile(file);
-                      
+
                       if (!isRestoring) {
                         setCurrentFileId(fileId);
                         setCachedResults({}); // Clear cache for new file
@@ -395,7 +395,7 @@ const ChordAIPage = () => {
                         setWasVocalFilterOn(false);
                         setHistoryFileName(null);
                       }
-                      
+
                       loadFile(file);
                     }
                     // Reset value so the same file can be selected again
@@ -438,7 +438,7 @@ const ChordAIPage = () => {
                     </p>
                     <p className="text-xs text-muted-foreground/60 font-mono">
                       Maximum file size: 15MB
-                   </p>
+                    </p>
                   </div>
                 ) : (
                   <div className="p-10 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">

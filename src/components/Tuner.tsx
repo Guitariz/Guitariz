@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Mic, MicOff, Settings2, Guitar, CheckCircle2 } from "lucide-react";
+import { Mic, MicOff, Guitar, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ const GUITAR_STRINGS = [
 export const Tuner = () => {
     const [isListening, setIsListening] = useState(false);
     const [note, setNote] = useState<string>("--");
-    const [octave, setOctave] = useState<number | null>(null);
     const [cents, setCents] = useState<number>(0);
     const [frequency, setFrequency] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
@@ -108,11 +107,11 @@ export const Tuner = () => {
         if (!buffer) return;
 
         analyserRef.current.getFloatTimeDomainData(buffer);
-        const ac = autoCorrelate(buffer, audioContextRef.current.sampleRate);
+        const ac = autoCorrelate(buffer as unknown as Float32Array, audioContextRef.current.sampleRate);
 
         if (ac > -1 && ac > 50 && ac < 2000) {
             // Valid frequency found
-            const { noteName, octaveVal, centsVal } = getNote(ac);
+            const { noteName, centsVal } = getNote(ac);
 
             // Rolling average for smoother UI
             centsHistory.current.push(centsVal);
@@ -120,7 +119,6 @@ export const Tuner = () => {
             const avgCents = centsHistory.current.reduce((a, b) => a + b, 0) / centsHistory.current.length;
 
             setNote(noteName);
-            setOctave(octaveVal);
             setCents(avgCents);
             setFrequency(ac);
 
@@ -192,7 +190,6 @@ export const Tuner = () => {
 
         setIsListening(false);
         setNote("--");
-        setOctave(null);
         setCents(0);
         setFrequency(0);
         setTargetStringIndex(null);

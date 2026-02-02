@@ -1,4 +1,4 @@
-import { Guitar, Layers, Disc, BookOpen, Music, Bot, Wand2, Download, Menu, Activity, GaugeCircle } from "lucide-react";
+import { Guitar, Layers, Disc, BookOpen, Music, Bot, Wand2, Download, Menu, Activity, GaugeCircle, Trophy } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -103,6 +103,7 @@ const Navigation = () => {
     { icon: Disc, label: "Scales", path: "/scales" },
     { icon: Music, label: "Metronome", path: "/metronome" },
     { icon: Wand2, label: "Vocal Splitter", path: "/vocal-splitter" },
+    { icon: Trophy, label: "Ear Training", path: "/ear-training" },
     { icon: GaugeCircle, label: "Tuner", path: "/tuner" },
     { icon: BookOpen, label: "Theory", path: "/theory" },
     { icon: Bot, label: "Chord AI", path: "/chord-ai" },
