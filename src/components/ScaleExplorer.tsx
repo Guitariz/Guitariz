@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Scale, Hash, Globe, Play, Info, Guitar, Search } from "lucide-react";
+import { Scale, Hash, Globe, Play, Info, Guitar, Search, PlayCircle, Layers } from "lucide-react";
 import { playNote } from "@/lib/chordAudio";
+import { motion, AnimatePresence } from "framer-motion";
 
 type ScaleDataBase = {
   intervals: number[];
@@ -268,18 +269,18 @@ const ScaleExplorer = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-8 w-full min-h-[600px]">
       {/* Selection Sidebar */}
-      <div className="w-full lg:w-80 flex flex-col gap-6">
-        <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
-          <div className="space-y-6">
-            <div className="flex p-1 bg-white/[0.03] rounded-xl border border-white/5">
+      <div className="w-full lg:w-64 flex flex-col gap-4 lg:sticky lg:top-8 h-full min-h-[750px] lg:h-[calc(100vh-4rem)]">
+        <div className="glass-card rounded-2xl p-4 border-white/5 bg-[#0a0a0a]/60 flex flex-col h-full overflow-hidden shadow-xl">
+          <div className="space-y-4 flex flex-col h-full pt-2">
+            <div className="flex p-0.5 bg-white/[0.03] rounded-xl border border-white/5">
               <button
                 onClick={() => {
                   setScaleCategory("western");
                   setSelectedScale("Major (Ionian)");
                 }}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "western"
-                    ? "bg-white/10 text-white shadow-sm border border-white/10"
-                    : "text-muted-foreground hover:text-white"
+                  ? "bg-white/10 text-white shadow-sm border border-white/10"
+                  : "text-muted-foreground hover:text-white"
                   }`}
               >
                 Western
@@ -290,24 +291,24 @@ const ScaleExplorer = () => {
                   setSelectedScale("Bhairav");
                 }}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "raga"
-                    ? "bg-white/10 text-white shadow-sm border border-white/10"
-                    : "text-muted-foreground hover:text-white"
+                  ? "bg-white/10 text-white shadow-sm border border-white/10"
+                  : "text-muted-foreground hover:text-white"
                   }`}
               >
                 Raga
               </button>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Root Position</label>
-              <div className="grid grid-cols-6 gap-1">
+            <div className="space-y-2">
+              <label className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold px-1">Root Note</label>
+              <div className="grid grid-cols-4 gap-1">
                 {NOTES.map((note) => (
                   <button
                     key={note}
                     onClick={() => setRootNote(note)}
-                    className={`h-8 rounded-md text-[10px] font-mono transition-all border ${rootNote === note
-                        ? "bg-white text-black border-white"
-                        : "bg-white/[0.02] border-white/5 text-muted-foreground hover:border-white/20 hover:text-white"
+                    className={`h-8 rounded-lg text-xs font-mono transition-all border ${rootNote === note
+                      ? "bg-white text-black border-white shadow-lg"
+                      : "bg-white/[0.02] border-white/5 text-muted-foreground hover:border-white/10 hover:text-white"
                       }`}
                   >
                     {note}
@@ -316,115 +317,130 @@ const ScaleExplorer = () => {
               </div>
             </div>
 
-            <div className="space-y-3 flex-1">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden space-y-2">
+              <label className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-bold px-1">Structure</label>
               <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-white transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/30 group-focus-within:text-white transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search scales..."
+                  placeholder="Filter scales..."
                   value={scaleSearchQuery}
                   onChange={(e) => setScaleSearchQuery(e.target.value)}
-                  className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2.5 pl-9 pr-4 text-xs text-white placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all font-medium shadow-inner"
+                  className="w-full bg-white/[0.03] border border-white/5 rounded-lg py-1.5 pl-9 pr-4 text-xs text-white placeholder:text-muted-foreground/20 focus:outline-none focus:ring-1 focus:ring-white/10 transition-all font-medium"
                 />
               </div>
 
-              <ScrollArea className="h-[400px] -mr-4 pr-4">
-                <div className="space-y-1">
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar-visible min-h-[500px]">
+                <div className="space-y-0.5">
                   {filteredScales.map((scale) => (
                     <button
                       key={scale}
                       onClick={() => setSelectedScale(scale)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${selectedScale === scale
-                          ? "bg-white/10 border-white/10 text-white font-semibold shadow-sm"
-                          : "border-transparent text-muted-foreground hover:bg-white/[0.03] hover:text-white"
+                      className={`w-full text-left px-3 py-1 rounded-lg text-xs font-sans transition-all border group relative overflow-hidden ${selectedScale === scale
+                        ? "bg-white/[0.06] border-white/10 text-white font-normal shadow-sm"
+                        : "border-transparent text-muted-foreground/60 hover:bg-white/[0.03] hover:text-white"
                         }`}
                     >
-                      {scale}
+                      {selectedScale === scale && (
+                        <motion.div layoutId="activeScale" className="absolute left-0 top-1 bottom-1 w-0.5 bg-white rounded-r-full" />
+                      )}
+                      <span className={selectedScale === scale ? "pl-1" : "pl-0"}>{scale}</span>
                     </button>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 space-y-6">
-        <div className="glass-card rounded-[2rem] p-8 border-white/10 bg-white/[0.01] overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <Scale className="w-32 h-32 text-white" />
+      <div className="flex-1 space-y-4">
+        <div className="glass-card rounded-[1.50rem] p-6 border-white/10 bg-white/[0.01] overflow-hidden relative min-h-[140px] flex items-center shadow-xl">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none">
+            <Scale className="w-48 h-48 text-white" />
           </div>
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px] font-mono text-muted-foreground uppercase px-2 py-0">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 w-full">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary px-2 py-0.5 text-[9px] uppercase tracking-widest font-bold">
                   {scaleCategory} structure
                 </Badge>
               </div>
-              <h1 className="text-4xl font-bold tracking-tight text-white">
-                {rootNote} <span className="text-muted-foreground font-medium">{selectedScale}</span>
-              </h1>
-              <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-                {scaleData.description}
-              </p>
-              <div className="flex items-center gap-3 pt-2">
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-light tracking-tighter text-white">
+                  {rootNote} <span className="text-muted-foreground font-thin italic">{selectedScale}</span>
+                </h1>
+                <p className="text-[11px] text-muted-foreground max-w-lg leading-relaxed opacity-50 font-medium font-sans">
+                  {scaleData.description}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
                 <button
                   onClick={playScale}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full bg-white text-black font-semibold text-xs hover:bg-neutral-200 transition-all disabled:opacity-50"
                   disabled={!!lastPlayed}
+                  className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-bold hover:bg-neutral-200 transition-all shadow-lg group disabled:opacity-50"
                 >
-                  <Play className="w-3 h-3 fill-current" />
-                  Audition Scale
+                  <PlayCircle className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" />
+                  Audition
                 </button>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 md:max-w-[280px] justify-end">
-              {getScaleNotes.map((note, idx) => (
-                <div
-                  key={idx}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono text-xs font-bold border transition-all ${note === rootNote
-                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]"
-                      : "bg-white/[0.03] border-white/10 text-white"
-                    } ${lastPlayed === note ? "scale-110 ring-2 ring-primary border-primary" : ""}`}
-                >
-                  {note}
-                </div>
-              ))}
+
+            <div className="flex flex-wrap gap-1.5 md:max-w-[280px] justify-end">
+              <AnimatePresence mode="popLayout">
+                {getScaleNotes.map((note, idx) => (
+                  <motion.div
+                    key={`${note}-${idx}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono text-[11px] font-bold border transition-all ${note === rootNote
+                      ? "bg-white text-black border-white shadow-xl"
+                      : "bg-white/[0.02] border-white/5 text-white"
+                      } ${lastPlayed === note ? "scale-105 ring-1 ring-primary border-primary shadow-[0_0_20px_rgba(255,255,255,0.3)]" : ""}`}
+                  >
+                    {note}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </div>
         </div>
 
-        <div className="glass-card rounded-[2rem] p-1 border-white/5 bg-black/40 shadow-2xl overflow-hidden">
-          <div className="p-4 md:p-6 pb-2 border-b border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-secondary/10 rounded-lg">
-                <Guitar className="w-4 h-4 text-secondary" />
+        <div className="glass-card rounded-[2rem] p-1 border-white/5 bg-black/40 shadow-xl overflow-hidden">
+          <div className="p-4 md:p-5 pb-1 border-b border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-secondary/20 rounded-lg">
+                <Guitar className="w-3.5 h-3.5 text-secondary" />
               </div>
-              <h3 className="text-sm font-semibold text-white">Fretboard Mapping</h3>
+              <div className="flex flex-col">
+                <h3 className="text-xs font-bold text-white tracking-tight">Fretboard Mapping</h3>
+                <span className="text-[9px] text-muted-foreground/40 font-medium uppercase tracking-tighter">0-12 Frets • Standard</span>
+              </div>
             </div>
-            <span className="text-[10px] text-muted-foreground/60 md:hidden animate-pulse">
-              Scroll →
-            </span>
           </div>
-          <div className="p-4 md:p-8 overflow-x-auto scrollbar-hide">
-            <div className="relative min-w-[700px] h-[340px] flex items-center justify-center">
-              <div className="relative bg-[#0a0a0a] p-8 rounded-3xl border border-white/5 shadow-inner">
-                <div className="relative" style={{ width: "560px", height: "200px" }}>
+          <div className="p-4 md:p-6 overflow-x-auto scrollbar-hide flex justify-center">
+            <div className="relative w-full max-w-[750px] flex items-center justify-center py-4">
+              <div className="relative bg-[#050505] p-6 md:p-8 rounded-[1.5rem] border border-white/5 shadow-inner w-full flex justify-center overflow-hidden">
+                <div className="relative" style={{ width: "100%", height: "150px" }}>
+                  {/* Strings */}
                   {Array.from({ length: 6 }, (_, idx) => (
-                    <div key={idx} className="absolute w-full h-[1px] bg-white/10" style={{ top: `${idx * 40}px` }} />
+                    <div key={idx} className="absolute w-full h-[1px] bg-white/[0.05]" style={{ top: `${idx * 30}px` }} />
                   ))}
+                  {/* Frets */}
                   {Array.from({ length: 13 }, (_, idx) => (
-                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/40" : "bg-white/10"}`} style={{ left: `${idx * (560 / 13)}px` }}>
+                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/20" : "bg-white/5"}`} style={{ left: `${idx * (100 / 12)}%` }}>
                       {[3, 5, 7, 9, 12].includes(idx) && (
-                        <div className="absolute left-1/2 -translate-x-1/2 -bottom-10 flex flex-col items-center gap-1 opacity-20">
-                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          {idx === 12 && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          <span className="text-[10px] font-mono mt-1">{idx}</span>
+                        <div className="absolute left-1/2 -translate-x-1/2 -bottom-6 flex flex-col items-center opacity-10">
+                          <div className="w-1 h-1 rounded-full bg-white" />
+                          <span className="text-[8px] font-mono mt-1 font-bold">{idx}</span>
                         </div>
                       )}
                     </div>
                   ))}
+                  {/* Notes */}
                   {Array.from({ length: 6 }, (_, sIdx) => {
                     const stringNotes = ["E", "A", "D", "G", "B", "E"];
                     const openIdx = NOTES.indexOf(stringNotes[sIdx]);
@@ -435,14 +451,19 @@ const ScaleExplorer = () => {
                         <TooltipProvider key={`${sIdx}-${fIdx}`}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (560 / 13)}px`, top: `${sIdx * 40}px`, transform: "translate(-50%, -50%)" }}>
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[9px] border-2 transition-all ${note === rootNote ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-110" : "bg-black/80 text-white border-white/20"}`}>
+                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (100 / 12)}%`, top: `${sIdx * 30}px`, transform: "translate(-50%, -50%)" }}>
+                                <motion.div
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  transition={{ delay: fIdx * 0.03 + sIdx * 0.01 }}
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[8px] border transition-all ${note === rootNote ? "bg-white text-black border-white shadow-lg scale-110" : "bg-black/90 text-white border-white/10"}`}
+                                >
                                   {note}
-                                </div>
+                                </motion.div>
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white text-[10px]">
-                              {note} on Fret {fIdx} ({stringNotes[sIdx]} string)
+                            <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white text-[9px] font-mono">
+                              {note} on Fret {fIdx}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -450,7 +471,7 @@ const ScaleExplorer = () => {
                     });
                   })}
                 </div>
-                <div className="absolute -left-10 top-8 bottom-8 flex flex-col justify-between text-[10px] font-mono text-muted-foreground/40">
+                <div className="absolute -left-6 top-8 bottom-8 flex flex-col justify-between text-[9px] font-mono text-muted-foreground/20">
                   {["e", "B", "G", "D", "A", "E"].map((s, i) => <div key={i} className="h-0 flex items-center">{s}</div>)}
                 </div>
               </div>
@@ -460,28 +481,28 @@ const ScaleExplorer = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {scaleCategory === "western" ? (
-            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-primary/10 rounded-lg text-primary"><Hash className="w-4 h-4" /></div>
-                <h3 className="text-sm font-semibold text-white">Modal Degrees</h3>
+            <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-primary/10 rounded-lg text-primary"><Hash className="w-3.5 h-3.5" /></div>
+                <h3 className="text-xs font-semibold text-white">Modal Degrees</h3>
               </div>
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
                   {(scaleData as WesternScaleData).chords.map((chord, idx) => (
-                    <div key={idx} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-mono text-white">
-                      <span className="text-muted-foreground mr-2">{idx + 1}.</span>{chord}
+                    <div key={idx} className="px-2 py-1 rounded-md bg-white/[0.03] border border-white/5 text-[10px] font-mono text-white">
+                      <span className="text-muted-foreground mr-1.5">{idx + 1}.</span>{chord}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-accent/10 rounded-lg text-accent"><Globe className="w-4 h-4" /></div>
-                <h3 className="text-sm font-semibold text-white">Raga Details</h3>
+            <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-accent/10 rounded-lg text-accent"><Globe className="w-3.5 h-3.5" /></div>
+                <h3 className="text-xs font-semibold text-white">Raga Details</h3>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
                     <span className="text-[10px] text-muted-foreground uppercase block mb-1">Time</span>
@@ -492,13 +513,13 @@ const ScaleExplorer = () => {
                     <span className="text-xs text-white">{(scaleData as RagaScaleData).mood}</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 font-mono text-xs space-y-2 text-center">
-                  <div className="flex items-center gap-3 justify-center">
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 font-mono text-[10px] space-y-2 text-center">
+                  <div className="flex items-center gap-2 justify-center">
                     <span className="text-primary opacity-50">↑</span>
                     <span className="tracking-widest">{(scaleData as RagaScaleData).aroha}</span>
                   </div>
                   <div className="h-px bg-white/5" />
-                  <div className="flex items-center gap-3 justify-center">
+                  <div className="flex items-center gap-2 justify-center">
                     <span className="text-accent opacity-50">↓</span>
                     <span className="tracking-widest">{(scaleData as RagaScaleData).avaroha}</span>
                   </div>
@@ -506,12 +527,12 @@ const ScaleExplorer = () => {
               </div>
             </div>
           )}
-          <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01] flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-neutral-100/10 rounded-lg text-white"><Info className="w-4 h-4" /></div>
-              <h3 className="text-sm font-semibold text-white">Music Theory Context</h3>
+          <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01] flex flex-col">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-1.5 bg-neutral-100/10 rounded-lg text-white"><Info className="w-3.5 h-3.5" /></div>
+              <h3 className="text-xs font-semibold text-white">Theory Context</h3>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-[11px] text-muted-foreground leading-relaxed opacity-70">
               This scale uses {getScaleNotes.length} notes. The relationship between the 3rd defines its core personality.
             </p>
           </div>
