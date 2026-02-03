@@ -43,7 +43,7 @@ export const GlobalMenu = () => {
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(true)}
-                className="fixed top-5 right-5 z-[90] w-12 h-12 bg-white/10 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-all shadow-2xl"
+                className="fixed top-5 right-5 z-[90] w-12 h-12 bg-[#111] border border-white/10 rounded-full flex items-center justify-center hover:bg-[#222] transition-all shadow-2xl"
             >
                 <Menu className="w-5 h-5 text-white" />
             </motion.button>
@@ -56,7 +56,7 @@ export const GlobalMenu = () => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]"
+                        className="fixed inset-0 bg-black/80 z-[100]"
                         onClick={() => setIsOpen(false)}
                     />
                 )}

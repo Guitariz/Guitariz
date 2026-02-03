@@ -370,7 +370,7 @@ const ChordAIPage = () => {
                 </div>
               </div>
 
-              <div className="glass-card rounded-[2.5rem] border border-white/5 bg-white/[0.015] backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] overflow-hidden min-h-[500px] flex flex-col transition-all">
+              <div className="glass-card rounded-[2.5rem] border border-white/5 bg-[#0d0d0d]/90 shadow-2xl overflow-hidden min-h-[500px] flex flex-col transition-all">
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -598,7 +598,7 @@ const ChordAIPage = () => {
                         </div>
                         <div className="bg-white/[0.02] rounded-3xl border border-white/5 p-2 overflow-hidden relative">
                           {!audioBuffer && (
-                            <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-8 text-center">
+                            <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-8 text-center">
                               <p className="text-xs text-white/60 font-medium">Waveform visualization requires audio file upload.</p>
                             </div>
                           )}
@@ -656,7 +656,7 @@ const ChordAIPage = () => {
 
             {/* Sidebar Data */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="glass-card rounded-[2rem] border border-white/5 bg-white/[0.015] p-8 space-y-8">
+              <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0d0d0d]/90 p-8 space-y-8">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="p-2 rounded-xl bg-white/5 border border-white/5">
                     <Sparkles className="w-4 h-4 text-white" />

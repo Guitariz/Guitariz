@@ -436,8 +436,7 @@ const VocalSplitterPage = () => {
   }, [teardownSources]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+    <div className="min-h-screen bg-[#030303] relative overflow-hidden selection:bg-white/10">
 
 
 
@@ -473,7 +472,7 @@ const VocalSplitterPage = () => {
           </div>
 
           {/* Main Content */}
-          <div className="glass-card rounded-[2.5rem] border border-white/5 bg-white/[0.015] backdrop-blur-3xl shadow-[0_30px_100px_rgba(0,0,0,0.5)] overflow-hidden min-h-[600px] flex flex-col p-10">
+          <div className="glass-card rounded-[2.5rem] border border-white/5 bg-[#0a0a0a]/90 shadow-2xl overflow-hidden min-h-[600px] flex flex-col p-10">
             {!selectedFile ? (
               <div
                 className={cn(

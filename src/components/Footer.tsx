@@ -6,7 +6,7 @@ const Footer = () => {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative z-10 border-t border-white/5 bg-[#0a0a0a]/60 backdrop-blur-xl pt-16 pb-8">
+        <footer className="relative z-10 border-t border-white/5 bg-[#0a0a0a]/90 pt-16 pb-8">
             <div className="container mx-auto max-w-5xl px-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-16">
                     {/* Brand Column */}

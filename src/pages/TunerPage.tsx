@@ -22,11 +22,7 @@ const TunerPage = () => {
     });
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
-            {/* Ambient Background */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-            <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
-            <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="min-h-screen bg-[#030303] relative overflow-hidden selection:bg-white/10">
 
 
 

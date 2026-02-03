@@ -21,7 +21,7 @@ const ScalesPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
+    <div className="min-h-screen bg-[#030303] relative overflow-hidden selection:bg-white/10">
 
 
 

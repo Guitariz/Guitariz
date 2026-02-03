@@ -48,7 +48,7 @@ const TheoryPage = () => {
           </div>
         </div>
 
-        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-xl shadow-2xl overflow-hidden p-4 md:p-8">
+        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/90 shadow-2xl overflow-hidden p-4 md:p-8">
           <CircleOfFifths />
         </div>
 

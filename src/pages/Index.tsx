@@ -69,69 +69,11 @@ const Index = () => {
   return (
     <div ref={containerRef} className="min-h-screen relative bg-[#050505] overflow-x-hidden selection:bg-white/10">
 
-      {/* Aesthetic Background */}
+      {/* Aesthetic Background - Clean & Optimized */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <svg className="invisible absolute size-0">
-          <filter id="noiseFilter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" />
-            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10" result="noise" />
-            <feComposite operator="in" in2="SourceGraphic" result="composite" />
-            <feBlend mode="overlay" in="noise" in2="SourceGraphic" />
-          </filter>
-        </svg>
-
-        {/* Base */}
         <div className="absolute inset-0 bg-[#030303]" />
-
-        {/* Animated Orbs */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-emerald-900/30 blur-[120px] rounded-full mix-blend-screen"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 0.6, 0.3],
-            x: [0, -70, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] bg-purple-900/30 blur-[120px] rounded-full mix-blend-screen"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.4, 0.2],
-            x: [0, 50, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 5 }}
-          className="absolute bottom-[-10%] left-[20%] w-[50%] h-[50%] bg-blue-900/20 blur-[120px] rounded-full mix-blend-screen"
-        />
-
-        {/* Noise Overlay using SVG Filter */}
-        <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay" style={{ filter: 'url(#noiseFilter)' }} />
-
-        {/* Fine Grain Texture Image (additional layer for detail) */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-
-        {/* Grid Pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)`,
-            backgroundSize: '100px 100px'
-          }}
-        />
-
-        {/* Vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]" />
+        {/* Subtle Vignette for depth without overhead */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
       </div>
 
       <main className="pt-12 pb-24 relative z-10">

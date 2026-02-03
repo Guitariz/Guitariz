@@ -72,8 +72,8 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
 
   useLayoutEffect(() => {
     if (fretsContainerRef.current) {
-        fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
-        setIsMeasured(true);
+      fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
+      setIsMeasured(true);
     }
   }, []); // Only run once after mount, as pianoMode is undefined here
 
@@ -319,26 +319,26 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   // Link drag position to barre fret state
   useEffect(() => {
     const unsubscribe = barreX.onChange(latestX => {
-        if (fretsContainerWidthRef.current > 0) {
-            const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
-            const handleCenter = latestX + (28 / 2); // 28px is handle width, find center
-            const currentFret = Math.max(0, Math.min(FRETS, Math.floor(handleCenter / fretPlusNutWidth)));
-            setBarreFret(currentFret);
-        }
+      if (fretsContainerWidthRef.current > 0) {
+        const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+        const handleCenter = latestX + (28 / 2); // 28px is handle width, find center
+        const currentFret = Math.max(0, Math.min(FRETS, Math.floor(handleCenter / fretPlusNutWidth)));
+        setBarreFret(currentFret);
+      }
     });
     return () => unsubscribe();
   }, [barreX]);
 
   const handleDragEnd = () => {
-      if (fretsContainerWidthRef.current > 0) {
-          const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
-          const targetX = barreFret * fretPlusNutWidth;
-          animate(barreX, targetX, { type: 'spring', stiffness: 500, damping: 30 });
-      }
+    if (fretsContainerWidthRef.current > 0) {
+      const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+      const targetX = barreFret * fretPlusNutWidth;
+      animate(barreX, targetX, { type: 'spring', stiffness: 500, damping: 30 });
+    }
   };
 
   const handleTap = () => {
-      toggleFret(barreFret);
+    toggleFret(barreFret);
   };
 
   // When a chord voicing is provided (e.g. from the Chords page),
@@ -569,9 +569,9 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap items-center justify-between gap-6 mb-8 bg-white/[0.03] border border-white/5 p-4 rounded-2xl backdrop-blur-md shadow-2xl"
+          className="flex flex-wrap items-center justify-between gap-6 mb-8 bg-[#111]/90 border border-white/5 p-4 rounded-2xl shadow-2xl"
         >
-          <div className="flex items-center p-1.5 bg-black/40 rounded-xl border border-white/5 backdrop-blur-sm self-start">
+          <div className="flex items-center p-1.5 bg-black/60 rounded-xl border border-white/5 self-start">
             <button
               onClick={() => setPianoMode(false)}
               className={cn(
@@ -686,25 +686,25 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
         {/* Main instrument display */}
         <motion.div
           ref={instrumentRef}
-          className="bg-black/40 border border-white/5 rounded-[2rem] p-4 md:p-12 mb-8 backdrop-blur-md shadow-2xl overflow-hidden ring-1 ring-white/10 group"
+          className="bg-black/60 border border-white/5 rounded-[2rem] p-4 md:p-12 mb-8 shadow-2xl overflow-hidden ring-1 ring-white/10 group"
         >
           <AnimatePresence mode="wait">
             {pianoMode ? (
               <motion.div
                 key="piano"
-                initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                transition={{ duration: 0.3, ease: "linear" }}
                 className="w-full flex flex-col items-center"
               >
                 {/* Piano Play Area */}
                 <div className="w-full overflow-x-auto pb-6 custom-scrollbar">
                   <div className="flex justify-center min-w-max px-4">
                     <div className="relative">
-                      {/* Background glow for active notes */}
+                      {/* Background glow for active notes - Optimized */}
                       {(pianoNotes.length > 0 || pianoActiveNotes.length > 0) && (
-                        <div className="absolute -inset-4 bg-primary/20 blur-[80px] opacity-40 z-0 animate-pulse"></div>
+                        <div className="absolute -inset-4 bg-primary/20 opacity-20 z-0"></div>
                       )}
                       <div className="relative z-10">
                         <PianoKeyboard
@@ -722,7 +722,7 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-10 flex flex-wrap items-center justify-center gap-6 p-5 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md shadow-2xl relative overflow-hidden group"
+                  className="mt-10 flex flex-wrap items-center justify-center gap-6 p-5 rounded-2xl bg-[#111] border border-white/5 shadow-2xl relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
@@ -764,10 +764,10 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
             ) : (
               <motion.div
                 key="guitar"
-                initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
-                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                transition={{ duration: 0.3, ease: "linear" }}
                 className="relative overflow-x-auto custom-scrollbar"
               >
                 <div className="md:hidden text-[10px] text-center text-muted-foreground/50 mb-2 animate-pulse font-mono tracking-widest uppercase">
@@ -799,30 +799,30 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                   <div className="space-y-4 mt-8">
                     {/* Draggable Barre Tool Row */}
                     <div className="flex items-center gap-2 h-10 -mb-4">
-                        <div className="w-10 shrink-0" /> {/* Spacer */}
-                        <div className="relative flex-1 h-full flex">
-                            {/* Invisible snap points */}
-                            {Array.from({ length: FRETS + 1 }).map((_, i) => (
-                                <div key={i} className="flex-1" />
-                            ))}
-                            {/* Visual indicator bar that follows the handle */}
-                            <motion.div
-                                className="absolute top-0 h-full w-1 bg-primary/50 rounded-full pointer-events-none z-20"
-                                style={{ x: barreX }}
-                            />
-                            {/* Draggable Handle */}
-                            <motion.div
-                                className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-black/40 border-2 border-dashed border-white/20 hover:border-primary hover:bg-primary/10 transition-colors text-white/50 hover:text-primary cursor-grab active:cursor-grabbing z-30"
-                                style={{ x: barreX }}
-                                drag={isMeasured ? "x" : false}
-                                dragConstraints={isMeasured ? { left: 0, right: fretsContainerWidthRef.current - 28 } : { left: 0, right: 0 }}
-                                dragElastic={0.1}
-                                onDragEnd={handleDragEnd}
-                                onTap={handleTap}
-                            >
-                                <X className="w-3 h-3" />
-                            </motion.div>
-                        </div>
+                      <div className="w-10 shrink-0" /> {/* Spacer */}
+                      <div className="relative flex-1 h-full flex">
+                        {/* Invisible snap points */}
+                        {Array.from({ length: FRETS + 1 }).map((_, i) => (
+                          <div key={i} className="flex-1" />
+                        ))}
+                        {/* Visual indicator bar that follows the handle */}
+                        <motion.div
+                          className="absolute top-0 h-full w-1 bg-primary/50 rounded-full pointer-events-none z-20"
+                          style={{ x: barreX }}
+                        />
+                        {/* Draggable Handle */}
+                        <motion.div
+                          className="absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-black/40 border-2 border-dashed border-white/20 hover:border-primary hover:bg-primary/10 transition-colors text-white/50 hover:text-primary cursor-grab active:cursor-grabbing z-30"
+                          style={{ x: barreX }}
+                          drag={isMeasured ? "x" : false}
+                          dragConstraints={isMeasured ? { left: 0, right: fretsContainerWidthRef.current - 28 } : { left: 0, right: 0 }}
+                          dragElastic={0.1}
+                          onDragEnd={handleDragEnd}
+                          onTap={handleTap}
+                        >
+                          <X className="w-3 h-3" />
+                        </motion.div>
+                      </div>
                     </div>
 
                     {NOTES.map((openNote, stringIndex) => (

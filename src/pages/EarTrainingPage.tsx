@@ -57,14 +57,8 @@ const EarTrainingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-black relative overflow-hidden selection:bg-emerald-500/30">
+        <div className="min-h-screen bg-[#030303] relative overflow-hidden selection:bg-emerald-500/30">
 
-            {/* Background Atmosphere */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/10 blur-[120px] rounded-full" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-900/10 blur-[120px] rounded-full" />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05]" />
-            </div>
 
             <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
 
@@ -80,7 +74,7 @@ const EarTrainingPage = () => {
                             <motion.div
                                 initial={{ y: -20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6"
+                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-[#111] mb-6"
                             >
                                 <Trophy className="w-3.5 h-3.5 text-yellow-500" />
                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">Ear Training Arcade</span>
@@ -103,7 +97,7 @@ const EarTrainingPage = () => {
                     <div className="sticky top-6 z-40 flex justify-center mb-12">
                         <motion.div
                             layout
-                            className="bg-[#111] border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-1 backdrop-blur-xl"
+                            className="bg-[#111] border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-1"
                         >
                             {[
                                 { id: null, label: "Hub", icon: Grid3X3 },

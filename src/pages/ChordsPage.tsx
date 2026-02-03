@@ -89,7 +89,7 @@ const ChordsPage = () => {
           </div>
         </div>
 
-        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/40 backdrop-blur-xl shadow-2xl overflow-hidden p-1">
+        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/80 shadow-2xl overflow-hidden p-1">
           <RootChordLibrary
             onChordSelect={(chord) => setSelectedChord(chord)}
           />
