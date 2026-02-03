@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import Fretboard from "@/components/Fretboard";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { chordLibraryData } from "@/data/chordData";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 const FretboardPage = () => {
   usePageMetadata({
@@ -53,6 +54,12 @@ const FretboardPage = () => {
 
 
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Virtual Fretboard", url: "https://guitariz.studio/fretboard" }
+        ]} />
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium tracking-wider uppercase">
@@ -103,6 +110,29 @@ const FretboardPage = () => {
             <p className="text-sm text-muted-foreground text-pretty">Real-time chord detection and interval labeling for every note played.</p>
           </div>
         </div>
+
+        {/* SEO FAQ Section */}
+        <SEOContent
+          pageName="fretboard"
+          faqs={[
+            {
+              question: "How do I use the Virtual Fretboard to learn guitar chords?",
+              answer: "The Virtual Fretboard is an interactive simulator that shows you exactly where to place your fingers for any chord or scale. You can select a root note and a chord type, and the fretboard will light up the correct positions. It's a perfect visual aid for beginners and intermediate players looking to expand their chord vocabulary."
+            },
+            {
+              question: "Does the Virtual Fretboard play actual sounds?",
+              answer: "Yes! Every note on the fretboard and the accompanying virtual piano is sampled with high fidelity. When you click a note or play a chord pattern, you'll hear the real tone of the instrument, making it easier to train your ear while you learn visually."
+            },
+            {
+              question: "Can I use my computer keyboard to play the virtual piano?",
+              answer: "Absolutely. We've optimized the instrument sandbox for low-latency QWERTY and AZERTY keyboard input. This turns your computer into a functional musical instrument that you can play in real-time."
+            },
+            {
+              question: "How do the 'Visual Learning' features work?",
+              answer: "The tool features real-time interval labeling. This means as you play, you'll see how notes relate to each other (e.g., Root, Major 3rd, Perfect 5th), which is the fastest way to understand the 'why' behind the music theory you're practicing."
+            }
+          ]}
+        />
       </main>
     </div>
   );

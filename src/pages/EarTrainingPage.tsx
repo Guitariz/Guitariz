@@ -4,6 +4,8 @@ import { Music, Activity, Grid3X3, Trophy, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { IntervalGame } from "@/components/ear-training/IntervalGame";
+import { usePageMetadata } from "@/hooks/usePageMetadata";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 // --- Types ---
 type GameMode = "INTERVALS" | "CHORDS" | "FRETBOARD" | "PERFECT_PITCH" | null;
@@ -52,6 +54,22 @@ const GameCard = ({
 const EarTrainingPage = () => {
     const [activeGame, setActiveGame] = useState<GameMode>(null);
 
+    usePageMetadata({
+        title: "Interactive Ear Training Arcade - Relative & Perfect Pitch | Guitariz",
+        description: "Elevate your musicality with our interactive ear training games. Master intervals, chord recognition, and perfect pitch through gamified challenges.",
+        keywords: "ear training, musical intervals, pitch recognition, perfect pitch, relative pitch, music theory games, guitar ear training",
+        canonicalUrl: "https://guitariz.studio/ear-training",
+        jsonLd: {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Guitariz Ear Training Arcade",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web",
+            "description": "Gamified ear training for musicians of all levels.",
+            "url": "https://guitariz.studio/ear-training"
+        }
+    });
+
     const handleExitGame = () => {
         setActiveGame(null);
     };
@@ -61,6 +79,13 @@ const EarTrainingPage = () => {
 
 
             <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
+                {/* Breadcrumb */}
+                {activeGame === null && (
+                    <Breadcrumb items={[
+                        { name: "Home", url: "https://guitariz.studio/" },
+                        { name: "Ear Training", url: "https://guitariz.studio/ear-training" }
+                    ]} />
+                )}
 
                 {/* Header / Arcade Banner - Only show on Hub */}
                 <AnimatePresence>
@@ -199,6 +224,31 @@ const EarTrainingPage = () => {
                     )}
                 </AnimatePresence>
 
+
+                {/* SEO FAQ Section */}
+                {activeGame === null && (
+                    <SEOContent
+                        pageName="ear-training"
+                        faqs={[
+                            {
+                                question: "What is ear training and why is it important for musicians?",
+                                answer: "Ear training is the process of connecting music theory (intervals, chords, scales) with actual sounds. It allows musicians to 'hear' what they see on a page and 'translate' what they hear in their head into their instrument. It's the key to improvisation, transcribing songs by ear, and better communication within a band."
+                            },
+                            {
+                                question: "How does the Ear Training Arcade help me learn?",
+                                answer: "Our Arcade uses gamification to make practice engaging. By playing 'Interval Master' or 'Chord Crusher', you get instant feedback on your progress. Studies show that short, daily sessions of 10-15 minutes are much more effective than long, infrequent ones."
+                            },
+                            {
+                                question: "What is the difference between relative pitch and perfect pitch?",
+                                answer: "Relative pitch is the ability to identify a note relative to a known reference (like an interval). Perfect pitch (absolute pitch) is the ability to identify a note without any reference. Most successful musicians rely heavily on relative pitch, which is highly trainable."
+                            },
+                            {
+                                question: "Is this tool suitable for singing practice?",
+                                answer: "Yes! Training your ear to recognize intervals and chords directly improves your intonation and ability to harmonize when singing. It's a foundational skill for vocalists and instrumentalists alike."
+                            }
+                        ]}
+                    />
+                )}
             </main>
         </div>
     );

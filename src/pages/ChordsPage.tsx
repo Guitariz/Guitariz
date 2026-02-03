@@ -6,6 +6,7 @@ import { BookOpen, Music, Layers, Bot } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 interface SelectedChord {
   root: string;
@@ -68,6 +69,12 @@ const ChordsPage = () => {
 
 
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Chord Library", url: "https://guitariz.studio/chords" }
+        ]} />
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium tracking-wider uppercase">
@@ -117,6 +124,29 @@ const ChordsPage = () => {
             <p className="text-xs text-muted-foreground">Clean, distraction-free environment for songwriting.</p>
           </div>
         </div>
+
+        {/* SEO FAQ Section */}
+        <SEOContent
+          pageName="chords"
+          faqs={[
+            {
+              question: "How do I find a chord in the library?",
+              answer: "You can use the root note selector to pick your key (e.g., C, G, Bb) and then browse through categories like Major, Minor, 7ths, and Altered chords. Each chord includes multiple voicings across the fretboard."
+            },
+            {
+              question: "What are 'intervals' and why are they shown?",
+              answer: "Intervals show how each note in a chord relates to the root (e.g., 3rd, 5th, 7th). Understanding intervals is the foundation of music theory and helps you understand the 'color' and function of different chords."
+            },
+            {
+              question: "Can I hear these chords played?",
+              answer: "Yes! Click on any chord diagram to hear high-fidelity piano samples of that specific voicing. This helps you audition sounds before you even pick up your instrument."
+            },
+            {
+              question: "How do I see these chords on the interactive guitar fretboard?",
+              answer: "When you select a chord, a toast notification will appear with an 'Open on Fretboard' button. Clicking this will take you to our Fretboard simulator with that specific voicing loaded onto the virtual neck."
+            }
+          ]}
+        />
       </main>
     </div>
   );

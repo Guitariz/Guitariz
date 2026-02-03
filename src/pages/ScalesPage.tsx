@@ -2,6 +2,7 @@
 import ScaleExplorer from "@/components/ScaleExplorer";
 import { Disc, Music, Bot, Layers } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 const ScalesPage = () => {
   usePageMetadata({
@@ -27,6 +28,12 @@ const ScalesPage = () => {
 
 
       <main className="container mx-auto px-4 md:px-6 pt-2 md:pt-4 pb-12 relative z-10">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Scale Explorer", url: "https://guitariz.studio/scales" }
+        ]} />
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
           <div className="space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium tracking-wider uppercase">
@@ -74,6 +81,29 @@ const ScalesPage = () => {
             <p className="text-xs text-muted-foreground">Map any selected scale directly to the guitar neck.</p>
           </div>
         </div>
+
+        {/* SEO FAQ Section */}
+        <SEOContent
+          pageName="scales"
+          faqs={[
+            {
+              question: "What is the Scale Explorer and how can it improve my playing?",
+              answer: "The Scale Explorer is an interactive visualization tool that maps over 100 musical scales and modes onto a virtual guitar fretboard. By seeing the patterns of major, minor, pentatonic, and exotic scales, you can improve your fretboard knowledge, speed up your learning of solos, and master improvisation in any key."
+            },
+            {
+              question: "How do I see patterns on the guitar neck?",
+              answer: "Simply select a scale and a root key from the menu. The notes will instantly populate onto the interactive fretboard. You can customize the view to show intervals (like 1, b3, 5) or note names (C, Eb, G) to help you understand the scale's internal logic."
+            },
+            {
+              question: "Can I use the Scale Explorer for piano or other instruments?",
+              answer: "Yes! While it features a guitar-centric fretboard, the tool also visualizes scale degrees and modal relationships that apply to all melodic instruments. It's a powerful reference for composers and keyboardists as well."
+            },
+            {
+              question: "What are 'Modal Synthesis' and 'Functional Harmony'?",
+              answer: "Modal Synthesis refers to the relationship between parent scales (like Major) and their modes (Dorian, Phrygian, etc.). Functional Harmony is the study of how chords and scales interact within a key. Our tool allows you to map these complex relationships directly onto the Circle of Fifths."
+            }
+          ]}
+        />
       </main>
     </div>
   );

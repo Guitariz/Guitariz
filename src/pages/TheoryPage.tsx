@@ -1,6 +1,7 @@
 
 import CircleOfFifths from "@/components/CircleOfFifths";
 import { Disc, Layers } from "lucide-react";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 
@@ -49,6 +50,12 @@ const TheoryPage = () => {
           </div>
         </div>
 
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Theory Lab", url: "https://guitariz.studio/theory" }
+        ]} />
+
         <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/90 shadow-2xl overflow-hidden p-4 md:p-8">
           <CircleOfFifths />
         </div>
@@ -65,6 +72,29 @@ const TheoryPage = () => {
             <p className="text-xs text-muted-foreground">Identify subdominant and dominant chords in any key.</p>
           </div>
         </div>
+
+        {/* SEO FAQ Section */}
+        <SEOContent
+          pageName="theory"
+          faqs={[
+            {
+              question: "What is the Circle of Fifths used for?",
+              answer: "The Circle of Fifths is a fundamental tool in music theory used to visualize the relationships between the 12 semi-tones of the chromatic scale, their corresponding key signatures, and the associated major and minor keys. It helps musicians understand modulation, chord progressions, and harmonic structure."
+            },
+            {
+              question: "How do I use this interactive Circle of Fifths?",
+              answer: "Click on any key in the circle to see its primary chords (I, IV, V, vi, ii, iii). It's designed to help you quickly find chords that sound good together when composing or transposing music."
+            },
+            {
+              question: "What are secondary dominants?",
+              answer: "Secondary dominants are chords that function as the dominant (V) of a chord other than the tonic. Our tool helps you visualize these relationships by showing the 'V of V' positions within any selected key."
+            },
+            {
+              question: "Is this tool suitable for beginners?",
+              answer: "Yes! While the Circle of Fifths can seem complex at first, our interactive lab makes it easy to see how keys are related by the number of sharps and flats. It's a great companion for students learning music theory."
+            }
+          ]}
+        />
       </main>
     </div>
   );

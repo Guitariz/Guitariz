@@ -2,6 +2,7 @@
 import Metronome from "@/components/Metronome";
 import { Timer, Zap } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
+import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
 const MetronomePage = () => {
   usePageMetadata({
@@ -26,6 +27,12 @@ const MetronomePage = () => {
 
 
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
+        {/* Breadcrumb */}
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Metronome", url: "https://guitariz.studio/metronome" }
+        ]} />
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-secondary/20 bg-secondary/5 text-secondary text-xs font-medium tracking-wider uppercase">
@@ -63,6 +70,29 @@ const MetronomePage = () => {
             <p className="text-xs text-muted-foreground">Built on Web Audio API for professional-grade stability.</p>
           </div>
         </div>
+
+        {/* SEO FAQ Section */}
+        <SEOContent
+          pageName="metronome"
+          faqs={[
+            {
+              question: "Why is a metronome essential for music practice?",
+              answer: "A metronome provides a steady beat, which is crucial for developing 'inner clock' and technical precision. It helps you stay in time, identify sections where you are rushing or dragging, and allows you to gradually increase speed while maintaining control."
+            },
+            {
+              question: "What does 'sample-accurate' mean?",
+              answer: "While many browser-based metronomes suffer from 'drift' (the beat slows down or speeds up slightly due to CPU load), our metronome uses the Web Audio API's scheduling system. This ensures the clicks are perfectly timed regardless of other processes running on your computer."
+            },
+            {
+              question: "How do I use tap-tempo?",
+              answer: "Simply click the 'TAP' button or press your spacebar in time with a song you are listening to. Our engine will calculate the average BPM based on your inputs, allowing you to quickly find the right tempo for any track."
+            },
+            {
+              question: "Can I use different time signatures?",
+              answer: "Yes! You can adjust the beats per measure to practice in 4/4, 3/4, 6/8, and more. Our visual indicator provides a distinct accent on the 'one' to help you keep track of the bar."
+            }
+          ]}
+        />
       </main>
     </div>
   );
