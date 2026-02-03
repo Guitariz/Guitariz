@@ -35,25 +35,25 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "1080x1080",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "1080x1080",
             type: "image/png",
             purpose: "maskable",
@@ -61,14 +61,14 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "1080x1080",
             type: "image/png",
             form_factor: "wide",
             label: "Guitariz Studio",
           },
           {
-            src: "logo.png",
+            src: "logo2.png",
             sizes: "1080x1080",
             type: "image/png",
             form_factor: "narrow",

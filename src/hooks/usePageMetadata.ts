@@ -12,6 +12,7 @@ interface PageMetadata {
 export const usePageMetadata = ({
     title,
     description,
+    keywords,
     canonicalUrl,
     ogUrl,
     jsonLd,
