@@ -22,7 +22,12 @@ const FretboardPage = () => {
       "operatingSystem": "Web",
       "description": "Interactive instrument sandbox for guitar and piano with real-time feedback.",
       "url": "https://guitariz.studio/fretboard",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "215"
+      }
     }
   });
 

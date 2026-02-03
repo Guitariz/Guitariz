@@ -136,7 +136,7 @@ const Navigation = () => {
                 <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="flex flex-col text-left">
-                <h1 className="font-bold text-sm tracking-tight text-white leading-tight">Guitariz</h1>
+                <h2 className="font-bold text-sm tracking-tight text-white leading-tight">Guitariz</h2>
                 <p className="text-[8px] uppercase tracking-widest text-white/60 font-medium">Studio</p>
               </div>
             </Link>

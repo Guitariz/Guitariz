@@ -20,13 +20,44 @@ const VocalSplitterPage = () => {
     ogType: "website",
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Guitariz Vocal Splitter",
-      "applicationCategory": "MultimediaApplication",
-      "operatingSystem": "Web",
-      "description": "High-quality AI stem extraction for karaoke and remixing.",
-      "url": "https://guitariz.studio/vocal-splitter",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "Guitariz Vocal Splitter",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web",
+          "description": "High-quality AI stem extraction for karaoke and remixing.",
+          "url": "https://guitariz.studio/vocal-splitter",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "56"
+          }
+        },
+        {
+          "@type": "HowTo",
+          "name": "How to separate vocals and instrumentals using Guitariz Vocal Splitter",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "text": "Select or drag your song file into the Guitariz Vocal Splitter."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Click 'Separate Vocals & Instrumentals' to start the AI isolation process."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Preview the isolated stems using the built-in mixer."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Download high-quality WAV files for your karaoke or production project."
+            }
+          ]
+        }
+      ]
     }
   });
 

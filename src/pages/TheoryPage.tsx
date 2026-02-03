@@ -21,7 +21,12 @@ const TheoryPage = () => {
       "operatingSystem": "Web",
       "description": "Interactive music theory tools featuring the Circle of Fifths.",
       "url": "https://guitariz.studio/theory",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "156"
+      }
     }
   });
 

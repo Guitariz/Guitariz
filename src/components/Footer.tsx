@@ -16,7 +16,7 @@ const Footer = () => {
                             <span className="font-bold text-lg text-white tracking-tight">Guitariz</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            Open-source audio intelligence for the modern musician. Built for the web.
+                            <strong>Guitariz Studio</strong>: High-precision AI Chord Recognition, Vocal Stem Separation, and interactive Music Theory tools. Built for musicians, by musicians.
                         </p>
                     </div>
 

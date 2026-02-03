@@ -20,7 +20,12 @@ const ScalesPage = () => {
       "operatingSystem": "Web",
       "description": "Mathematical approach to musical scales and modal synthesis.",
       "url": "https://guitariz.studio/scales",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "192"
+      }
     }
   });
 

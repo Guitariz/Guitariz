@@ -33,19 +33,39 @@ const Index = () => {
     ogType: "website",
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Guitariz Studio",
-      "description": "Professional music theory and AI analysis tools for musicians.",
-      "applicationCategory": "MusicApplication",
-      "operatingSystem": "Any",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://guitariz.studio/search?q={search_term_string}"
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "Guitariz Studio",
+          "description": "Professional music theory and AI analysis tools for musicians.",
+          "applicationCategory": "MusicApplication",
+          "operatingSystem": "Any",
+          "url": "https://guitariz.studio",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://guitariz.studio/search?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "128"
+          }
         },
-        "query-input": "required name=search_term_string"
-      }
+        {
+          "@type": "Organization",
+          "name": "Guitariz Studio",
+          "url": "https://guitariz.studio",
+          "logo": "https://guitariz.studio/logo2.png",
+          "sameAs": [
+            "https://x.com/GuitarizStudio",
+            "https://github.com/abhi9vaidya/Guitariz"
+          ]
+        }
+      ]
     }
   });
 

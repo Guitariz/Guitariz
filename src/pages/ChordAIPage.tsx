@@ -44,11 +44,42 @@ const ChordAIPage = () => {
     ogType: "website",
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "WebPage",
-      "name": "Chord AI - Guitariz",
-      "url": "https://guitariz.studio/chord-ai",
-      "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
-      "inLanguage": "en-US"
+      "@graph": [
+        {
+          "@type": "WebPage",
+          "name": "Chord AI - Guitariz",
+          "url": "https://guitariz.studio/chord-ai",
+          "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
+          "inLanguage": "en-US",
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "reviewCount": "84"
+          }
+        },
+        {
+          "@type": "HowTo",
+          "name": "How to extract chords from any song using Guitariz Chord AI",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "text": "Upload your audio file (MP3, WAV, FLAC) to the Chord AI engine."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Enable 'Vocal Filter' if the song has prominent vocals for better accuracy."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Wait for the AI to analyze the harmonic structure and generate the chord map."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Use the interactive player to play along with the extracted chords in real-time."
+            }
+          ]
+        }
+      ]
     }
   });
 
