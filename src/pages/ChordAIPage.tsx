@@ -16,12 +16,13 @@ import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2 } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
 import { transposeChord, transposeKey } from "@/lib/transposition";
 import { Slider } from "@/components/ui/slider";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -96,6 +97,7 @@ const ChordAIPage = () => {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
   const [historyFileName, setHistoryFileName] = useState<string | null>(null);
+  const [isSharedView, setIsSharedView] = useState(false);
 
   // Cache for analysis results to avoid re-analyzing when toggling
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
@@ -208,6 +210,42 @@ const ChordAIPage = () => {
       });
     }
   }, [fileInfo, analysisLoading, isInstrumentalLoaded, separateVocals, result, toast]);
+
+  // 5. Handle shared URL parameter on mount
+   
+  useEffect(() => {
+    const shareParam = getShareParamFromUrl();
+    if (shareParam) {
+      const decoded = decodeShareableState(shareParam);
+      if (decoded) {
+        setIsSharedView(true);
+        setHistoryFileName(decoded.fileName);
+
+        // Set up the cached result so it displays
+        const sharedCacheKey = `shared-${decoded.fileName}`;
+        setCurrentFileId(`shared-${decoded.fileName}`);
+        setCachedResults(prev => ({
+          ...prev,
+          [sharedCacheKey + `-false-true`]: { result: decoded.result }
+        }));
+
+        // Clear URL parameter without reload
+        clearShareParamFromUrl();
+
+        toast({
+          title: "Shared analysis loaded",
+          description: `Viewing chord chart for "${decoded.fileName}"`,
+        });
+      } else {
+        toast({
+          title: "Invalid share link",
+          description: "Could not decode the shared analysis data.",
+          variant: "destructive",
+        });
+        clearShareParamFromUrl();
+      }
+    }
+  }, []); // Only run once on mount
 
   // Load instrumental audio when available
   useEffect(() => {
@@ -476,20 +514,43 @@ const ChordAIPage = () => {
                   </div>
                 ) : (
                   <div className="p-10 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    {/* History Restore Warning */}
+                    {/* History/Shared Restore Warning */}
                     {!audioBuffer && result && (
-                      <div className="px-6 py-4 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in zoom-in-95 duration-500">
+                      <div className={cn(
+                        "px-6 py-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in zoom-in-95 duration-500",
+                        isSharedView
+                          ? "bg-blue-500/10 border border-blue-500/20"
+                          : "bg-amber-500/10 border border-amber-500/20"
+                      )}>
                         <div className="flex items-center gap-3">
-                          <Activity className="w-5 h-5 text-amber-400" />
-                          <p className="text-sm text-amber-200/80 font-medium">Loaded from history. Upload original audio to listen and sync with waveform.</p>
+                          {isSharedView ? (
+                            <>
+                              <Share2 className="w-5 h-5 text-blue-400" />
+                              <p className="text-sm text-blue-200/80 font-medium">
+                                Viewing shared chord chart. Upload audio to sync playback with chords.
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <Activity className="w-5 h-5 text-amber-400" />
+                              <p className="text-sm text-amber-200/80 font-medium">
+                                Loaded from history. Upload original audio to listen and sync with waveform.
+                              </p>
+                            </>
+                          )}
                         </div>
                         <Button
                           size="sm"
                           onClick={() => fileInputRef.current?.click()}
-                          className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-none h-8 whitespace-nowrap"
+                          className={cn(
+                            "border-none h-8 whitespace-nowrap",
+                            isSharedView
+                              ? "bg-blue-500/20 hover:bg-blue-500/30 text-blue-200"
+                              : "bg-amber-500/20 hover:bg-amber-500/30 text-amber-200"
+                          )}
                         >
                           <Upload className="w-3.5 h-3.5 mr-2" />
-                          Restore Audio
+                          {isSharedView ? "Add Audio" : "Restore Audio"}
                         </Button>
                       </div>
                     )}
@@ -602,7 +663,6 @@ const ChordAIPage = () => {
                             New File
                           </Button>
 
-                          {/* Download instrumental button - show as soon as URL is available */}
                           {instrumentalUrl && (
                             <Button
                               size="sm"
@@ -617,6 +677,34 @@ const ChordAIPage = () => {
                             >
                               <Download className="w-3.5 h-3.5 mr-2" />
                               Instrumental
+                            </Button>
+                          )}
+
+                          {/* Share button - show when analysis is complete */}
+                          {result && effectiveFileName && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-9 px-3 rounded-xl bg-white/[0.03] border-white/10 hover:bg-white/[0.05] text-xs group"
+                              onClick={async () => {
+                                const shareUrl = generateShareUrl(effectiveFileName, result);
+                                const success = await copyToClipboard(shareUrl);
+                                if (success) {
+                                  toast({
+                                    title: "Link copied!",
+                                    description: "Share this link with anyone to show your chord chart.",
+                                  });
+                                } else {
+                                  toast({
+                                    title: "Failed to copy",
+                                    description: "Please copy the URL manually from the address bar.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            >
+                              <Share2 className="w-3.5 h-3.5 mr-2 group-hover:text-green-400 transition-colors" />
+                              Share
                             </Button>
                           )}
                         </div>
