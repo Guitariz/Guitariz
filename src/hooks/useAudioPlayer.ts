@@ -23,6 +23,7 @@ export type UseAudioPlayer = {
   setTranspose: (semitones: number) => void;
   tempo: number;
   setTempo: (rate: number) => void;
+  getAudioChunk: () => Float32Array | null;
 };
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
@@ -47,6 +48,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
   const offsetRef = useRef<number>(0);
@@ -129,7 +131,14 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     source.playbackRate.value = tempo;
     const gain = gainRef.current || ctx.createGain();
     gainRef.current = gain;
-    source.connect(gain);
+
+    // Create analyser for WebSocket audio streaming
+    const analyser = analyserRef.current || ctx.createAnalyser();
+    analyser.fftSize = 4096;
+    analyserRef.current = analyser;
+
+    source.connect(analyser);
+    analyser.connect(gain);
     gain.connect(ctx.destination);
 
     startTimeRef.current = ctx.currentTime;
@@ -252,6 +261,18 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     };
   }, []);
 
+  // Get current audio chunk for WebSocket streaming
+  const getAudioChunk = useCallback((): Float32Array | null => {
+    if (!analyserRef.current || !isPlaying) return null;
+
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Float32Array(bufferLength);
+    analyser.getFloatTimeDomainData(dataArray);
+
+    return dataArray;
+  }, [isPlaying]);
+
   return {
     loadFile,
     play,
@@ -268,6 +289,7 @@ export const useAudioPlayer = (): UseAudioPlayer => {
     setTranspose,
     tempo,
     setTempo,
+    getAudioChunk,
   };
 };
 

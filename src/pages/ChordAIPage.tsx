@@ -6,9 +6,11 @@ import ChordTimeline from "@/components/chord-ai/ChordTimeline";
 import HorizontalChordTape from "@/components/chord-ai/HorizontalChordTape";
 import AnalysisSummary from "@/components/chord-ai/AnalysisSummary";
 import ConfidenceSummary from "@/components/chord-ai/ConfidenceSummary";
+import { LiveChordIndicator } from "@/components/chord-ai/LiveChordIndicator";
 import { useToast } from "@/components/ui/use-toast";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
+import { useChordWebSocket } from "@/hooks/useChordWebSocket";
 import { AnalysisResult } from "@/types/chordAI";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import ChordDiagram from "@/components/chord/ChordDiagram";
@@ -84,7 +86,7 @@ const ChordAIPage = () => {
     }
   });
 
-  const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose, tempo, setTempo } =
+  const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose, tempo, setTempo, getAudioChunk } =
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showSimple, setShowSimple] = useState(false);
@@ -103,8 +105,51 @@ const ChordAIPage = () => {
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
   const [currentFileId, setCurrentFileId] = useState<string | null>(null);
 
+  // WebSocket for real-time chord detection
+  const { isConnected, currentChord: liveChord, connect, disconnect, sendAudioChunk } = useChordWebSocket();
+  const [liveChordEnabled, setLiveChordEnabled] = useState(false);
+  const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${useMadmom}` : undefined;
   const cachedResult = cacheKey ? cachedResults[cacheKey] : undefined;
+
+  // WebSocket audio streaming effect
+  useEffect(() => {
+    if (liveChordEnabled && isPlaying && audioBuffer) {
+      // Connect WebSocket if not connected
+      if (!isConnected) {
+        connect();
+      }
+
+      // Start streaming audio chunks every 100ms
+      streamingIntervalRef.current = setInterval(() => {
+        const chunk = getAudioChunk();
+        if (chunk) {
+          sendAudioChunk(chunk, currentTime);
+        }
+      }, 100);
+
+      return () => {
+        if (streamingIntervalRef.current) {
+          clearInterval(streamingIntervalRef.current);
+          streamingIntervalRef.current = null;
+        }
+      };
+    } else {
+      // Clear interval when not streaming
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+        streamingIntervalRef.current = null;
+      }
+    }
+  }, [liveChordEnabled, isPlaying, audioBuffer, isConnected, connect, getAudioChunk, sendAudioChunk, currentTime]);
+
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
 
   const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress } = useChordAnalysis(
     audioBuffer,
@@ -212,7 +257,7 @@ const ChordAIPage = () => {
   }, [fileInfo, analysisLoading, isInstrumentalLoaded, separateVocals, result, toast]);
 
   // 5. Handle shared URL parameter on mount
-   
+
   useEffect(() => {
     const shareParam = getShareParamFromUrl();
     if (shareParam) {
@@ -596,6 +641,32 @@ const ChordAIPage = () => {
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Live Chord Indicator */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setLiveChordEnabled(!liveChordEnabled)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-xl border transition-all text-xs font-medium",
+                            liveChordEnabled
+                              ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
+                              : "bg-white/5 border-white/10 text-white/50 hover:text-white/70"
+                          )}
+                          disabled={!audioBuffer}
+                        >
+                          <Activity className={cn("w-4 h-4", liveChordEnabled && isPlaying && "animate-pulse")} />
+                          <span>Live</span>
+                        </button>
+
+                        {liveChordEnabled && (
+                          <LiveChordIndicator
+                            chord={liveChord?.chord ?? null}
+                            confidence={liveChord?.confidence ?? 0}
+                            isConnected={isConnected}
+                            isActive={isPlaying}
+                          />
+                        )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-4">
