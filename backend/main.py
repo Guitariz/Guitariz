@@ -52,32 +52,28 @@ try:
     _original_gethostbyname = socket.gethostbyname
 
     def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-        try:
+        # Only patch YouTube domains to bypass potential system-level poisoning/blocking
+        if host == "www.youtube.com" or host == "youtube.com" or host == "music.youtube.com":
             try:
-                socket.inet_aton(host)
-                return _original_getaddrinfo(host, port, family, type, proto, flags)
-            except:
+                # Use dnspython to query 8.8.8.8 directly
+                answers = res.resolve(host, 'A')
+                ip = answers[0].to_text()
+                # print(f"[DNS Patch] Resolved {host} -> {ip}")
+                return _original_getaddrinfo(ip, port, family, type, proto, flags)
+            except Exception:
                 pass
-            
-            # Use dnspython
-            answers = res.resolve(host, 'A')
-            ip = answers[0].to_text()
-            # print(f"[DNS Patch] Resolved {host} -> {ip}")
-            return _original_getaddrinfo(ip, port, family, type, proto, flags)
-        except Exception as e:
-            return _original_getaddrinfo(host, port, family, type, proto, flags)
+        
+        # Fallback to system DNS for everything else
+        return _original_getaddrinfo(host, port, family, type, proto, flags)
 
     def patched_gethostbyname(hostname):
-        try:
+        if hostname == "www.youtube.com" or hostname == "youtube.com" or hostname == "music.youtube.com":
             try:
-                socket.inet_aton(hostname)
-                return hostname
+                answers = res.resolve(hostname, 'A')
+                return answers[0].to_text()
             except:
                 pass
-            answers = res.resolve(hostname, 'A')
-            return answers[0].to_text()
-        except:
-             return _original_gethostbyname(hostname)
+        return _original_gethostbyname(hostname)
 
     socket.getaddrinfo = patched_getaddrinfo
     socket.gethostbyname = patched_gethostbyname
