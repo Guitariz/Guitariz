@@ -489,15 +489,90 @@ const ChordAIPage = () => {
         description: `Analyzed "${title}"`,
       });
 
-    } catch (error: unknown) {
-      console.error(error);
-      const message = error instanceof Error ? error.message : "Failed to analyze YouTube video.";
-      setYoutubeError(message);
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive"
-      });
+    } catch (clientError: unknown) {
+      console.warn("Client-side download failed, trying backend fallback...", clientError);
+
+      // --- BACKEND FALLBACK ---
+      try {
+        toast({
+          title: "Trying Server-Side Download...",
+          description: "Client download failed. Attempting server-side extraction (slower).",
+        });
+
+        const formData = new FormData();
+        formData.append("url", youtubeUrl);
+        formData.append("separate_vocals", separateVocals.toString());
+        formData.append("use_madmom", useMadmom.toString());
+        formData.append("client_ip", "browser_fallback");
+
+        const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
+        const response = await fetch(`${API_BASE}/api/analyze-youtube`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          let errorMessage = `Server Analysis failed: ${response.status}`;
+          try {
+            const errorData = await response.json();
+            if (errorData.detail) errorMessage = errorData.detail;
+          } catch (e) {
+            console.warn("Error parsing error response", e);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+
+        // Normalize Backend Result
+        setIsYoutubeMode(true);
+        setYoutubeVideoInfo(data.youtube);
+        setRemainingYoutubeRequests(data.remainingRequests || 0);
+
+        const ytCacheKey = `yt-${data.youtube.videoId}-${separateVocals}-${useMadmom}`;
+        setCurrentFileId(`yt-${data.youtube.videoId}`);
+        setHistoryFileName(data.youtube.title);
+
+        setCachedResults(prev => ({
+          ...prev,
+          [ytCacheKey]: {
+            result: data as AnalysisResult,
+            instrumentalUrl: data.instrumentalUrl
+          }
+        }));
+
+        saveToHistory({
+          fileName: data.youtube.title,
+          result: data as AnalysisResult,
+          instrumentalUrl: data.instrumentalUrl,
+          useMadmom,
+          separateVocals,
+        });
+
+        if (data.audioUrl) {
+          const audioResponse = await fetch(`${API_BASE}${data.audioUrl}`);
+          if (audioResponse.ok) {
+            const blob = await audioResponse.blob();
+            const file = new File([blob], "youtube_audio.mp3", { type: "audio/mp3" });
+            loadFile(file);
+          }
+        }
+
+        toast({
+          title: "✅ Analysis Complete (Server-Side)",
+          description: `Detected ${data.key || "N/A"} • ${data.tempo || "N/A"} BPM`,
+        });
+
+      } catch (backendError: unknown) {
+        console.error(backendError);
+        const message = backendError instanceof Error ? backendError.message : "Both Client and Server download methods failed.";
+        setYoutubeError(message);
+        toast({
+          title: "Analysis Failed",
+          description: message,
+          variant: "destructive"
+        });
+      }
     } finally {
       setYoutubeLoading(false);
     }
