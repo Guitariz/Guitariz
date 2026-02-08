@@ -200,7 +200,7 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
     try:
         # Try yt-dlp first
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([youtube_url])
+            ydl.download([url])
         
         # Verify file exists
         if not output_path.exists():
@@ -212,7 +212,7 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
         print(f"[YouTube] yt-dlp failed: {e_yt}. Trying pytubefix fallback...")
         try:
             from pytubefix import YouTube
-            yt = YouTube(youtube_url)
+            yt = YouTube(url)
             # Filter for audio only
             stream = yt.streams.get_audio_only()
             if not stream:
