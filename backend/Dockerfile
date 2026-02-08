@@ -1,15 +1,21 @@
-# Use Python 3.10 (Updated to fix DNS/SSL issues in HF Spaces)
+# Use Python 3.10 Full (non-slim) to include all networking libraries
 # Note: Madmom support disabled as it requires <3.9
-FROM python:3.10-slim
+FROM python:3.10
 
-# Install system dependencies and build tools
+# Install system dependencies and build tools + networking fixes
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     build-essential \
     gcc \
     g++ \
+    ca-certificates \
+    dnsutils \
+    iputils-ping \
     && rm -rf /var/lib/apt/lists/*
+
+# Configure libc to prefer IPv4 (fixes [Errno -5] in some containers)
+RUN echo "precedence ::ffff:0:0/96 100" >> /etc/gai.conf
 
 # Create a user to avoid running as root (required by Hugging Face)
 RUN useradd -m -u 1000 user
