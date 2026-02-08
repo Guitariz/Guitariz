@@ -198,8 +198,6 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
     # Check for YOUTUBE_COOKIES env var (Netscape format content)
     cookie_path = None
     try:
-        import os
-        import tempfile
         cookies_content = os.environ.get("YOUTUBE_COOKIES")
         if cookies_content:
             print("[YouTube] Found YOUTUBE_COOKIES in env, creating temp cookie file...")
