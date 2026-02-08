@@ -1,5 +1,6 @@
-# Use Python 3.9 (madmom requires Python <=3.9 for collections.MutableSequence)
-FROM python:3.9-slim
+# Use Python 3.10 (Updated to fix DNS/SSL issues in HF Spaces)
+# Note: Madmom support disabled as it requires <3.9
+FROM python:3.10-slim
 
 # Install system dependencies and build tools
 RUN apt-get update && apt-get install -y \
@@ -27,7 +28,7 @@ RUN pip install --no-cache-dir "Cython>=0.25" "numpy<1.24.0"
 RUN pip install --no-cache-dir -r requirements.txt || true
 
 # Install madmom separately with --no-build-isolation to use the installed Cython and numpy
-RUN pip install --no-cache-dir --no-build-isolation madmom>=0.16.1
+# RUN pip install --no-cache-dir --no-build-isolation madmom>=0.16.1
 
 # Copy the rest of the backend code
 COPY --chown=user . .
