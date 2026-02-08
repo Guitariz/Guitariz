@@ -18,7 +18,8 @@ import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2 } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, Link2, Loader2 } from "lucide-react";
+import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
 import { transposeChord, transposeKey } from "@/lib/transposition";
@@ -100,6 +101,21 @@ const ChordAIPage = () => {
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
   const [historyFileName, setHistoryFileName] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
+
+  // YouTube integration state
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [isYoutubeMode, setIsYoutubeMode] = useState(false);
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
+  const [youtubeVideoInfo, setYoutubeVideoInfo] = useState<{
+    videoId: string;
+    title: string;
+    duration: number;
+    thumbnail: string;
+    channel: string;
+  } | null>(null);
+  const [audioOnlyMode, setAudioOnlyMode] = useState(false);
+  const [remainingYoutubeRequests, setRemainingYoutubeRequests] = useState(5);
+  const [youtubeError, setYoutubeError] = useState<string | null>(null);
 
   // Cache for analysis results to avoid re-analyzing when toggling
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
@@ -379,6 +395,117 @@ const ChordAIPage = () => {
     return found?.variant.voicings[0] || null;
   }, [currentChord]);
 
+  // YouTube analysis function
+  const analyzeFromYoutube = async () => {
+    if (!youtubeUrl.trim()) {
+      toast({
+        title: "Enter a YouTube URL",
+        description: "Paste a YouTube video link to analyze its chords.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setYoutubeLoading(true);
+    setYoutubeError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("url", youtubeUrl);
+      formData.append("separate_vocals", separateVocals.toString());
+      formData.append("use_madmom", useMadmom.toString());
+      formData.append("client_ip", "browser"); // Simple client ID for rate limiting
+
+      const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
+
+      toast({
+        title: "Analyzing YouTube Video",
+        description: audioOnlyMode
+          ? "Downloading audio and detecting chords... (1-3 min)"
+          : "Downloading audio. Video will appear when ready.",
+      });
+
+      const response = await fetch(`${API_BASE}/api/analyze-youtube`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          const error = await response.json();
+          throw new Error(error.detail || "Rate limit exceeded. Try again later.");
+        }
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Update state with results
+      setIsYoutubeMode(true);
+      setYoutubeVideoInfo(data.youtube);
+      setRemainingYoutubeRequests(data.remainingRequests || 0);
+
+      // Set up cache key for YouTube analysis
+      const ytCacheKey = `yt-${data.youtube.videoId}-${separateVocals}-${useMadmom}`;
+      setCurrentFileId(`yt-${data.youtube.videoId}`);
+      setHistoryFileName(data.youtube.title);
+
+      // Store result in cache
+      setCachedResults(prev => ({
+        ...prev,
+        [ytCacheKey]: {
+          result: data as AnalysisResult,
+          instrumentalUrl: data.instrumentalUrl
+        }
+      }));
+
+      // Save to history
+      saveToHistory({
+        fileName: data.youtube.title,
+        result: data as AnalysisResult,
+        instrumentalUrl: data.instrumentalUrl,
+        useMadmom,
+        separateVocals,
+      });
+
+      // Load audio for waveform visualization
+      if (data.audioUrl) {
+        try {
+          const audioResponse = await fetch(`${API_BASE}${data.audioUrl}`);
+          if (audioResponse.ok) {
+            const blob = await audioResponse.blob();
+            const file = new File([blob], "youtube_audio.mp3", { type: "audio/mp3" });
+            loadFile(file);
+          }
+        } catch (e) {
+          console.error("Failed to load YouTube audio for waveform", e);
+        }
+      }
+
+      toast({
+        title: "✅ Analysis Complete",
+        description: `Detected ${data.key || "N/A"} • ${data.tempo || "N/A"} BPM • ${data.chords?.length || 0} chord segments`,
+      });
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setYoutubeError(message);
+      toast({
+        title: "YouTube Analysis Failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setYoutubeLoading(false);
+    }
+  };
+
+  // Handle YouTube time sync
+  const onYoutubeTimeUpdate = (time: number) => {
+    // Sync with chord timeline - this updates the current time display
+    seek(time);
+  };
+
   return (
     <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
 
@@ -519,43 +646,144 @@ const ChordAIPage = () => {
                     e.target.value = '';
                   }}
                 />
-                {!audioBuffer && !result ? (
-                  <div
-                    className={cn(
-                      "flex-1 m-4 border-2 border-dashed rounded-[2rem] transition-all flex flex-col items-center justify-center p-12 text-center",
-                      dragActive ? "border-white/20 bg-white/[0.03]" : "border-white/5 hover:border-white/10"
-                    )}
-                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-                    onDragLeave={() => setDragActive(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDragActive(false);
-                      const files = e.dataTransfer.files;
-                      if (files?.[0]) {
-                        const file = files[0];
-                        const fileId = `${file.name}-${file.size}-${file.lastModified}`;
-                        setSelectedFile(file);
-                        setOriginalFile(file);
-                        setCurrentFileId(fileId);
-                        setCachedResults({}); // Clear cache for new file
-                        setLoadedInstrumentalUrl(null);
-                        setIsInstrumentalLoaded(false);
-                        setWasVocalFilterOn(false);
-                        loadFile(file);
-                      }
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <div className="w-24 h-24 bg-white/[0.03] rounded-full flex items-center justify-center mb-8 border border-white/5">
-                      <Wand2 className="w-10 h-10 text-muted-foreground" />
+                {!audioBuffer && !result && !isYoutubeMode ? (
+                  <div className="flex-1 m-4 flex flex-col gap-6">
+                    {/* Tabs for File vs YouTube */}
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                          !youtubeUrl ? "bg-white text-black" : "bg-white/10 text-white/70 hover:bg-white/15"
+                        )}
+                        onClick={() => setYoutubeUrl("")}
+                      >
+                        <Upload className="w-4 h-4 inline mr-2" />
+                        Upload File
+                      </button>
+                      <button
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                          youtubeUrl ? "bg-red-500 text-white" : "bg-white/10 text-white/70 hover:bg-white/15"
+                        )}
+                        onClick={() => setYoutubeUrl("https://")}
+                      >
+                        <Youtube className="w-4 h-4 inline mr-2" />
+                        YouTube URL
+                      </button>
                     </div>
-                    <h3 className="text-2xl font-light text-white mb-3">Initialize Analysis</h3>
-                    <p className="text-muted-foreground max-w-sm font-light">
-                      Drag and drop your project file or select from disk. Support for stem analysis and full mix transcription.
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 font-mono">
-                      Maximum file size: 15MB
-                    </p>
+
+                    {/* File Upload Area */}
+                    {!youtubeUrl && (
+                      <div
+                        className={cn(
+                          "flex-1 border-2 border-dashed rounded-[2rem] transition-all flex flex-col items-center justify-center p-12 text-center cursor-pointer",
+                          dragActive ? "border-white/20 bg-white/[0.03]" : "border-white/5 hover:border-white/10"
+                        )}
+                        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                        onDragLeave={() => setDragActive(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setDragActive(false);
+                          const files = e.dataTransfer.files;
+                          if (files?.[0]) {
+                            const file = files[0];
+                            const fileId = `${file.name}-${file.size}-${file.lastModified}`;
+                            setSelectedFile(file);
+                            setOriginalFile(file);
+                            setCurrentFileId(fileId);
+                            setCachedResults({});
+                            setLoadedInstrumentalUrl(null);
+                            setIsInstrumentalLoaded(false);
+                            setWasVocalFilterOn(false);
+                            loadFile(file);
+                          }
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <div className="w-24 h-24 bg-white/[0.03] rounded-full flex items-center justify-center mb-8 border border-white/5">
+                          <Wand2 className="w-10 h-10 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-2xl font-light text-white mb-3">Initialize Analysis</h3>
+                        <p className="text-muted-foreground max-w-sm font-light">
+                          Drag and drop your project file or select from disk. Support for stem analysis and full mix transcription.
+                        </p>
+                        <p className="text-xs text-muted-foreground/60 font-mono">
+                          Maximum file size: 15MB
+                        </p>
+                      </div>
+                    )}
+
+                    {/* YouTube URL Input Area */}
+                    {youtubeUrl !== "" && (
+                      <div className="flex-1 border border-white/10 rounded-[2rem] p-8 flex flex-col items-center justify-center gap-6 bg-gradient-to-b from-red-500/5 to-transparent">
+                        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/30">
+                          <Youtube className="w-10 h-10 text-red-400" />
+                        </div>
+
+                        <h3 className="text-2xl font-light text-white">Analyze from YouTube</h3>
+
+                        <div className="w-full max-w-md space-y-4">
+                          {/* URL Input */}
+                          <div className="relative">
+                            <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="text"
+                              placeholder="Paste YouTube URL..."
+                              value={youtubeUrl === "https://" ? "" : youtubeUrl}
+                              onChange={(e) => setYoutubeUrl(e.target.value)}
+                              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-muted-foreground focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-all"
+                            />
+                          </div>
+
+                          {/* Options */}
+                          <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center gap-3">
+                              <Switch
+                                id="audio-only-mode"
+                                checked={audioOnlyMode}
+                                onCheckedChange={setAudioOnlyMode}
+                              />
+                              <Label htmlFor="audio-only-mode" className="text-sm text-muted-foreground cursor-pointer">
+                                Audio only (no video player)
+                              </Label>
+                            </div>
+                            <span className="text-xs text-muted-foreground/60">
+                              {remainingYoutubeRequests}/5 requests left
+                            </span>
+                          </div>
+
+                          {/* Error Message */}
+                          {youtubeError && (
+                            <p className="text-sm text-red-400 text-center px-2">
+                              {youtubeError}
+                            </p>
+                          )}
+
+                          {/* Analyze Button */}
+                          <Button
+                            onClick={analyzeFromYoutube}
+                            disabled={youtubeLoading || !youtubeUrl.includes("youtu")}
+                            className="w-full h-14 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-lg font-semibold disabled:opacity-50"
+                          >
+                            {youtubeLoading ? (
+                              <>
+                                <Loader2 className="w-5 h-5 mr-2" style={{ animation: 'spin 1s linear infinite' }} />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-5 h-5 mr-2" />
+                                Analyze Chords
+                              </>
+                            )}
+                          </Button>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground/60 text-center max-w-sm">
+                          Paste any YouTube song URL. Audio will be extracted and analyzed for chords.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-10 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -603,14 +831,16 @@ const ChordAIPage = () => {
                     {/* Controls Interface */}
                     <div className="flex flex-wrap items-center justify-between gap-6">
                       <div className="flex items-center gap-6 min-w-fit">
-                        <Button
-                          size="icon"
-                          className="w-16 h-16 rounded-3xl bg-white text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={isPlaying ? pause : play}
-                          disabled={!audioBuffer}
-                        >
-                          {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6 ml-1" />}
-                        </Button>
+                        {(!isYoutubeMode || audioOnlyMode) && (
+                          <Button
+                            size="icon"
+                            className="w-16 h-16 rounded-3xl bg-white text-black hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={isPlaying ? pause : play}
+                            disabled={!audioBuffer}
+                          >
+                            {isPlaying ? <Pause className="fill-current w-6 h-6" /> : <Play className="fill-current w-6 h-6 ml-1" />}
+                          </Button>
+                        )}
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <div className="text-base font-medium text-white tracking-tight">{effectiveFileName}</div>
@@ -784,6 +1014,24 @@ const ChordAIPage = () => {
 
                     {/* Technical Visualizations */}
                     <div className="space-y-10">
+                      {/* YouTube Player */}
+                      {isYoutubeMode && youtubeVideoInfo && !audioOnlyMode && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                          <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
+                            <Youtube className="w-3 h-3" />
+                            Video Playback
+                          </div>
+                          <div className="rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black relative z-20">
+                            <YouTubePlayer
+                              videoId={youtubeVideoInfo.videoId}
+                              onTimeUpdate={onYoutubeTimeUpdate}
+                              className="w-full aspect-video"
+                              initialPiP={false}
+                            />
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
                           <Activity className="w-3 h-3" />

@@ -92,6 +92,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.1",
+    "react-youtube": "^10.1.0",
     "sonner": "^1.7.4",
     "tailwind": "^4.0.0",
     "tailwind-merge": "^2.6.0",

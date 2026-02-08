@@ -12,6 +12,7 @@ import threading
 
 from analysis import analyze_file, separate_audio_full, separate_audio_stems, STEM_TYPES
 from websocket_chords import websocket_chord_endpoint
+from youtube import extract_audio, get_video_info, check_rate_limit, get_remaining_requests, extract_video_id
 
 # Try to import madmom, but don't fail if it's not available
 try:
@@ -143,6 +144,121 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
             tmp_path.unlink(missing_ok=True)
         except Exception:
             pass
+
+
+@app.post("/api/analyze-youtube")
+def analyze_youtube(
+    url: str = Form(...),
+    separate_vocals: bool = Form(False),
+    use_madmom: bool = Form(True),
+    client_ip: str = Form("unknown"),
+):
+    """Analyze YouTube video for chords.
+    
+    Args:
+        url: YouTube video URL
+        separate_vocals: If True, separate vocals before analysis (slower, more accurate)
+        use_madmom: If True, use fast madmom engine. If False, use librosa.
+        client_ip: Client IP for rate limiting
+    
+    Returns:
+        Video metadata + chord analysis result
+    """
+    print(f"[YouTube] Received request for URL: {url}")
+    
+    # Rate limiting check
+    if not check_rate_limit(client_ip):
+        remaining = get_remaining_requests(client_ip)
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Rate limit exceeded. Maximum 5 YouTube analyses per hour. Remaining: {remaining}"
+        )
+    
+    # Validate URL
+    video_id = extract_video_id(url)
+    if not video_id:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+    
+    try:
+        # Extract audio from YouTube
+        print(f"[YouTube] Extracting audio for video: {video_id}")
+        audio_info = extract_audio(url)
+        audio_path = Path(audio_info['audio_path'])
+        
+        if not audio_path.exists():
+            raise HTTPException(status_code=500, detail="Failed to download audio")
+        
+        print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
+        
+        # Analyze the audio
+        print(f"[YouTube] Starting analysis (madmom={use_madmom}, vocals={separate_vocals})")
+        if not use_madmom:
+            result = analyze_file(audio_path, separate_vocals=separate_vocals)
+        elif separate_vocals:
+            result = analyze_file(audio_path, separate_vocals=True)
+        elif MADMOM_AVAILABLE:
+            result = analyze_file_madmom(audio_path)
+        else:
+            result = analyze_file(audio_path, separate_vocals=False)
+        
+        # Handle instrumental file if vocal separation was used
+        if "instrumentalPath" in result:
+            file_id = str(uuid.uuid4())
+            path = result["instrumentalPath"]
+            separated_files[file_id] = {
+                "paths": [path],
+                "timestamp": time.time(),
+                "type": "youtube_analysis"
+            }
+            result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
+            del result["instrumentalPath"]
+            
+        # Register the original audio file for download (for waveform visualization)
+        audio_id = str(uuid.uuid4())
+        separated_files[audio_id] = {
+            "paths": [str(audio_path)],
+            "timestamp": time.time(),
+            "type": "youtube_audio"
+        }
+        result["audioUrl"] = f"/api/analyze/download/{audio_id}/original.mp3"
+        
+        # Add YouTube video metadata
+        result["youtube"] = {
+            "videoId": audio_info['video_id'],
+            "title": audio_info['title'],
+            "duration": audio_info['duration'],
+            "thumbnail": audio_info['thumbnail'],
+            "channel": audio_info.get('channel', 'Unknown'),
+        }
+        result["remainingRequests"] = get_remaining_requests(client_ip)
+        
+        print(f"[YouTube] Analysis complete for: {audio_info['title']}")
+        return JSONResponse(result)
+        
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"[YouTube] Analysis failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {exc}")
+
+
+@app.get("/api/youtube/info")
+def youtube_info(url: str):
+    """Get YouTube video info without downloading.
+    
+    Args:
+        url: YouTube video URL
+    
+    Returns:
+        Video metadata (title, duration, thumbnail, channel)
+    """
+    try:
+        info = get_video_info(url)
+        return JSONResponse(info)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get video info: {e}")
 
 
 @app.post("/api/separate")
