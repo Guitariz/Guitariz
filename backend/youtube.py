@@ -191,6 +191,7 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
         }],
         'quiet': True,
         'no_warnings': True,
+        'force_ipv4': True,  # Fix for HF/Docker DNS issues
     }
     
     if ffmpeg_path:
