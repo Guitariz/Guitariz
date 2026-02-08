@@ -306,7 +306,7 @@ const ChordAIPage = () => {
         clearShareParamFromUrl();
       }
     }
-  }, []); // Only run once on mount
+  }, [toast]); // Only run once on mount (with toast dep)
 
   // Load instrumental audio when available
   useEffect(() => {
@@ -395,7 +395,7 @@ const ChordAIPage = () => {
     return found?.variant.voicings[0] || null;
   }, [currentChord]);
 
-  // YouTube analysis function
+  // YouTube analysis function (Client-Side)
   const analyzeFromYoutube = async () => {
     if (!youtubeUrl.trim()) {
       toast({
@@ -410,95 +410,93 @@ const ChordAIPage = () => {
     setYoutubeError(null);
 
     try {
-      const formData = new FormData();
-      formData.append("url", youtubeUrl);
-      formData.append("separate_vocals", separateVocals.toString());
-      formData.append("use_madmom", useMadmom.toString());
-      formData.append("client_ip", "browser"); // Simple client ID for rate limiting
+      // Step 1: Download Audio Client-Side
+      // This bypasses server-side IP blocks (Hugging Face / Datacenter)
+      const { downloadYouTubeAudio, extractVideoId } = await import('../lib/youtube');
 
-      const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
-
-      toast({
-        title: "Analyzing YouTube Video",
-        description: audioOnlyMode
-          ? "Downloading audio and detecting chords... (1-3 min)"
-          : "Downloading audio. Video will appear when ready.",
+      // We can simulate download progress in the UI if we want, 
+      // but for now we just show "Downloading..."
+      const { file, title, duration, thumbnailUrl } = await downloadYouTubeAudio(youtubeUrl, (msg) => {
+        // Optional: Update a status toast or similar
+        console.log(msg);
       });
 
-      const response = await fetch(`${API_BASE}/api/analyze-youtube`, {
+      toast({
+        title: "Audio Downloaded",
+        description: `Extracted "${title}". Uploading to analysis engine...`
+      });
+
+      // Step 2: Upload to Backend
+      // We use the existing file upload endpoint (/api/analyze)
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("separate_vocals", separateVocals.toString());
+      formData.append("use_madmom", useMadmom.toString());
+
+      const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
+      const uploadUrl = new URL(`${API_BASE}/api/analyze`);
+
+      const response = await fetch(uploadUrl.toString(), {
         method: "POST",
-        body: formData,
+        body: formData
       });
 
       if (!response.ok) {
-        let errorMessage = `Analysis failed: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          if (errorData.detail) {
-            errorMessage = errorData.detail;
-          }
-        } catch (e) {
-          // Response was not JSON, stick to status text
-        }
-        throw new Error(errorMessage);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
 
-      // Update state with results
+      // Step 3: Normalize Data
+      // The upload endpoint returns the Analysis Result directly
       setIsYoutubeMode(true);
-      setYoutubeVideoInfo(data.youtube);
-      setRemainingYoutubeRequests(data.remainingRequests || 0);
+      setYoutubeVideoInfo({
+        videoId: extractVideoId(youtubeUrl) || "unknown",
+        title: title,
+        channel: "YouTube",
+        thumbnail: thumbnailUrl || "",
+        duration: duration
+      });
 
-      // Set up cache key for YouTube analysis
-      const ytCacheKey = `yt-${data.youtube.videoId}-${separateVocals}-${useMadmom}`;
-      setCurrentFileId(`yt-${data.youtube.videoId}`);
-      setHistoryFileName(data.youtube.title);
+      setRemainingYoutubeRequests(prev => prev > 0 ? prev - 1 : 0); // Client side decrement
 
-      // Store result in cache
+      // ... Normal caching/history logic ...
+      const ytCacheKey = `yt-${title}-${separateVocals}-${useMadmom}`;
+      setCurrentFileId(`yt-${title}`);
+      setHistoryFileName(title);
+
       setCachedResults(prev => ({
         ...prev,
         [ytCacheKey]: {
-          result: data as AnalysisResult,
+          result: data,
           instrumentalUrl: data.instrumentalUrl
         }
       }));
 
-      // Save to history
       saveToHistory({
-        fileName: data.youtube.title,
-        result: data as AnalysisResult,
+        fileName: title,
+        result: data,
         instrumentalUrl: data.instrumentalUrl,
         useMadmom,
-        separateVocals,
+        separateVocals
       });
 
-      // Load audio for waveform visualization
-      if (data.audioUrl) {
-        try {
-          const audioResponse = await fetch(`${API_BASE}${data.audioUrl}`);
-          if (audioResponse.ok) {
-            const blob = await audioResponse.blob();
-            const file = new File([blob], "youtube_audio.mp3", { type: "audio/mp3" });
-            loadFile(file);
-          }
-        } catch (e) {
-          console.error("Failed to load YouTube audio for waveform", e);
-        }
-      }
+      // Play Audio
+      loadFile(file);
 
       toast({
-        title: "✅ Analysis Complete",
-        description: `Detected ${data.key || "N/A"} • ${data.tempo || "N/A"} BPM • ${data.chords?.length || 0} chord segments`,
+        title: "Analysis Complete",
+        description: `Analyzed "${title}"`,
       });
 
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
+    } catch (error: unknown) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : "Failed to analyze YouTube video.";
       setYoutubeError(message);
       toast({
-        title: "YouTube Analysis Failed",
+        title: "Error",
         description: message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setYoutubeLoading(false);

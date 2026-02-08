@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+
 
 interface AudioStream {
     url: string;
@@ -20,16 +20,23 @@ const COBALT_INSTANCES = [
     "https://cobalt.maybreak.com"
 ];
 
-function extractVideoId(url: string): string | null {
+export function extractVideoId(url: string): string | null {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[7].length === 11) ? match[7] : null;
 }
 
+export interface YouTubeDownloadResult {
+    file: File;
+    title: string;
+    duration: number; // seconds
+    thumbnailUrl?: string;
+}
+
 export async function downloadYouTubeAudio(
     url: string,
     onProgress?: (msg: string) => void
-): Promise<File> {
+): Promise<YouTubeDownloadResult> {
     const videoId = extractVideoId(url);
     if (!videoId) throw new Error("Invalid YouTube URL");
 
@@ -39,7 +46,7 @@ export async function downloadYouTubeAudio(
             if (onProgress) onProgress(`Fetching metadata from ${new URL(api).hostname}...`);
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
 
             const resp = await fetch(`${api}/streams/${videoId}`, {
                 signal: controller.signal
@@ -62,14 +69,21 @@ export async function downloadYouTubeAudio(
                 if (!audioResp.ok) throw new Error("Stream fetch failed");
 
                 const blob = await audioResp.blob();
-                return new File([blob], `${videoId}.m4a`, { type: 'audio/mp4' });
+                const file = new File([blob], `${data.title || videoId}.m4a`, { type: 'audio/mp4' });
+
+                return {
+                    file,
+                    title: data.title || videoId,
+                    duration: data.duration || 0,
+                    thumbnailUrl: data.thumbnailUrl
+                };
             }
         } catch (e) {
             console.warn(`Piped ${api} failed:`, e);
         }
     }
 
-    // 2. Try Cobalt API (Backup)
+    // 2. Try Cobalt API (Backup) -- Cobalt doesn't always return metadata
     for (const api of COBALT_INSTANCES) {
         try {
             if (onProgress) onProgress(`Trying Cobalt ${new URL(api).hostname}...`);
@@ -96,12 +110,19 @@ export async function downloadYouTubeAudio(
                 if (onProgress) onProgress("Downloading from Cobalt...");
                 const audioResp = await fetch(data.url);
                 const blob = await audioResp.blob();
-                return new File([blob], `${videoId}.mp3`, { type: 'audio/mpeg' });
+                const file = new File([blob], `${videoId}.mp3`, { type: 'audio/mpeg' });
+
+                // Cobalt might not verify metadata in legacy mode
+                return {
+                    file,
+                    title: `YouTube Video (${videoId})`,
+                    duration: 0
+                };
             }
         } catch (e) {
             console.warn(`Cobalt ${api} failed:`, e);
         }
     }
 
-    throw new Error("All download methods failed. Please use a localized VPN or try again.");
+    throw new Error("All download methods failed. The video might be region-locked or private.");
 }
