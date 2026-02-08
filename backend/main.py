@@ -25,6 +25,30 @@ except ImportError:
     MADMOM_AVAILABLE = False
     print("[Startup] ℹ madmom module not found - using librosa engine only")
 
+# --- NETWORK DIAGNOSTICS ---
+try:
+    print("\n[DIAG] Starting Network Diagnostics...")
+    import socket
+    import httpx
+    
+    # 1. Test DNS
+    target = "www.youtube.com"
+    print(f"[DIAG] Resolving {target}...")
+    ip = socket.gethostbyname(target)
+    print(f"[DIAG] ✓ DNS OK: {target} -> {ip}")
+    
+    # 2. Test HTTPS
+    print(f"[DIAG] Testing HTTPS {target} via httpx...")
+    response = httpx.get(f"https://{target}", timeout=10.0, follow_redirects=True)
+    print(f"[DIAG] ✓ HTTPS OK: Status {response.status_code}")
+    
+except Exception as e:
+    print(f"[DIAG] ❌ NETWORK FAILURE: {e}")
+    import traceback
+    traceback.print_exc()
+print("[DIAG] Diagnostics complete.\n")
+# ---------------------------
+
 from contextlib import asynccontextmanager
 
 # Store separated audio files temporarily (in production, use S3/cloud storage)
