@@ -26,56 +26,82 @@ except ImportError:
     print("[Startup] ℹ madmom module not found - using librosa engine only")
 
 # --- NETWORK DIAGNOSTICS & PATCH ---
-try:
-    print("\n[DIAG] Starting Network Diagnostics...")
-    import socket
-    import httpx
-    import dns.resolver
+# --- NETWORK DIAGNOSTICS & PATCH ---
+print("\n[DIAG] Starting Network Diagnostics (v1.9.4)...")
+import socket
+import httpx
+import dns.resolver
 
-    # MONKEY PATCH: Force Google DNS to bypass broken OS resolver
-    print("[DNS] 🛠️ Patching socket.getaddrinfo to use Google DNS (8.8.8.8)...")
-    resolver = dns.resolver.Resolver()
-    resolver.nameservers = ['8.8.8.8', '8.8.4.4']
+# 1. Test Upstream DNS (Google) directly
+try:
+    print("[DIAG] Testing direct query to 8.8.8.8...")
+    res = dns.resolver.Resolver()
+    res.nameservers = ['8.8.8.8', '8.8.4.4']
+    ans = res.resolve('www.youtube.com', 'A')
+    print(f"[DIAG] ✓ dnspython Success: {ans[0].to_text()}")
+    DNS_BYPASS_POSSIBLE = True
+except Exception as e:
+    print(f"[DIAG] ❌ dnspython FAILED: {e}")
+    DNS_BYPASS_POSSIBLE = False
+
+# 2. Apply Monkey Patches
+try:
+    print("[DNS] 🛠️ Patching socket..." if DNS_BYPASS_POSSIBLE else "[DNS] ⚠️ Applying patch anyway...")
+    
     _original_getaddrinfo = socket.getaddrinfo
+    _original_gethostbyname = socket.gethostbyname
 
     def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
         try:
-            # If it's already an IP, pass through
             try:
                 socket.inet_aton(host)
                 return _original_getaddrinfo(host, port, family, type, proto, flags)
             except:
                 pass
             
-            # Resolve against Google DNS
-            # print(f"[DNS Patch] Querying {host}...")
-            answers = resolver.resolve(host, 'A')
+            # Use dnspython
+            answers = res.resolve(host, 'A')
             ip = answers[0].to_text()
             # print(f"[DNS Patch] Resolved {host} -> {ip}")
             return _original_getaddrinfo(ip, port, family, type, proto, flags)
         except Exception as e:
-            # print(f"[DNS Patch] Fallback for {host}: {e}")
             return _original_getaddrinfo(host, port, family, type, proto, flags)
-    
-    # Apply patch
-    socket.getaddrinfo = patched_getaddrinfo
-    print("[DNS] ✓ Patch applied.")
 
-    # 1. Test DNS (Now using Patch)
-    target = "www.youtube.com"
-    print(f"[DIAG] Resolving {target} (Patched)...")
-    ip = socket.gethostbyname(target)
-    print(f"[DIAG] ✓ DNS OK: {target} -> {ip}")
-    
-    # 2. Test HTTPS
-    print(f"[DIAG] Testing HTTPS {target} via httpx...")
-    response = httpx.get(f"https://{target}", timeout=10.0, follow_redirects=True)
-    print(f"[DIAG] ✓ HTTPS OK: Status {response.status_code}")
-    
+    def patched_gethostbyname(hostname):
+        try:
+            try:
+                socket.inet_aton(hostname)
+                return hostname
+            except:
+                pass
+            answers = res.resolve(hostname, 'A')
+            return answers[0].to_text()
+        except:
+             return _original_gethostbyname(hostname)
+
+    socket.getaddrinfo = patched_getaddrinfo
+    socket.gethostbyname = patched_gethostbyname
+    print("[DNS] ✓ Patches applied to getaddrinfo and gethostbyname.")
 except Exception as e:
-    print(f"[DIAG] ❌ NETWORK FAILURE: {e}")
-    import traceback
-    traceback.print_exc()
+    print(f"[DIAG] ❌ Patching Failed: {e}")
+
+# 3. Verify Patches
+try:
+    target = "www.youtube.com"
+    print(f"[DIAG] Testing socket.gethostbyname('{target}')...")
+    ip = socket.gethostbyname(target)
+    print(f"[DIAG] ✓ gethostbyname Result: {ip}")
+except Exception as e:
+    print(f"[DIAG] ❌ gethostbyname FAILED: {e}")
+
+try:
+    target = "www.youtube.com"
+    print(f"[DIAG] Testing httpx.get('https://{target}')...")
+    response = httpx.get(f"https://{target}", timeout=10.0, follow_redirects=True)
+    print(f"[DIAG] ✓ HTTPS Result: {response.status_code}")
+except Exception as e:
+    print(f"[DIAG] ❌ HTTPS FAILED: {e}")
+
 print("[DIAG] Diagnostics complete.\n")
 # ---------------------------
 
