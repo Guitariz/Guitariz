@@ -78,12 +78,39 @@ def extract_video_id(url: str) -> Optional[str]:
     return None
 
 
+def _setup_ydl_opts(base_opts: Dict[str, Any]) -> Dict[str, Any]:
+    """Helper to add cookies and client args to ydl_opts"""
+    opts = base_opts.copy()
+    
+    # 1. Add Client Config (Try looser clients first)
+    opts['extractor_args'] = {
+        'youtube': {
+            'player_client': ['android_creator', 'tv_embedded', 'web']
+        }
+    }
+    
+    # 2. Add Cookies
+    try:
+        cookies_content = os.environ.get("YOUTUBE_COOKIES")
+        if cookies_content:
+            line_count = cookies_content.count('\n')
+            if line_count < 2:
+                # Naive fix for mangled secrets
+                cookies_content = cookies_content.replace(".youtube.com", "\n.youtube.com")
+                cookies_content = cookies_content.replace("# Netscape", "# Netscape")
+                
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as cf:
+                cf.write(cookies_content)
+                opts['cookiefile'] = cf.name
+    except Exception as e:
+        print(f"[YouTube] ⚠️ Failed to setup cookies: {e}")
+        
+    return opts
+
+
 def get_video_info(url: str) -> Dict[str, Any]:
     """
     Get video metadata without downloading.
-    
-    Returns:
-        Dict with: title, duration, thumbnail, channel, video_id
     """
     try:
         import yt_dlp
@@ -100,9 +127,17 @@ def get_video_info(url: str) -> Dict[str, Any]:
         'extract_flat': False,
     }
     
+    # Use helper to add cookies and client config
+    ydl_opts = _setup_ydl_opts(ydl_opts)
+    
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
             info = ydl.extract_info(url, download=False)
+            # Clean up cookie if created
+            if 'cookiefile' in ydl_opts and os.path.exists(ydl_opts['cookiefile']):
+                try: os.unlink(ydl_opts['cookiefile'])
+                except: pass
+
             return {
                 'video_id': video_id,
                 'title': info.get('title', 'Unknown'),
@@ -111,6 +146,10 @@ def get_video_info(url: str) -> Dict[str, Any]:
                 'channel': info.get('channel', info.get('uploader', 'Unknown')),
             }
         except Exception as e:
+            # Cleanup on error too
+            if 'cookiefile' in ydl_opts and os.path.exists(ydl_opts['cookiefile']):
+                try: os.unlink(ydl_opts['cookiefile'])
+                except: pass
             raise RuntimeError(f"Failed to get video info: {str(e)}")
 
 
@@ -191,38 +230,12 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
         }],
         'quiet': True,
         'no_warnings': True,
-        'force_ipv4': True,  # Fix for HF/Docker DNS issues
+        'force_ipv4': True,
     }
     
-    # COOKIES HANDLING
-    # Check for YOUTUBE_COOKIES env var (Netscape format content)
-    cookie_path = None
-    try:
-        cookies_content = os.environ.get("YOUTUBE_COOKIES")
-        if cookies_content:
-            # DEBUG: Check if newlines are preserved
-            line_count = cookies_content.count('\n')
-            print(f"[YouTube] Cookies loaded. Length: {len(cookies_content)}, Lines: {line_count}")
-            if line_count < 2:
-                print("[YouTube] ⚠️ Cookies look malformed (one line). Attempting to fix...")
-                # Naive fix: Add newline before .youtube.com if likely missing
-                cookies_content = cookies_content.replace(".youtube.com", "\n.youtube.com")
-                cookies_content = cookies_content.replace("# Netscape", "# Netscape") # Ensure header
-
-            print("[YouTube] Creating temp cookie file...")
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as cf:
-                cf.write(cookies_content)
-                cookie_path = cf.name
-            ydl_opts['cookiefile'] = cookie_path
-    except Exception as e:
-        print(f"[YouTube] ⚠️ Failed to setup cookies: {e}")
-
-    # Add client configuration to bypass some blocks
-    ydl_opts['extractor_args'] = {
-        'youtube': {
-            'player_client': ['web', 'ios', 'android'] 
-        }
-    }
+    # Use helper for cookies & clients
+    ydl_opts = _setup_ydl_opts(ydl_opts)
+    cookie_path = ydl_opts.get('cookiefile')
 
     if ffmpeg_path:
         ydl_opts['ffmpeg_location'] = ffmpeg_path
