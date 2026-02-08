@@ -293,7 +293,57 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
 
         except Exception as e_py:
             print(f"[YouTube] pytubefix also failed: {e_py}")
-            raise RuntimeError(f"Download failed.\nyt-dlp: {e_yt}.\npytubefix: {e_py}\n\nRunning in Datacenter? Try setting YOUTUBE_COOKIES env var!")
+            
+            # ---------------------------------------------------------
+            # FALLBACK 3: Invidious Instances (The "Hail Mary")
+            # ---------------------------------------------------------
+            print("[YouTube] Trying Invidious fallback (proxying)...")
+            invidious_instances = [
+                "https://inv.tux.pizza",
+                "https://vid.puffyan.us", 
+                "https://invidious.projectsegfau.lt",
+                "https://invidious.jing.rocks",
+            ]
+            
+            import requests
+            
+            success = False
+            last_err = None
+            
+            for instance in invidious_instances:
+                try:
+                    # m4a audio itag=140
+                    download_url = f"{instance}/latest_version?id={video_id}&itag=140"
+                    print(f"[YouTube] Trying {instance}...")
+                    
+                    with requests.get(download_url, stream=True, timeout=15) as r:
+                         if r.status_code == 200:
+                             # Save to temp file
+                             temp_audio = output_dir / f"{video_id}.m4a"
+                             with open(temp_audio, 'wb') as f:
+                                 for chunk in r.iter_content(chunk_size=8192):
+                                     f.write(chunk)
+                             
+                             # Convert to MP3
+                             print(f"[YouTube] Converting Invidious output {temp_audio} to {output_path}...")
+                             subprocess.run([
+                                 'ffmpeg', '-y', '-i', str(temp_audio), 
+                                 '-vn', '-acodec', 'libmp3lame', '-q:a', '2', 
+                                 str(output_path)
+                             ], check=True)
+                             
+                             temp_audio.unlink(missing_ok=True)
+                             print(f"[YouTube] Audio extracted via Invidious: {output_path}")
+                             success = True
+                             break
+                         else:
+                             print(f"[YouTube] {instance} returned {r.status_code}")
+                except Exception as e_inv:
+                    print(f"[YouTube] {instance} failed: {e_inv}")
+                    last_err = e_inv
+
+            if not success:
+                raise RuntimeError(f"All methods failed.\nyt-dlp: {e_yt}\npytubefix: {e_py}\nInvidious: {last_err}\n\nRunning in Datacenter? IP is heavily blocked.")
 
     finally:
         # Cleanup cookie file
