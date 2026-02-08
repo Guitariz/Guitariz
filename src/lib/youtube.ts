@@ -93,24 +93,30 @@ export async function downloadYouTubeAudio(
             if (onProgress) onProgress(`Trying Cobalt (${new URL(api).hostname})...`);
 
             // Payload strategies
-            const payloads = [
-                // v10 style
+            const strategies = [
+                // v10 style -> POST /
                 {
-                    url: url,
-                    downloadMode: "audio",
-                    audioFormat: "mp3"
+                    endpoint: "/",
+                    payload: {
+                        url: url,
+                        downloadMode: "audio",
+                        audioFormat: "mp3"
+                    }
                 },
-                // v7 style
+                // v7 style -> POST /api/json
                 {
-                    url: url,
-                    isAudioOnly: true,
-                    aFormat: "mp3"
+                    endpoint: "/api/json",
+                    payload: {
+                        url: url,
+                        isAudioOnly: true,
+                        aFormat: "mp3"
+                    }
                 }
             ];
 
-            for (const payload of payloads) {
+            for (const { endpoint, payload } of strategies) {
                 try {
-                    const resp = await fetch(`${api}/api/json`, {
+                    const resp = await fetch(`${api}${endpoint}`, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -137,7 +143,7 @@ export async function downloadYouTubeAudio(
                         };
                     }
                 } catch (innerE) {
-                    // try next payload
+                    // try next strategy
                 }
             }
         } catch (e) {
