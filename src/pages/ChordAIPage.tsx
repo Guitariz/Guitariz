@@ -431,11 +431,16 @@ const ChordAIPage = () => {
       });
 
       if (!response.ok) {
-        if (response.status === 429) {
-          const error = await response.json();
-          throw new Error(error.detail || "Rate limit exceeded. Try again later.");
+        let errorMessage = `Analysis failed: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch (e) {
+          // Response was not JSON, stick to status text
         }
-        throw new Error(`Analysis failed: ${response.statusText}`);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

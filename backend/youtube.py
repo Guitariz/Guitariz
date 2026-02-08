@@ -19,7 +19,7 @@ _rate_limit_lock = threading.Lock()
 _request_counts: Dict[str, list] = defaultdict(list)  # IP -> list of timestamps
 
 # Rate limit constants
-RATE_LIMIT_REQUESTS = 5  # max requests
+RATE_LIMIT_REQUESTS = 100  # max requests (increased for testing)
 RATE_LIMIT_WINDOW = 3600  # per hour (seconds)
 
 

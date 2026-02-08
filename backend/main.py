@@ -31,6 +31,11 @@ from contextlib import asynccontextmanager
 # Format: { id: {"paths": [path1, path2], "timestamp": float} }
 separated_files = {}
 
+# Concurrency Control
+# Limit max concurrent heavy analysis tasks to prevent OOM/CPU saturation
+MAX_CONCURRENT_ANALYSIS = 2
+analysis_semaphore = threading.Semaphore(MAX_CONCURRENT_ANALYSIS)
+
 def cleanup_loop():
     """Background thread to clean up old files after 1 hour."""
     while True:
@@ -94,56 +99,62 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
         use_madmom: If True, use fast madmom engine. If False, use librosa (detailed analysis)
     """
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_madmom={use_madmom})")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="File required")
-
-    suffix = Path(file.filename).suffix or ".tmp"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
-
-    try:
-        # The 'use_madmom' flag is the primary engine selector (Fast vs Detailed)
-        if not use_madmom:
-            # User wants MORE ACCURATE -> Force Librosa
-            print(f"[API] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
-            result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-        elif separate_vocals:
-            # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
-            print("[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
-            result = analyze_file(tmp_path, separate_vocals=True)
-        elif MADMOM_AVAILABLE:
-            # FAST -> Madmom
-            print("[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
-            result = analyze_file_madmom(tmp_path)
-        else:
-            # Fallback
-            print("[API] Engine: LIBROSA (Fallback) | Madmom not found")
-            result = analyze_file(tmp_path, separate_vocals=False)
-        
-        # If vocal separation was used, store the instrumental file and return its URL
-        if "instrumentalPath" in result:
-            file_id = str(uuid.uuid4())
-            path = result["instrumentalPath"]
-            separated_files[file_id] = {
-                "paths": [path],
-                "timestamp": time.time(),
-                "type": "analysis"
-            }
-            result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
-            print(f"Stored instrumental file with ID: {file_id}, URL: {result['instrumentalUrl']}")
-            del result["instrumentalPath"]  # Remove the local path from response
-        
-        print(f"Returning result with keys: {result.keys()}")
-        return JSONResponse(result)
-    except Exception as exc: 
-        print(f"[API] Analysis failed: {exc}")
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
-    finally:
+    
+    # Acquire semaphore (queueing if busy)
+    with analysis_semaphore:
         try:
-            tmp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="File required")
+
+            suffix = Path(file.filename).suffix or ".tmp"
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                tmp_path = Path(tmp.name)
+        
+            try:
+                # The 'use_madmom' flag is the primary engine selector (Fast vs Detailed)
+                if not use_madmom:
+                    # User wants MORE ACCURATE -> Force Librosa
+                    print(f"[API] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
+                    result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+                elif separate_vocals:
+                    # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
+                    print("[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
+                    result = analyze_file(tmp_path, separate_vocals=True)
+                elif MADMOM_AVAILABLE:
+                    # FAST -> Madmom
+                    print("[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
+                    result = analyze_file_madmom(tmp_path)
+                else:
+                    # Fallback
+                    print("[API] Engine: LIBROSA (Fallback) | Madmom not found")
+                    result = analyze_file(tmp_path, separate_vocals=False)
+                
+                # If vocal separation was used, store the instrumental file and return its URL
+                if "instrumentalPath" in result:
+                    file_id = str(uuid.uuid4())
+                    path = result["instrumentalPath"]
+                    separated_files[file_id] = {
+                        "paths": [path],
+                        "timestamp": time.time(),
+                        "type": "analysis"
+                    }
+                    result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
+                    print(f"Stored instrumental file with ID: {file_id}, URL: {result['instrumentalUrl']}")
+                    del result["instrumentalPath"]  # Remove the local path from response
+                
+                print(f"Returning result with keys: {result.keys()}")
+                return JSONResponse(result)
+            except Exception as exc: 
+                print(f"[API] Analysis failed: {exc}")
+                raise HTTPException(status_code=500, detail=f"Analysis failed: {exc}")
+        finally:
+            try:
+                if 'tmp_path' in locals():
+                    tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 @app.post("/api/analyze-youtube")
@@ -179,67 +190,69 @@ def analyze_youtube(
     if not video_id:
         raise HTTPException(status_code=400, detail="Invalid YouTube URL")
     
-    try:
-        # Extract audio from YouTube
-        print(f"[YouTube] Extracting audio for video: {video_id}")
-        audio_info = extract_audio(url)
-        audio_path = Path(audio_info['audio_path'])
-        
-        if not audio_path.exists():
-            raise HTTPException(status_code=500, detail="Failed to download audio")
-        
-        print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
-        
-        # Analyze the audio
-        print(f"[YouTube] Starting analysis (madmom={use_madmom}, vocals={separate_vocals})")
-        if not use_madmom:
-            result = analyze_file(audio_path, separate_vocals=separate_vocals)
-        elif separate_vocals:
-            result = analyze_file(audio_path, separate_vocals=True)
-        elif MADMOM_AVAILABLE:
-            result = analyze_file_madmom(audio_path)
-        else:
-            result = analyze_file(audio_path, separate_vocals=False)
-        
-        # Handle instrumental file if vocal separation was used
-        if "instrumentalPath" in result:
-            file_id = str(uuid.uuid4())
-            path = result["instrumentalPath"]
-            separated_files[file_id] = {
-                "paths": [path],
-                "timestamp": time.time(),
-                "type": "youtube_analysis"
-            }
-            result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
-            del result["instrumentalPath"]
+    # Acquire semaphore (queueing if busy)
+    with analysis_semaphore:
+        try:
+            # Extract audio from YouTube
+            print(f"[YouTube] Extracting audio for video: {video_id}")
+            audio_info = extract_audio(url)
+            audio_path = Path(audio_info['audio_path'])
             
-        # Register the original audio file for download (for waveform visualization)
-        audio_id = str(uuid.uuid4())
-        separated_files[audio_id] = {
-            "paths": [str(audio_path)],
-            "timestamp": time.time(),
-            "type": "youtube_audio"
-        }
-        result["audioUrl"] = f"/api/analyze/download/{audio_id}/original.mp3"
-        
-        # Add YouTube video metadata
-        result["youtube"] = {
-            "videoId": audio_info['video_id'],
-            "title": audio_info['title'],
-            "duration": audio_info['duration'],
-            "thumbnail": audio_info['thumbnail'],
-            "channel": audio_info.get('channel', 'Unknown'),
-        }
-        result["remainingRequests"] = get_remaining_requests(client_ip)
-        
-        print(f"[YouTube] Analysis complete for: {audio_info['title']}")
-        return JSONResponse(result)
-        
-    except HTTPException:
-        raise
-    except Exception as exc:
-        print(f"[YouTube] Analysis failed: {exc}")
-        raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {exc}")
+            if not audio_path.exists():
+                raise HTTPException(status_code=500, detail="Failed to download audio")
+            
+            print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
+            
+            # Analyze the audio
+            print(f"[YouTube] Starting analysis (madmom={use_madmom}, vocals={separate_vocals})")
+            if not use_madmom:
+                result = analyze_file(audio_path, separate_vocals=separate_vocals)
+            elif separate_vocals:
+                result = analyze_file(audio_path, separate_vocals=True)
+            elif MADMOM_AVAILABLE:
+                result = analyze_file_madmom(audio_path)
+            else:
+                result = analyze_file(audio_path, separate_vocals=False)
+            
+            # Handle instrumental file if vocal separation was used
+            if "instrumentalPath" in result:
+                file_id = str(uuid.uuid4())
+                path = result["instrumentalPath"]
+                separated_files[file_id] = {
+                    "paths": [path],
+                    "timestamp": time.time(),
+                    "type": "youtube_analysis"
+                }
+                result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
+                del result["instrumentalPath"]
+                
+            # Register the original audio file for download (for waveform visualization)
+            audio_id = str(uuid.uuid4())
+            separated_files[audio_id] = {
+                "paths": [str(audio_path)],
+                "timestamp": time.time(),
+                "type": "youtube_audio"
+            }
+            result["audioUrl"] = f"/api/analyze/download/{audio_id}/original.mp3"
+            
+            # Add YouTube video metadata
+            result["youtube"] = {
+                "videoId": audio_info['video_id'],
+                "title": audio_info['title'],
+                "duration": audio_info['duration'],
+                "thumbnail": audio_info['thumbnail'],
+                "channel": audio_info.get('channel', 'Unknown'),
+            }
+            result["remainingRequests"] = get_remaining_requests(client_ip)
+            
+            print(f"[YouTube] Analysis complete for: {audio_info['title']}")
+            return JSONResponse(result)
+            
+        except HTTPException:
+            raise
+        except Exception as exc:
+            print(f"[YouTube] Analysis failed: {exc}")
+            raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {exc}")
 
 
 @app.get("/api/youtube/info")
@@ -285,89 +298,92 @@ def separate_audio(
         raise HTTPException(status_code=400, detail="Invalid format. Use 'wav' or 'mp3'.")
 
     suffix = Path(file.filename).suffix or ".tmp"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
+    
+    # Acquire semaphore (queueing if busy)
+    with analysis_semaphore:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = Path(tmp.name)
 
-    try:
-        # Perform full separation (writes WAV stems)
-        # Note: Analysis.py now handles truncation internally using librosa
-        print(f"Starting separation for {file.filename}...")
-        result = separate_audio_full(tmp_path)
-
-        if not result:
-            raise HTTPException(status_code=500, detail="Separation failed - model error")
-
-        print("Separation finished, starting transcoding...")
-        session_id = str(uuid.uuid4())
-
-        vocals_path = Path(result["vocals"])
-        instrumental_path = Path(result["instrumental"])
-
-        # Optionally transcode to MP3 for faster downloads
-        if format == "mp3":
-            def to_mp3(src: Path) -> Path:
-                dst = src.with_suffix(".mp3")
-                # 192k is a good quality/size tradeoff; adjust if needed
-                subprocess.run(
-                    [
-                        "ffmpeg",
-                        "-y",
-                        "-i",
-                        str(src),
-                        "-codec:a",
-                        "libmp3lame",
-                        "-b:a",
-                        "192k",
-                        str(dst),
-                    ],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-                return dst
-
-            try:
-                vocals_path = to_mp3(vocals_path)
-                instrumental_path = to_mp3(instrumental_path)
-            except subprocess.CalledProcessError as e:
-                # Fallback to WAV if MP3 conversion fails
-                print(f"MP3 conversion failed, falling back to WAV: {e}")
-                format = "wav"
-            except FileNotFoundError:
-                # ffmpeg not installed
-                print("ffmpeg not found, falling back to WAV format")
-                format = "wav"
-
-        # Store paths temporarily
-        separated_files[session_id] = {
-            "vocals": str(vocals_path),
-            "instrumental": str(instrumental_path),
-            "paths": [str(vocals_path), str(instrumental_path)],
-            "format": format,
-            "timestamp": time.time(),
-            "type": "separation"
-        }
-
-        return JSONResponse(
-            {
-                "session_id": session_id,
-                "format": format,
-                "vocalsUrl": f"/api/separate/download/{session_id}/vocals?format={format}",
-                "instrumentalUrl": f"/api/separate/download/{session_id}/instrumental?format={format}",
-            }
-        )
-    except Exception as exc:
-        print(f"Separation error: {exc}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Separation failed: {str(exc)}")
-    finally:
-        # Clean up original upload
         try:
-            tmp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+            # Perform full separation (writes WAV stems)
+            # Note: Analysis.py now handles truncation internally using librosa
+            print(f"Starting separation for {file.filename}...")
+            result = separate_audio_full(tmp_path)
+
+            if not result:
+                raise HTTPException(status_code=500, detail="Separation failed - model error")
+
+            print("Separation finished, starting transcoding...")
+            session_id = str(uuid.uuid4())
+
+            vocals_path = Path(result["vocals"])
+            instrumental_path = Path(result["instrumental"])
+
+            # Optionally transcode to MP3 for faster downloads
+            if format == "mp3":
+                def to_mp3(src: Path) -> Path:
+                    dst = src.with_suffix(".mp3")
+                    # 192k is a good quality/size tradeoff; adjust if needed
+                    subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-y",
+                            "-i",
+                            str(src),
+                            "-codec:a",
+                            "libmp3lame",
+                            "-b:a",
+                            "192k",
+                            str(dst),
+                        ],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    return dst
+
+                try:
+                    vocals_path = to_mp3(vocals_path)
+                    instrumental_path = to_mp3(instrumental_path)
+                except subprocess.CalledProcessError as e:
+                    # Fallback to WAV if MP3 conversion fails
+                    print(f"MP3 conversion failed, falling back to WAV: {e}")
+                    format = "wav"
+                except FileNotFoundError:
+                    # ffmpeg not installed
+                    print("ffmpeg not found, falling back to WAV format")
+                    format = "wav"
+
+            # Store paths temporarily
+            separated_files[session_id] = {
+                "vocals": str(vocals_path),
+                "instrumental": str(instrumental_path),
+                "paths": [str(vocals_path), str(instrumental_path)],
+                "format": format,
+                "timestamp": time.time(),
+                "type": "separation"
+            }
+
+            return JSONResponse(
+                {
+                    "session_id": session_id,
+                    "format": format,
+                    "vocalsUrl": f"/api/separate/download/{session_id}/vocals?format={format}",
+                    "instrumentalUrl": f"/api/separate/download/{session_id}/instrumental?format={format}",
+                }
+            )
+        except Exception as exc:
+            print(f"Separation error: {exc}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Separation failed: {str(exc)}")
+        finally:
+            # Clean up original upload
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 @app.post("/api/separate-stems")
@@ -400,87 +416,91 @@ def separate_audio_6stems(
         raise HTTPException(status_code=400, detail="Invalid format. Use 'wav' or 'mp3'.")
 
     suffix = Path(file.filename).suffix or ".tmp"
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
+    
+    # Acquire semaphore (queueing if busy)
+    with analysis_semaphore:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = Path(tmp.name)
 
-    try:
-        print(f"Starting 6-stem separation for {file.filename}...")
-        result = separate_audio_stems(tmp_path)
-
-        if not result:
-            raise HTTPException(status_code=500, detail="6-stem separation failed - model error")
-
-        print("6-stem separation finished, starting transcoding...")
-        session_id = str(uuid.uuid4())
-
-        stem_data = {}
-        all_paths = []
-        
-        for stem_name, stem_path in result.items():
-            stem_path = Path(stem_path)
-            
-            # Optionally transcode to MP3
-            if format == "mp3":
-                try:
-                    mp3_path = stem_path.with_suffix(".mp3")
-                    subprocess.run(
-                        [
-                            "ffmpeg",
-                            "-y",
-                            "-i",
-                            str(stem_path),
-                            "-codec:a",
-                            "libmp3lame",
-                            "-b:a",
-                            "192k",
-                            str(mp3_path),
-                        ],
-                        check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                    stem_path = mp3_path
-                except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                    print(f"MP3 conversion failed for {stem_name}, keeping WAV: {e}")
-            
-            stem_data[stem_name] = str(stem_path)
-            all_paths.append(str(stem_path))
-
-        # Store paths temporarily
-        separated_files[session_id] = {
-            **stem_data,
-            "paths": all_paths,
-            "format": format,
-            "timestamp": time.time(),
-            "type": "6stem-separation"
-        }
-
-        # Build response with download URLs for each stem
-        stem_urls = {}
-        for stem_name in STEM_TYPES:
-            if stem_name in stem_data:
-                stem_urls[f"{stem_name}Url"] = f"/api/separate-stems/download/{session_id}/{stem_name}?format={format}"
-
-        return JSONResponse(
-            {
-                "session_id": session_id,
-                "format": format,
-                "stems": list(stem_data.keys()),
-                **stem_urls,
-            }
-        )
-    except Exception as exc:
-        print(f"6-stem separation error: {exc}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"6-stem separation failed: {str(exc)}")
-    finally:
-        # Clean up original upload
         try:
-            tmp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+            print(f"Starting 6-stem separation for {file.filename}...")
+            result = separate_audio_stems(tmp_path)
+
+            if not result:
+                raise HTTPException(status_code=500, detail="6-stem separation failed - model error")
+
+            print("6-stem separation finished, starting transcoding...")
+            session_id = str(uuid.uuid4())
+
+            stem_data = {}
+            all_paths = []
+            
+            for stem_name, stem_path in result.items():
+                stem_path = Path(stem_path)
+                
+                # Optionally transcode to MP3
+                if format == "mp3":
+                    try:
+                        mp3_path = stem_path.with_suffix(".mp3")
+                        subprocess.run(
+                            [
+                                "ffmpeg",
+                                "-y",
+                                "-i",
+                                str(stem_path),
+                                "-codec:a",
+                                "libmp3lame",
+                                "-b:a",
+                                "192k",
+                                "-loglevel", "quiet", # fix: suppress ffmpeg output which might clutter logs or cause issues
+                                str(mp3_path),
+                            ],
+                            check=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                        stem_path = mp3_path
+                    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                        print(f"MP3 conversion failed for {stem_name}, keeping WAV: {e}")
+                
+                stem_data[stem_name] = str(stem_path)
+                all_paths.append(str(stem_path))
+
+            # Store paths temporarily
+            separated_files[session_id] = {
+                **stem_data,
+                "paths": all_paths,
+                "format": format,
+                "timestamp": time.time(),
+                "type": "6stem-separation"
+            }
+
+            # Build response with download URLs for each stem
+            stem_urls = {}
+            for stem_name in STEM_TYPES:
+                if stem_name in stem_data:
+                    stem_urls[f"{stem_name}Url"] = f"/api/separate-stems/download/{session_id}/{stem_name}?format={format}"
+
+            return JSONResponse(
+                {
+                    "session_id": session_id,
+                    "format": format,
+                    "stems": list(stem_data.keys()),
+                    **stem_urls,
+                }
+            )
+        except Exception as exc:
+            print(f"6-stem separation error: {exc}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"6-stem separation failed: {str(exc)}")
+        finally:
+            # Clean up original upload
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 @app.get("/api/separate-stems/download/{session_id}/{stem_type}")
