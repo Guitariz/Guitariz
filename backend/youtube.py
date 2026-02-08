@@ -299,12 +299,15 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
             # ---------------------------------------------------------
             print("[YouTube] Trying Invidious fallback (proxying)...")
             invidious_instances = [
+                "https://yewtu.be",             # Very reliable
+                "https://invidious.flokinet.to", # Reliable
+                "https://vid.uff.uf.br",
+                "https://invidious.privacydev.net",
                 "https://invidious.projectsegfau.lt",
                 "https://inv.tux.pizza",
-                "https://inv.nadeko.net",
                 "https://invidious.nerdvpn.de",
                 "https://invidious.drgns.space",
-                "https://invidious.jing.rocks",
+                "https://yt.artemislena.eu",
             ]
             
             import requests
@@ -318,21 +321,38 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
                     download_url = f"{instance}/latest_version?id={video_id}&itag=140"
                     print(f"[YouTube] Trying {instance}...")
                     
-                    with requests.get(download_url, stream=True, timeout=15) as r:
+                    with requests.get(download_url, stream=True, timeout=20) as r:
                          if r.status_code == 200:
+                             content_type = r.headers.get('Content-Type', '')
+                             if 'text/html' in content_type:
+                                 print(f"[YouTube] {instance} returned HTML (likely error page). Skipping.")
+                                 continue
+                                 
                              # Save to temp file
                              temp_audio = output_dir / f"{video_id}.m4a"
+                             file_size = 0
                              with open(temp_audio, 'wb') as f:
                                  for chunk in r.iter_content(chunk_size=8192):
                                      f.write(chunk)
+                                     file_size += len(chunk)
                              
+                             if file_size < 10000: # Less than 10KB
+                                 print(f"[YouTube] {instance} returned too small file ({file_size} bytes). Skipping.")
+                                 # Debug: Print first 100 chars
+                                 try:
+                                     with open(temp_audio, 'r', errors='ignore') as f:
+                                         print(f"[YouTube] File preview: {f.read(100)}")
+                                 except: pass
+                                 temp_audio.unlink(missing_ok=True)
+                                 continue
+
                              # Convert to MP3
-                             print(f"[YouTube] Converting Invidious output {temp_audio} to {output_path}...")
+                             print(f"[YouTube] Converting Invidious output {temp_audio} ({file_size} bytes) to {output_path}...")
                              subprocess.run([
                                  'ffmpeg', '-y', '-i', str(temp_audio), 
                                  '-vn', '-acodec', 'libmp3lame', '-q:a', '2', 
                                  str(output_path)
-                             ], check=True)
+                             ], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                              
                              temp_audio.unlink(missing_ok=True)
                              print(f"[YouTube] Audio extracted via Invidious: {output_path}")
