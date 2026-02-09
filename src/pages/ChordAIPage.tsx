@@ -395,6 +395,8 @@ const ChordAIPage = () => {
     return found?.variant.voicings[0] || null;
   }, [currentChord]);
 
+
+
   // YouTube analysis function (Client-Side)
   const analyzeFromYoutube = async () => {
     if (!youtubeUrl.trim()) {
@@ -412,167 +414,174 @@ const ChordAIPage = () => {
     try {
       // Step 1: Download Audio Client-Side
       // This bypasses server-side IP blocks (Hugging Face / Datacenter)
-      const { downloadYouTubeAudio, extractVideoId } = await import('../lib/youtube');
+      const { extractAudioFromUrl } = await import('@/utils/youtubeClient');
+      const { extractVideoId } = await import('@/lib/youtube'); // Keep existing helper for ID
 
-      // We can simulate download progress in the UI if we want, 
-      // but for now we just show "Downloading..."
-      const { file, title, duration, thumbnailUrl } = await downloadYouTubeAudio(youtubeUrl, (msg) => {
-        // Optional: Update a status toast or similar
-        console.log(msg);
-      });
+      let clientFile: File | null = null;
+      let videoTitle = "YouTube Audio";
 
-      toast({
-        title: "Audio Downloaded",
-        description: `Extracted "${title}". Uploading to analysis engine...`
-      });
-
-      // Step 2: Upload to Backend
-      // We use the existing file upload endpoint (/api/analyze)
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("separate_vocals", separateVocals.toString());
-      formData.append("use_madmom", useMadmom.toString());
-
-      const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
-      const uploadUrl = new URL(`${API_BASE}/api/analyze`);
-
-      const response = await fetch(uploadUrl.toString(), {
-        method: "POST",
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Step 3: Normalize Data
-      // The upload endpoint returns the Analysis Result directly
-      setIsYoutubeMode(true);
-      setYoutubeVideoInfo({
-        videoId: extractVideoId(youtubeUrl) || "unknown",
-        title: title,
-        channel: "YouTube",
-        thumbnail: thumbnailUrl || "",
-        duration: duration
-      });
-
-      setRemainingYoutubeRequests(prev => prev > 0 ? prev - 1 : 0); // Client side decrement
-
-      // ... Normal caching/history logic ...
-      const ytCacheKey = `yt-${title}-${separateVocals}-${useMadmom}`;
-      setCurrentFileId(`yt-${title}`);
-      setHistoryFileName(title);
-
-      setCachedResults(prev => ({
-        ...prev,
-        [ytCacheKey]: {
-          result: data,
-          instrumentalUrl: data.instrumentalUrl
-        }
-      }));
-
-      saveToHistory({
-        fileName: title,
-        result: data,
-        instrumentalUrl: data.instrumentalUrl,
-        useMadmom,
-        separateVocals
-      });
-
-      // Play Audio
-      loadFile(file);
-
-      toast({
-        title: "Analysis Complete",
-        description: `Analyzed "${title}"`,
-      });
-
-    } catch (clientError: unknown) {
-      console.warn("Client-side download failed, trying backend fallback...", clientError);
-
-      // --- BACKEND FALLBACK ---
       try {
-        toast({
-          title: "Trying Server-Side Download...",
-          description: "Client download failed. Attempting server-side extraction (slower).",
+        const result = await extractAudioFromUrl(youtubeUrl, (msg) => {
+          console.log(msg); // Optional UI feedback
         });
 
+        if (result) {
+          clientFile = new File([result.blob], result.filename, { type: "audio/mp3" });
+          videoTitle = result.filename.replace(".mp3", "");
+          toast({
+            title: "Audio Downloaded in Browser",
+            description: "Uploading to analysis engine... "
+          });
+        }
+      } catch (err) {
+        console.warn("Client-side download error:", err);
+      }
+
+      // Step 2: If Client Download worked, upload it
+      if (clientFile) {
         const formData = new FormData();
-        formData.append("url", youtubeUrl);
+        formData.append("file", clientFile);
         formData.append("separate_vocals", separateVocals.toString());
         formData.append("use_madmom", useMadmom.toString());
-        formData.append("client_ip", "browser_fallback");
 
-        const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:7860";
-        const response = await fetch(`${API_BASE}/api/analyze-youtube`, {
+        const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
+        const uploadUrl = new URL(`${API_BASE}/api/analyze`);
+
+        const response = await fetch(uploadUrl.toString(), {
           method: "POST",
-          body: formData,
+          body: formData
         });
 
         if (!response.ok) {
-          let errorMessage = `Server Analysis failed: ${response.status}`;
-          try {
-            const errorData = await response.json();
-            if (errorData.detail) errorMessage = errorData.detail;
-          } catch (e) {
-            console.warn("Error parsing error response", e);
-          }
-          throw new Error(errorMessage);
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
 
-        // Normalize Backend Result
+        // Normalize Data
         setIsYoutubeMode(true);
-        setYoutubeVideoInfo(data.youtube);
-        setRemainingYoutubeRequests(data.remainingRequests || 0);
+        const videoId = extractVideoId(youtubeUrl) || "unknown";
 
-        const ytCacheKey = `yt-${data.youtube.videoId}-${separateVocals}-${useMadmom}`;
-        setCurrentFileId(`yt-${data.youtube.videoId}`);
-        setHistoryFileName(data.youtube.title);
+        setYoutubeVideoInfo({
+          videoId: videoId,
+          title: videoTitle, // Cobalt might give better title
+          channel: "YouTube",
+          thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+          duration: 0 // We might not know duration yet
+        });
+
+        setRemainingYoutubeRequests(prev => prev > 0 ? prev - 1 : 0);
+
+        // Cache & Play
+        const ytCacheKey = `yt-${videoId}-${separateVocals}-${useMadmom}`;
+        setCurrentFileId(`yt-${videoId}`);
+        setHistoryFileName(videoTitle);
 
         setCachedResults(prev => ({
           ...prev,
           [ytCacheKey]: {
-            result: data as AnalysisResult,
+            result: data,
             instrumentalUrl: data.instrumentalUrl
           }
         }));
 
         saveToHistory({
-          fileName: data.youtube.title,
-          result: data as AnalysisResult,
+          fileName: videoTitle,
+          result: data,
           instrumentalUrl: data.instrumentalUrl,
           useMadmom,
-          separateVocals,
+          separateVocals
         });
 
-        if (data.audioUrl) {
-          const audioResponse = await fetch(`${API_BASE}${data.audioUrl}`);
-          if (audioResponse.ok) {
-            const blob = await audioResponse.blob();
-            const file = new File([blob], "youtube_audio.mp3", { type: "audio/mp3" });
-            loadFile(file);
-          }
-        }
+        loadFile(clientFile);
 
         toast({
-          title: "✅ Analysis Complete (Server-Side)",
-          description: `Detected ${data.key || "N/A"} • ${data.tempo || "N/A"} BPM`,
+          title: "Analysis Complete",
+          description: `Analyzed "${videoTitle}"`,
         });
-
-      } catch (backendError: unknown) {
-        console.error(backendError);
-        const message = backendError instanceof Error ? backendError.message : "Both Client and Server download methods failed.";
-        setYoutubeError(message);
-        toast({
-          title: "Analysis Failed",
-          description: message,
-          variant: "destructive"
-        });
+        return; // EXIT SUCCESS
       }
+
+      // --- BACKEND FALLBACK (Original Logic) ---
+      console.warn("Client-side download failed or returned null, trying backend fallback...");
+      toast({
+        title: "Trying Server-Side Download...",
+        description: "Browser download failed. Attempting server-side extraction (slower).",
+      });
+
+      const formData = new FormData();
+      formData.append("url", youtubeUrl);
+      formData.append("separate_vocals", separateVocals.toString());
+      formData.append("use_madmom", useMadmom.toString());
+      formData.append("client_ip", "browser_fallback");
+
+      const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
+      const response = await fetch(`${API_BASE}/api/analyze-youtube`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Server Analysis failed: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) errorMessage = errorData.detail;
+        } catch (e) {
+          console.warn("Error parsing error response", e);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      // Normalize Backend Result
+      setIsYoutubeMode(true);
+      setYoutubeVideoInfo(data.youtube);
+      setRemainingYoutubeRequests(data.remainingRequests || 0);
+
+      const ytCacheKey = `yt-${data.youtube.videoId}-${separateVocals}-${useMadmom}`;
+      setCurrentFileId(`yt-${data.youtube.videoId}`);
+      setHistoryFileName(data.youtube.title);
+
+      setCachedResults(prev => ({
+        ...prev,
+        [ytCacheKey]: {
+          result: data as AnalysisResult,
+          instrumentalUrl: data.instrumentalUrl
+        }
+      }));
+
+      saveToHistory({
+        fileName: data.youtube.title,
+        result: data as AnalysisResult,
+        instrumentalUrl: data.instrumentalUrl,
+        useMadmom,
+        separateVocals,
+      });
+
+      if (data.audioUrl) {
+        const audioResponse = await fetch(`${API_BASE}${data.audioUrl}`);
+        if (audioResponse.ok) {
+          const blob = await audioResponse.blob();
+          const file = new File([blob], "youtube_audio.mp3", { type: "audio/mp3" });
+          loadFile(file);
+        }
+      }
+
+      toast({
+        title: "✅ Analysis Complete (Server-Side)",
+        description: `Detected ${data.key || "N/A"} • ${data.tempo || "N/A"} BPM`,
+      });
+
+    } catch (error: unknown) {
+      console.error(error);
+      const message = error instanceof Error ? error.message : "Both Client and Server download methods failed.";
+      setYoutubeError(message);
+      toast({
+        title: "Analysis Failed",
+        description: message,
+        variant: "destructive"
+      });
     } finally {
       setYoutubeLoading(false);
     }
