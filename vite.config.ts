@@ -99,6 +99,77 @@ export default defineConfig({
         ],
       },
     }),
+    {
+      name: "cors-proxy",
+      configureServer(server) {
+        server.middlewares.use("/api/proxy", async (req, res, next) => {
+          try {
+            const url = new URL(req.url!, `http://${req.headers.host}`);
+            const targetUrl = url.searchParams.get("url");
+
+            // Handle preflight OPTIONS
+            if (req.method === "OPTIONS") {
+              res.setHeader("Access-Control-Allow-Origin", "*");
+              res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+              res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+              res.statusCode = 204;
+              res.end();
+              return;
+            }
+
+            if (!targetUrl) {
+              res.statusCode = 400;
+              res.end("Missing url query parameter");
+              return;
+            }
+
+            // Prepare headers to forward
+            const headers = new Headers();
+            for (const [key, value] of Object.entries(req.headers)) {
+              if (key !== "host" && key !== "origin" && key !== "referer" && value) {
+                headers.set(key, Array.isArray(value) ? value.join(",") : value);
+              }
+            }
+
+            // Prepare body
+            let body: Buffer | undefined = undefined;
+            if (req.method !== "GET" && req.method !== "HEAD") {
+              // Collect body data
+              const buffers = [];
+              for await (const chunk of req) {
+                buffers.push(chunk);
+              }
+              body = Buffer.concat(buffers);
+            }
+
+            const response = await fetch(targetUrl, {
+              method: req.method,
+              headers: headers,
+              body: body,
+            });
+
+            // Forward response
+            res.statusCode = response.status;
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            response.headers.forEach((value, key) => {
+              // Avoid duplicate cors headers or encoding issues
+              if (key.toLowerCase() !== "content-encoding" && key.toLowerCase() !== "content-length" && !key.startsWith("access-control-")) {
+                res.setHeader(key, value);
+              }
+            });
+
+            const arrayBuffer = await response.arrayBuffer();
+            res.write(Buffer.from(arrayBuffer));
+            res.end();
+
+          } catch (e) {
+            console.error("Proxy error:", e);
+            res.statusCode = 500;
+            res.end("Proxy error: " + String(e));
+          }
+        });
+      },
+    },
   ],
   resolve: {
     alias: {

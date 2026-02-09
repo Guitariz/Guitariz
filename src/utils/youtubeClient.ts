@@ -18,14 +18,10 @@ const PIPED_INSTANCES = [
     "https://pipedapi.tokhmi.xyz",
 ];
 
-// Enhanced list of CORS proxies
-const CORS_PROXIES = [
-    // "https://corsproxy.io/?url=", // often blocks API calls
-    "https://api.allorigins.win/raw?url=", // reliable for GET
-    "https://thingproxy.freeboard.io/fetch/", // good for small payloads
-    "https://cors-anywhere.herokuapp.com/", // classic, rate limited
-    "https://proxy.cors.sh/", // requires header sometimes, but worth a shot
-];
+// Local Vite Proxy to bypass CORS
+// We use the relative path so it goes to the dev server (localhost:8080)
+// The dev server then proxies it using the 'cors-proxy' middleware in vite.config.ts
+const LOCAL_PROXY = "/api/proxy?url=";
 
 interface AudioExtractionResult {
     blob: Blob;
@@ -48,50 +44,54 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
 
             if (onProgress) onProgress(`Trying Piped instance: ${instance}...`);
 
-            // Iterate through CORS proxies for each Piped instance
-            for (const proxy of CORS_PROXIES) {
-                try {
-                    const targetUrl = `${instance}/streams/${videoId}`;
-                    // Handle different proxy URL formats
-                    const proxiedUrl = proxy.endsWith("=") ? `${proxy}${encodeURIComponent(targetUrl)}` : `${proxy}${targetUrl}`;
+            // Use Local Proxy
+            try {
+                const targetUrl = `${instance}/streams/${videoId}`;
+                const proxiedUrl = `${LOCAL_PROXY}${encodeURIComponent(targetUrl)}`;
 
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
 
-                    const response = await fetch(proxiedUrl, {
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
+                const response = await fetch(proxiedUrl, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-                    if (!response.ok) continue;
-
-                    const data = await response.json();
-
-                    // Find audio stream
-                    const audioStreams = data.audioStreams || [];
-                    // Prefer m4a or webm with highest bitrate
-                    const bestStream = audioStreams.find((s: { mimeType: string; url: string }) => s.mimeType.includes("audio/mp4") || s.mimeType.includes("audio/m4a"))
-                        || audioStreams[0];
-
-                    if (!bestStream) continue;
-
-                    if (onProgress) onProgress("Downloading audio from Piped...");
-
-                    // Proxy the download link too!
-                    const audioTargetUrl = bestStream.url;
-                    const proxiedAudioUrl = proxy.endsWith("=") ? `${proxy}${encodeURIComponent(audioTargetUrl)}` : `${proxy}${audioTargetUrl}`;
-
-                    const audioRes = await fetch(proxiedAudioUrl);
-                    if (!audioRes.ok) continue;
-
-                    const blob = await audioRes.blob();
-                    const filename = `${data.title || "audio"}.mp3`;
-
-                    return { blob, filename };
-
-                } catch (e) {
+                if (!response.ok) {
+                    console.warn(`Piped instance ${instance} returned ${response.status}`);
                     continue;
                 }
+
+                const data = await response.json();
+
+                // Find audio stream
+                const audioStreams = data.audioStreams || [];
+                // Prefer m4a or webm with highest bitrate
+                const bestStream = audioStreams.find((s: { mimeType: string; url: string }) => s.mimeType.includes("audio/mp4") || s.mimeType.includes("audio/m4a"))
+                    || audioStreams[0];
+
+                if (!bestStream) {
+                    console.warn(`No audio streams found for ${instance}`);
+                    continue;
+                }
+
+                if (onProgress) onProgress("Downloading audio from Piped...");
+
+                // Proxy the download link too!
+                const audioTargetUrl = bestStream.url;
+                const proxiedAudioUrl = `${LOCAL_PROXY}${encodeURIComponent(audioTargetUrl)}`;
+
+                const audioRes = await fetch(proxiedAudioUrl);
+                if (!audioRes.ok) continue;
+
+                const blob = await audioRes.blob();
+                const filename = `${data.title || "audio"}.mp3`;
+
+                return { blob, filename };
+
+            } catch (e) {
+                console.warn(`Piped proxy error:`, e);
+                continue;
             }
 
         } catch (e) {
@@ -100,10 +100,7 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
     }
 
     // 2. Try Cobalt Instances (Fallback)
-    // We try to proxy the POST request using a specific proxy if needed
-    // 'corsproxy.io' handles POST, but often fails. 'thingproxy' handles POST too.
-    const PROXY_FOR_POST = "https://thingproxy.freeboard.io/fetch/";
-
+    // We proxy the POST request using our local proxy which supports it perfectly
     for (const instance of COBALT_INSTANCES) {
         try {
             if (onProgress) onProgress(`Trying Cobalt instance: ${instance}...`);
@@ -114,41 +111,10 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                 isAudioOnly: true,
             };
 
-            // Strategy A: Direct attempt (some instances might allow CORS)
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-                const response = await fetch(`${instance}/api/json`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                    signal: controller.signal,
-                });
-                clearTimeout(timeoutId);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.status !== "error" && data.url) {
-                        const audioRes = await fetch(data.url); // Try direct download
-                        if (audioRes.ok) {
-                            const blob = await audioRes.blob();
-                            const filename = data.filename || "audio.mp3";
-                            return { blob, filename };
-                        }
-                    }
-                }
-            } catch (e) {
-                // Ignore direct failure
-            }
-
-            // Strategy B: Proxy the POST request
+            // Proxy the POST request
             try {
                 const targetUrl = `${instance}/api/json`;
-                // Thingproxy usage: https://thingproxy.freeboard.io/fetch/https://...
-                const proxiedUrl = `${PROXY_FOR_POST}${targetUrl}`;
+                const proxiedUrl = `${LOCAL_PROXY}${encodeURIComponent(targetUrl)}`;
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -164,7 +130,10 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                 });
                 clearTimeout(timeoutId);
 
-                if (!response.ok) continue;
+                if (!response.ok) {
+                    console.warn(`Cobalt proxy ${instance} returned ${response.status}`);
+                    continue;
+                }
 
                 const data = await response.json();
                 if (data.status === "error" || !data.url) continue;
@@ -172,7 +141,7 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                 // Download the file via proxy too
                 if (onProgress) onProgress("Downloading audio from Cobalt...");
 
-                const proxiedFileUrl = `${PROXY_FOR_POST}${data.url}`;
+                const proxiedFileUrl = `${LOCAL_PROXY}${encodeURIComponent(data.url)}`;
                 const audioRes = await fetch(proxiedFileUrl);
                 if (!audioRes.ok) continue;
 
@@ -182,7 +151,7 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                 return { blob, filename };
 
             } catch (e) {
-                // Ignore proxy failure
+                console.warn(`Cobalt proxy error:`, e);
             }
 
         } catch (e) {
