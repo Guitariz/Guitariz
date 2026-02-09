@@ -83,16 +83,7 @@ def _setup_ydl_opts(base_opts: Dict[str, Any]) -> Dict[str, Any]:
     """Helper to add cookies and client args to ydl_opts"""
     opts = base_opts.copy()
     
-    # 1. Add Client Config - Prioritize 'web' for PO Token compatibility
-    opts['extractor_args'] = {
-        'youtube': {
-            'player_client': ['web', 'ios', 'android'],
-            'player_skip': ['webpage', 'configs', 'js'],
-            'innertube_client': ['web', 'android'],
-        }
-    }
-    
-    # 2. Add Cookies (Highest Priority)
+    # Check for Cookies First
     has_cookies = False
     try:
         cookies_content = os.environ.get("YOUTUBE_COOKIES")
@@ -108,25 +99,36 @@ def _setup_ydl_opts(base_opts: Dict[str, Any]) -> Dict[str, Any]:
                 cf.write(cookies_content)
                 opts['cookiefile'] = cf.name
                 has_cookies = True
+            
+            # When using cookies, avoid custom client overrides that might mismatch the session
+            # We trust yt-dlp defaults + cookies to behave like a browser
+            opts['extractor_args'] = {}
+            
         else:
             print("[YouTube] ❌ No YOUTUBE_COOKIES found in environment.")
     except Exception as e:
         print(f"[YouTube] ⚠️ Failed to setup cookies: {e}")
 
-    # 3. Add PO Token & Visitor Data (Only if no cookies, to avoid conflict)
+    # Fallback to PO Token & Visitor Data (Only if no cookies)
     if not has_cookies:
         po_token = os.environ.get("YOUTUBE_PO_TOKEN")
         visitor_data = os.environ.get("YOUTUBE_VISITOR_DATA")
         
+        # Default robust clients for non-cookie requests
+        opts['extractor_args'] = {
+            'youtube': {
+                'player_client': ['web', 'android', 'ios', 'mweb', 'tv'],
+                'player_skip': ['webpage', 'configs', 'js'],
+                'innertube_client': ['web', 'android'],
+            }
+        }
+        
         if po_token and visitor_data:
             print(f"[YouTube] 🛡️ Using PO Token and Visitor Data for authentication")
-            # Format: client+visitor_data+po_token
-            # Note: PO Token is bound to the 'web' client usually
             opts['extractor_args']['youtube']['po_token'] = [f"web+{visitor_data}+{po_token}"]
-            # Ensure 'web' is the first client when using PO Token, but add others
             opts['extractor_args']['youtube']['player_client'] = ['web', 'android', 'ios', 'mweb', 'tv']
     else:
-        print("[YouTube] 🍪 Cookies present, skipping manual PO Token to avoid session mismatch.")
+        print("[YouTube] 🍪 Cookies present, skipping manual PO Token/Client Config to avoid session mismatch.")
         
     return opts
 
