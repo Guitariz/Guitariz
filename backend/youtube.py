@@ -83,14 +83,28 @@ def _setup_ydl_opts(base_opts: Dict[str, Any]) -> Dict[str, Any]:
     """Helper to add cookies and client args to ydl_opts"""
     opts = base_opts.copy()
     
-    # 1. Add Client Config (Try looser clients first)
+    # 1. Add Client Config - Prioritize 'web' for PO Token compatibility
     opts['extractor_args'] = {
         'youtube': {
-            'player_client': ['ios', 'web', 'android']
+            'player_client': ['web', 'ios', 'android'],
+            'player_skip': ['webpage', 'configs', 'js'],
+            'innertube_client': ['web', 'android'],
         }
     }
     
-    # 2. Add Cookies
+    # 2. Add PO Token & Visitor Data (CRITICAL for bypassing bot detection)
+    po_token = os.environ.get("YOUTUBE_PO_TOKEN")
+    visitor_data = os.environ.get("YOUTUBE_VISITOR_DATA")
+    
+    if po_token and visitor_data:
+        print(f"[YouTube] 🛡️ Using PO Token and Visitor Data for authentication")
+        # Format: client+visitor_data+po_token
+        # Note: PO Token is bound to the 'web' client usually
+        opts['extractor_args']['youtube']['po_token'] = [f"web+{visitor_data}+{po_token}"]
+        # Ensure 'web' is the first client when using PO Token
+        opts['extractor_args']['youtube']['player_client'] = ['web', 'ios', 'android']
+
+    # 3. Add Cookies
     try:
         cookies_content = os.environ.get("YOUTUBE_COOKIES")
         if cookies_content:
@@ -299,13 +313,22 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
             # ---------------------------------------------------------
             print("[YouTube] Trying Invidious fallback (proxying)...")
             invidious_instances = [
-                "https://yewtu.be",
-                "https://invidious.flokinet.to",
+                # Top tier (usually reliable)
                 "https://inv.tux.pizza",
-                "https://inv.nadeko.net",
-                "https://invidious.nerdvpn.de",
+                "https://yt.artemislena.eu", 
                 "https://invidious.drgns.space",
-                "https://yt.artemislena.eu",
+                
+                # Second tier
+                "https://invidious.flokinet.to",
+                "https://invidious.nerdvpn.de",
+                "https://inv.nadeko.net",
+                "https://yewtu.be",
+                
+                # Extra fallbacks
+                "https://invidious.io.lol",
+                "https://invidious.private.coffee",
+                "https://iv.ggtyler.dev",
+                "https://invidious.lunar.icu",
             ]
             
             import requests
@@ -362,6 +385,8 @@ def extract_audio(url: str, output_dir: Optional[Path] = None) -> Dict[str, Any]
                      "https://api.piped.privacy.com.de",
                      "https://pipedapi.drgns.space",
                      "https://api.piped.yt",
+                     "https://pipedapi.tokhmi.xyz", 
+                     "https://piped-api.lunar.icu",
                  ]
                  
                  for api_base in piped_instances:
