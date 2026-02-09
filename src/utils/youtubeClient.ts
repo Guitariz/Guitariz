@@ -60,7 +60,10 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                     });
                     clearTimeout(timeoutId);
 
-                    if (!response.ok) continue;
+                    if (!response.ok) {
+                        console.warn(`Piped proxy ${proxy} + ${instance} returned ${response.status}`);
+                        continue;
+                    }
 
                     const data = await response.json();
 
@@ -70,7 +73,10 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                     const bestStream = audioStreams.find((s: { mimeType: string; url: string }) => s.mimeType.includes("audio/mp4") || s.mimeType.includes("audio/m4a"))
                         || audioStreams[0];
 
-                    if (!bestStream) continue;
+                    if (!bestStream) {
+                        console.warn(`No audio streams found for ${instance} via ${proxy}`);
+                        continue;
+                    }
 
                     if (onProgress) onProgress("Downloading audio from Piped...");
 
@@ -88,6 +94,7 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
 
                 } catch (e) {
                     // Try next proxy
+                    console.warn(`Piped proxy error:`, e);
                     continue;
                 }
             }
@@ -98,7 +105,9 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
     }
 
     // 2. Try Cobalt Instances (Fallback)
-    // Cobalt uses POST, which is harder for some simple CORS proxies, but we'll try direct + proxy
+    // We try to proxy the POST request using corsproxy.io which supports it
+    const PROXY_FOR_POST = "https://corsproxy.io/?";
+
     for (const instance of COBALT_INSTANCES) {
         try {
             if (onProgress) onProgress(`Trying Cobalt instance: ${instance}...`);
@@ -109,7 +118,7 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                 isAudioOnly: true,
             };
 
-            // Direct attempt first (some instances might allow CORS)
+            // Strategy A: Direct attempt (some instances might allow CORS)
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -136,11 +145,49 @@ export async function extractAudioFromUrl(url: string, onProgress?: (msg: string
                     }
                 }
             } catch (e) {
-                // Direct failed, proceed to proxy (if possible for POST)
+                console.warn(`Direct Cobalt ${instance} failed, trying proxy...`);
             }
 
-            // Proxying POST requests is tricky with free proxies (often strip body or headers)
-            // Skip proxy for Cobalt for now unless we find a specific POST-friendly proxy service
+            // Strategy B: Proxy the POST request
+            // fetch('https://corsproxy.io/?https://cobalt.../api/json', { method: 'POST', body: ... })
+            try {
+                const targetUrl = `${instance}/api/json`;
+                const proxiedUrl = `${PROXY_FOR_POST}${encodeURIComponent(targetUrl)}`;
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const response = await fetch(proxiedUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal,
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) continue;
+
+                const data = await response.json();
+                if (data.status === "error" || !data.url) continue;
+
+                // Download the file via proxy too
+                if (onProgress) onProgress("Downloading audio from Cobalt...");
+
+                const proxiedFileUrl = `${PROXY_FOR_POST}${encodeURIComponent(data.url)}`;
+                const audioRes = await fetch(proxiedFileUrl);
+                if (!audioRes.ok) continue;
+
+                const blob = await audioRes.blob();
+                const filename = data.filename || "audio.mp3";
+
+                return { blob, filename };
+
+            } catch (e) {
+                console.warn(`Proxied Cobalt ${instance} failed`, e);
+            }
 
         } catch (e) {
             console.warn(`Cobalt instance ${instance} failed`, e);
