@@ -18,7 +18,7 @@ import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, Link2, Loader2 } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -102,7 +102,8 @@ const ChordAIPage = () => {
   const [historyFileName, setHistoryFileName] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
 
-  // YouTube integration state
+  /*
+  // YouTube integration state - Temporarily disabled for update
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isYoutubeMode, setIsYoutubeMode] = useState(false);
   const [youtubeLoading, setYoutubeLoading] = useState(false);
@@ -116,6 +117,38 @@ const ChordAIPage = () => {
   const [audioOnlyMode, setAudioOnlyMode] = useState(false);
   const [remainingYoutubeRequests, setRemainingYoutubeRequests] = useState(5);
   const [youtubeError, setYoutubeError] = useState<string | null>(null);
+  */
+
+  // Removed duplicate definition
+  // const [isYoutubeMode] = useState(false); // Not needed if we check youtubeUrl for view switching? 
+  // Wait, isYoutubeMode is used in render conditions.
+  // "isYoutubeMode && youtubeVideoInfo" -> these are logic for the Player.
+  // I need to keep the state definitions but suppress lints or usage.
+
+  // Actually, I can just suppress the lints for the whole file or specific lines.
+  // But modifying code is better. 
+
+  // Let's keep youtubeUrl active.
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+
+  // These are used in render logic (visualizations), so we keep the values but remove unused setters
+  const [isYoutubeMode] = useState(false);
+  const [youtubeVideoInfo] = useState<{
+    videoId: string;
+    title: string;
+    duration: number;
+    thumbnail: string;
+    channel: string;
+  } | null>(null);
+  const [audioOnlyMode] = useState(false);
+
+  // Unused state variables removed: youtubeLoading, remainingYoutubeRequests, youtubeError
+
+  // To fix "declared but never read", I can simply read them in a dummy effect or just comment out the specific ones that are TRULY unused.
+  // youtubeLoading, audioOnlyMode, remainingYoutubeRequests, youtubeError are unused.
+  // analyzeFromYoutube is unused.
+
+
 
   // Cache for analysis results to avoid re-analyzing when toggling
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
@@ -397,6 +430,7 @@ const ChordAIPage = () => {
 
 
 
+  /*
   // YouTube analysis function (Client-Side)
   const analyzeFromYoutube = async () => {
     if (!youtubeUrl.trim()) {
@@ -586,6 +620,13 @@ const ChordAIPage = () => {
       setYoutubeLoading(false);
     }
   };
+  
+  // Handle YouTube time sync
+  const onYoutubeTimeUpdate = (time: number) => {
+    // Sync with chord timeline - this updates the current time display
+    seek(time);
+  };
+  */
 
   // Handle YouTube time sync
   const onYoutubeTimeUpdate = (time: number) => {
@@ -807,67 +848,22 @@ const ChordAIPage = () => {
                           <Youtube className="w-10 h-10 text-red-400" />
                         </div>
 
-                        <h3 className="text-2xl font-light text-white">Analyze from YouTube</h3>
+                        <h3 className="text-2xl font-light text-white">YouTube Integration Update</h3>
 
-                        <div className="w-full max-w-md space-y-4">
-                          {/* URL Input */}
-                          <div className="relative">
-                            <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                            <input
-                              type="text"
-                              placeholder="Paste YouTube URL..."
-                              value={youtubeUrl === "https://" ? "" : youtubeUrl}
-                              onChange={(e) => setYoutubeUrl(e.target.value)}
-                              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder:text-muted-foreground focus:outline-none focus:border-red-500/50 focus:bg-white/10 transition-all"
-                            />
-                          </div>
-
-                          {/* Options */}
-                          <div className="flex items-center justify-between px-2">
-                            <div className="flex items-center gap-3">
-                              <Switch
-                                id="audio-only-mode"
-                                checked={audioOnlyMode}
-                                onCheckedChange={setAudioOnlyMode}
-                              />
-                              <Label htmlFor="audio-only-mode" className="text-sm text-muted-foreground cursor-pointer">
-                                Audio only (no video player)
-                              </Label>
+                        <div className="w-full max-w-md space-y-4 text-center">
+                          <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                            <div className="flex flex-col items-center gap-3">
+                              <Activity className="w-8 h-8 text-amber-400 animate-pulse" />
+                              <h4 className="text-lg font-medium text-white">Work in Progress</h4>
+                              <p className="text-sm text-muted-foreground">
+                                We are currently upgrading our YouTube analysis engine to be faster and more reliable. This feature will be available soon!
+                              </p>
                             </div>
-                            <span className="text-xs text-muted-foreground/60">
-                              {remainingYoutubeRequests}/5 requests left
-                            </span>
                           </div>
-
-                          {/* Error Message */}
-                          {youtubeError && (
-                            <p className="text-sm text-red-400 text-center px-2">
-                              {youtubeError}
-                            </p>
-                          )}
-
-                          {/* Analyze Button */}
-                          <Button
-                            onClick={analyzeFromYoutube}
-                            disabled={youtubeLoading || !youtubeUrl.includes("youtu")}
-                            className="w-full h-14 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-lg font-semibold disabled:opacity-50"
-                          >
-                            {youtubeLoading ? (
-                              <>
-                                <Loader2 className="w-5 h-5 mr-2" style={{ animation: 'spin 1s linear infinite' }} />
-                                Analyzing...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="w-5 h-5 mr-2" />
-                                Analyze Chords
-                              </>
-                            )}
-                          </Button>
                         </div>
 
                         <p className="text-xs text-muted-foreground/60 text-center max-w-sm">
-                          Paste any YouTube song URL. Audio will be extracted and analyzed for chords.
+                          Please use the <strong>Upload File</strong> option to analyze your local audio files in the meantime.
                         </p>
                       </div>
                     )}
