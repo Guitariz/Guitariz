@@ -51,7 +51,7 @@ export const Tuner = () => {
         return { noteName, octaveVal, centsVal };
     }, [referenceA4]);
 
-    const autoCorrelate = (buffer: Float32Array, sampleRate: number) => {
+    const autoCorrelate = (buffer: Float32Array<ArrayBufferLike>, sampleRate: number) => {
         // RMS Volume Check
         let rms = 0;
         for (let i = 0; i < buffer.length; i++) {
@@ -177,7 +177,7 @@ export const Tuner = () => {
             setError("Microphone access denied. Please check permissions.");
             setIsListening(false);
         }
-    };
+    };                  
 
     const stopListening = () => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);

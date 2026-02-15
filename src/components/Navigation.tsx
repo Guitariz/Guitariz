@@ -129,7 +129,7 @@ const Navigation = () => {
             >
               <div className="relative">
                 <img
-                  src="/logo2.png"
+                  src="/logo.png"
                   alt="Guitariz Logo"
                   className="w-8 h-8 object-contain relative z-10"
                 />
@@ -215,7 +215,7 @@ const Navigation = () => {
               >
                 <SheetHeader className="pb-6 border-b border-white/10">
                   <SheetTitle className="flex items-center gap-3 text-white">
-                    <img src="/logo2.png" alt="Guitariz Logo" className="w-8 h-8" />
+                    <img src="/logo.png" alt="Guitariz Logo" className="w-8 h-8" />
                     <span>Guitariz Studio</span>
                   </SheetTitle>
                 </SheetHeader>

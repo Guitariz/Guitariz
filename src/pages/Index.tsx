@@ -35,7 +35,7 @@ const Index = () => {
     keywords: "chord ai, chord ai free, music theory, guitar chords, vocal splitter, fretboard, scale explorer, music studio, free music tools",
     canonicalUrl: "https://guitariz.studio",
     ogUrl: "https://guitariz.studio",
-    ogImage: "https://guitariz.studio/logo2.png",
+    ogImage: "https://guitariz.studio/logo.png",
     ogType: "website",
     jsonLd: {
       "@context": "https://schema.org",
@@ -65,7 +65,7 @@ const Index = () => {
           "@type": "Organization",
           "name": "Guitariz Studio",
           "url": "https://guitariz.studio",
-          "logo": "https://guitariz.studio/logo2.png",
+          "logo": "https://guitariz.studio/logo.png",
           "sameAs": [
             "https://x.com/GuitarizStudio",
             "https://github.com/abhi9vaidya/Guitariz"

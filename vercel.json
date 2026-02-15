@@ -13,13 +13,13 @@
       "has": [
         {
           "type": "host",
-          "value": "guitariz.vercel.app"
+          "value": "(.*)\\.vercel\\.app"
         }
       ],
       "headers": [
         {
           "key": "X-Robots-Tag",
-          "value": "noindex"
+          "value": "noindex, nofollow, noarchive"
         }
       ]
     },

@@ -59,7 +59,7 @@ const EarTrainingPage = () => {
         description: "Elevate your musicality with our interactive ear training games. Master intervals, chord recognition, and perfect pitch through gamified challenges.",
         keywords: "ear training, musical intervals, pitch recognition, perfect pitch, relative pitch, music theory games, guitar ear training",
         canonicalUrl: "https://guitariz.studio/ear-training",
-        ogImage: "https://guitariz.studio/logo2.png",
+        ogImage: "https://guitariz.studio/logo.png",
         ogType: "website",
         jsonLd: {
             "@context": "https://schema.org",

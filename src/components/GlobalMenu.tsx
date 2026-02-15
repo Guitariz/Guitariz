@@ -81,7 +81,7 @@ export const GlobalMenu = () => {
                 <div className="flex items-center justify-between p-5 border-b border-white/5">
                     <div className="flex items-center gap-3">
                         <img
-                            src="/logo.svg"
+                            src="/logo.png"
                             alt="Guitariz Logo"
                             className="w-8 h-8 rounded-lg"
                         />
