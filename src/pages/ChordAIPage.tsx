@@ -50,11 +50,13 @@ const ChordAIPage = () => {
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "WebPage",
+          "@type": "SoftwareApplication",
           "name": "Chord AI - Guitariz",
           "url": "https://guitariz.studio/chord-ai",
           "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
-          "inLanguage": "en-US",
+          "applicationCategory": "MusicApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
           "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "4.8",
