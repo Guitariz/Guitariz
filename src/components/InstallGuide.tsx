@@ -136,13 +136,13 @@ export const InstallGuide = ({ isOpen, onClose }: InstallGuideProps) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-black/80 z-[200]"
+                        className="fixed inset-0 bg-black/80 z-[300]"
                         onClick={onClose}
                     />
                 )}
             </AnimatePresence>
 
-            {/* Dialog */}
+            {/* Dialog - safe centered with scroll */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -150,19 +150,21 @@ export const InstallGuide = ({ isOpen, onClose }: InstallGuideProps) => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[360px] max-w-[90vw] z-[201]"
+                        className="fixed inset-0 z-[301] flex items-center justify-center p-4 pointer-events-none"
                     >
-                        <div className="bg-gradient-to-br from-[#0a0a0a] to-[#111] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+                        <div className="w-[360px] max-w-full max-h-[85vh] overflow-y-auto rounded-2xl pointer-events-auto bg-gradient-to-br from-[#0a0a0a] to-[#111] border border-white/10 shadow-2xl custom-scrollbar">
                             {/* Header gradient */}
                             <div className="h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500" />
 
                             {/* Close button */}
-                            <button
-                                onClick={onClose}
-                                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group z-10"
-                            >
-                                <X className="w-4 h-4 text-white/40 group-hover:text-white/70" />
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={onClose}
+                                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors group z-10"
+                                >
+                                    <X className="w-4 h-4 text-white/40 group-hover:text-white/70" />
+                                </button>
+                            </div>
 
                             <div className="p-6">
                                 {/* Title */}
