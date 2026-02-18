@@ -4,13 +4,26 @@ import { Slider } from "@/components/ui/slider";
 import { Play, Pause, RotateCcw, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type Subdivision = 1 | 2 | 3 | 4;
+
+const SUBDIVISION_LABELS: Record<Subdivision, string> = {
+  1: "♩ Quarter",
+  2: "♪♪ 8th",
+  3: "♪♪♪ Triplet",
+  4: "♬ 16th",
+};
+
 const Metronome = () => {
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [timeSignature, setTimeSignature] = useState({ num: 4, den: 4 });
+  const [subdivision, setSubdivision] = useState<Subdivision>(1);
+
   const intervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  // Track sub-ticks within a beat
+  const subTickRef = useRef<number>(0);
 
   const tapTimesRef = useRef<number[]>([]);
   const tappedBpmTimeoutRef = useRef<number | null>(null);
@@ -43,7 +56,7 @@ const Metronome = () => {
     };
   }, []);
 
-  const playClick = useCallback((isAccent: boolean) => {
+  const playClick = useCallback((type: "accent" | "beat" | "sub") => {
     if (!audioContextRef.current) return;
 
     const ctx = audioContextRef.current;
@@ -57,29 +70,51 @@ const Metronome = () => {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    oscillator.frequency.value = isAccent ? 1200 : 800;
-    gainNode.gain.value = isAccent ? 0.2 : 0.1;
+    // Accent (beat 1): high pitch, louder
+    // Beat: medium pitch
+    // Sub-division: low pitch, quieter
+    const freq = type === "accent" ? 1200 : type === "beat" ? 800 : 600;
+    const gain = type === "accent" ? 0.22 : type === "beat" ? 0.12 : 0.06;
+    const duration = type === "sub" ? 0.03 : 0.05;
+
+    oscillator.frequency.value = freq;
+    gainNode.gain.value = gain;
 
     oscillator.start(ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    oscillator.stop(ctx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    oscillator.stop(ctx.currentTime + duration);
   }, []);
 
   useEffect(() => {
     if (isPlaying) {
-      const interval = (60 / bpm) * (4 / timeSignature.den) * 1000;
+      // Each interval tick = one sub-division unit
+      const beatInterval = (60 / bpm) * (4 / timeSignature.den) * 1000;
+      const tickInterval = beatInterval / subdivision;
+
+      subTickRef.current = 0;
+
       intervalRef.current = window.setInterval(() => {
-        setCurrentBeat((prev) => {
-          const nextBeat = (prev + 1) % timeSignature.num;
-          playClick(nextBeat === 0);
-          return nextBeat;
-        });
-      }, interval);
+        const subTick = subTickRef.current;
+        const isNewBeat = subTick % subdivision === 0;
+
+        if (isNewBeat) {
+          setCurrentBeat((prev) => {
+            const nextBeat = (prev + 1) % timeSignature.num;
+            playClick(nextBeat === 0 ? "accent" : "beat");
+            return nextBeat;
+          });
+        } else {
+          playClick("sub");
+        }
+
+        subTickRef.current = (subTick + 1) % (timeSignature.num * subdivision);
+      }, tickInterval);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       setCurrentBeat(0);
+      subTickRef.current = 0;
     }
 
     return () => {
@@ -87,7 +122,7 @@ const Metronome = () => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isPlaying, bpm, timeSignature, playClick]);
+  }, [isPlaying, bpm, timeSignature, subdivision, playClick]);
 
   const togglePlay = () => {
     if (!isPlaying && audioContextRef.current?.state === "suspended") {
@@ -101,6 +136,7 @@ const Metronome = () => {
     setCurrentBeat(0);
     setBpm(120);
     setTimeSignature({ num: 4, den: 4 });
+    setSubdivision(1);
   };
 
   const handleTapTempo = useCallback(() => {
@@ -280,6 +316,7 @@ const Metronome = () => {
                 size="icon"
                 onClick={handleTapTempo}
                 className="w-16 h-16 rounded-2xl border-white/5 bg-white/[0.02] text-muted-foreground hover:text-white"
+                title="Tap Tempo"
               >
                 <Activity className="w-5 h-5" />
               </Button>
@@ -289,6 +326,7 @@ const Metronome = () => {
                 size="icon"
                 onClick={reset}
                 className="w-16 h-16 rounded-2xl border-white/5 bg-white/[0.02] text-muted-foreground hover:text-white"
+                title="Reset"
               >
                 <RotateCcw className="w-5 h-5" />
               </Button>
@@ -298,7 +336,32 @@ const Metronome = () => {
 
         {/* Sidebar Configuration */}
         <div className="lg:col-span-5 space-y-8 lg:pl-12 lg:border-l border-white/5">
-          <div className="space-y-6">
+          {/* Subdivisions */}
+          <div className="space-y-4">
+            <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+              Subdivision
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {([1, 2, 3, 4] as Subdivision[]).map((sub) => (
+                <Button
+                  key={sub}
+                  variant="outline"
+                  onClick={() => setSubdivision(sub)}
+                  className={cn(
+                    "h-11 rounded-xl border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all text-xs font-medium",
+                    subdivision === sub && "border-white/20 bg-white/[0.08] text-white"
+                  )}
+                >
+                  {SUBDIVISION_LABELS[sub]}
+                </Button>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
+              Accent on beat 1 · Sub-ticks are quieter
+            </p>
+          </div>
+
+          <div className="space-y-4">
             <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
               Time Signature
             </h3>
@@ -329,7 +392,7 @@ const Metronome = () => {
             </div>
           </div>
 
-          <div className="space-y-6 pt-4">
+          <div className="space-y-4 pt-2">
             <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
               Presets
             </h3>

@@ -82,8 +82,8 @@ const Index = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.06,
-        delayChildren: 0.5,
+        staggerChildren: 0.04,
+        delayChildren: 0.1,
       }
     }
   };
@@ -126,7 +126,7 @@ const Index = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
+                transition={{ delay: 0.05, duration: 0.6, ease: "easeOut" }}
                 className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
               >
                 <Headphones className="w-3 h-3" />
@@ -163,7 +163,7 @@ const Index = () => {
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.5, duration: 1, ease: "easeOut" }}
+                  transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
                   className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light"
                 >
                   A high-fidelity technical suite for the modern guitarist. Neural audio analysis meets <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">architectural music theory</span>.
