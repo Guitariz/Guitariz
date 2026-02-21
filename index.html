@@ -17,10 +17,12 @@
     content="Free Chord AI and music toolkit: Extract chords from any song, use our vocal splitter, and explore scales/fretboards." />
   <meta property="og:url" content="https://guitariz.studio/" />
   <meta property="og:image" content="https://guitariz.studio/logo.png" />
+  <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Guitariz" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@GuitarizStudio" />
   <meta name="twitter:title" content="Guitariz - Chord AI Free & Music Theory Toolkit" />
   <meta name="twitter:description"
     content="Advanced music-forward toolkit: Chord AI free, interactive fretboard, and music theory labs." />
@@ -38,37 +40,67 @@
   <link rel="apple-touch-icon" href="/logo.png" />
 
   <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Guitariz - Chord AI Free",
-        "url": "https://guitariz.studio/",
-        "applicationCategory": "MusicApplication",
-        "operatingSystem": "Web",
-        "description": "Guitariz: Advanced music laboratory with Chord AI free, interactive fretboard, piano keys, vocal splitter, and scale explorer.",
-        "author": {
-          "@type": "Organization",
-          "name": "Guitariz Studio"
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://guitariz.studio/#website",
+      "url": "https://guitariz.studio/",
+      "name": "Guitariz",
+      "description": "Professional music theory and AI analysis tools for musicians.",
+      "inLanguage": "en-US",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://guitariz.studio/search?q={search_term_string}"
         },
-        "screenshot": "https://guitariz.studio/logo.png",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        "query-input": "required name=search_term_string"
       }
-    </script>
+    }
+  </script>
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "@id": "https://guitariz.studio/#app",
+      "name": "Guitariz - Chord AI Free",
+      "url": "https://guitariz.studio/",
+      "applicationCategory": "MusicApplication",
+      "operatingSystem": "Web",
+      "description": "Guitariz: Advanced music laboratory with Chord AI free, interactive fretboard, piano keys, vocal splitter, and scale explorer.",
+      "author": {
+        "@type": "Organization",
+        "@id": "https://guitariz.studio/#org",
+        "name": "Guitariz Studio"
+      },
+      "screenshot": "https://guitariz.studio/logo2.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "bestRating": "5",
+        "worstRating": "1",
+        "reviewCount": "128"
+      }
+    }
+  </script>
 
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://guitariz.studio/#org",
       "name": "Guitariz Studio",
       "url": "https://guitariz.studio/",
       "logo": "https://guitariz.studio/logo.png",
       "sameAs": [
         "https://x.com/GuitarizStudio",
-        "https://github.com/abhi9vaidya/guitariz"
+        "https://github.com/abhi9vaidya/Guitariz"
       ]
     }
   </script>

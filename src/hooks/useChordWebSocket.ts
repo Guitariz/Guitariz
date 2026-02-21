@@ -40,13 +40,10 @@ export const useChordWebSocket = () => {
 
         try {
             const wsUrl = `${BACKEND_WS_URL}/ws/chords/${clientIdRef.current}`;
-            console.log("[WS] Connecting to:", wsUrl);
-
             const ws = new WebSocket(wsUrl);
             wsRef.current = ws;
 
             ws.onopen = () => {
-                console.log("[WS] Connected");
                 setIsConnected(true);
                 setError(null);
                 reconnectAttemptsRef.current = 0;
@@ -76,14 +73,12 @@ export const useChordWebSocket = () => {
             };
 
             ws.onclose = () => {
-                console.log("[WS] Disconnected");
                 setIsConnected(false);
                 wsRef.current = null;
 
                 // Attempt reconnection
                 if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
                     reconnectAttemptsRef.current++;
-                    console.log(`[WS] Reconnecting (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
                     reconnectTimeoutRef.current = setTimeout(() => {
                         connect();
                     }, RECONNECT_DELAY * reconnectAttemptsRef.current);

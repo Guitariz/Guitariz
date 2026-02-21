@@ -1,6 +1,4 @@
 User-agent: *
 Allow: /
 
-Host: https://guitariz.studio
-
 Sitemap: https://guitariz.studio/sitemap.xml

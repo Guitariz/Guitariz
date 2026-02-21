@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/images/readme_hero.png" alt="Guitariz Studio" width="85%" />
+  <img src="public/images/readme_hero.png" alt="Guitariz Studio" width="90%" />
 
   <br />
 

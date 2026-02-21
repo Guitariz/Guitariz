@@ -1,7 +1,11 @@
 {
+    "id": "https://guitariz.studio/",
     "short_name": "Guitariz",
     "name": "Guitariz - Chord AI Free & Music Theory",
     "description": "Professional music laboratory for guitarists and producers. Features Chord AI, vocal isolation, and interactive theory tools.",
+    "lang": "en",
+    "dir": "ltr",
+    "scope": "/",
     "categories": [
         "music",
         "utilities",
@@ -25,7 +29,7 @@
             "purpose": "any maskable"
         }
     ],
-    "start_url": ".",
+    "start_url": "/",
     "display": "standalone",
     "orientation": "portrait-primary",
     "theme_color": "#060606",
