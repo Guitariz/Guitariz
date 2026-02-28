@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -6,35 +6,16 @@ import {
     Zap, Music2, Shuffle, Volume2, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { scheduleChord, scheduleClick, getAudioTime, type JamInstrument } from "@/lib/jamAudio";
+import { scheduleChord, scheduleClick, getAudioTime } from "@/lib/jamAudio";
 import { chordLibraryData } from "@/data/chordData";
 import { motion, AnimatePresence } from "framer-motion";
 import ChordDiagram from "@/components/chord/ChordDiagram";
+import { ChordSlot, PresetProgression, useJamStore, getChordLabel } from "@/stores/jamStore";
 
-// ─── Types ────────────────────────────────────────────────────────────────
-interface ChordSlot {
-    root: string;
-    variant: string; // e.g. "Major", "Minor", "7", "m7"
-    frets: number[];
-    fingers: string[];
-    label: string; // display label like "Am7"
-}
-
-interface PresetProgression {
-    name: string;
-    genre: string;
-    description: string;
-    slots: { root: string; variant: string }[];
-    color: string;
-}
+// Removed duplicate PresetProgression interface
 
 // ─── Constants ────────────────────────────────────────────────────────────
 const ROOTS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-const VARIANT_LABELS: Record<string, string> = {
-    Major: "", Minor: "m", "7": "7", maj7: "maj7", m7: "m7",
-    sus4: "sus4", sus2: "sus2", add9: "add9", dim: "dim", aug: "aug", "6": "6", m6: "m6",
-};
 
 const COMMON_VARIANTS = ["Major", "Minor", "7", "maj7", "m7", "sus4", "sus2", "dim", "aug"];
 
@@ -141,19 +122,6 @@ const PRESETS: PresetProgression[] = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
-function lookupChord(root: string, variant: string) {
-    const rootData = chordLibraryData.roots.find((r) => r.root === root);
-    if (!rootData) return null;
-    const v = rootData.variants.find((vr) => vr.name === variant);
-    if (!v || !v.voicings[0]) return null;
-    return { frets: v.voicings[0].frets, fingers: v.voicings[0].fingers };
-}
-
-function getChordLabel(root: string, variant: string): string {
-    const abbrev = VARIANT_LABELS[variant] ?? variant.toLowerCase();
-    return `${root}${abbrev}`;
-}
-
 // Simple scale detection based on chord roots
 function suggestScales(slots: ChordSlot[]): string[] {
     const nonEmpty = slots.filter((s) => s.root);
@@ -177,25 +145,13 @@ function suggestScales(slots: ChordSlot[]): string[] {
 
 // ─── Component ────────────────────────────────────────────────────────────
 const ChordProgressionPlayer = () => {
-    const SLOT_COUNT = 4;
-
-    const emptySlot = (): ChordSlot => ({
-        root: "", variant: "", frets: [], fingers: [], label: "",
-    });
-
-    const [slots, setSlots] = useState<ChordSlot[]>(() =>
-        Array.from({ length: SLOT_COUNT }, emptySlot)
-    );
-    const [bpm, setBpm] = useState(100);
-    const [beatsPerChord, setBeatsPerChord] = useState(4);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentSlotIndex, setCurrentSlotIndex] = useState(0);
-    const [currentBeat, setCurrentBeat] = useState(0);
-    const [instrument, setInstrument] = useState<JamInstrument>("piano");
-    const [volume, setVolume] = useState(0.45);
-    const [editingSlot, setEditingSlot] = useState<number | null>(null);
-    const [showPresets, setShowPresets] = useState(true);
-    const [metronomeEnabled, setMetronomeEnabled] = useState(true);
+    const {
+        slots, bpm, beatsPerChord, isPlaying, currentSlotIndex, currentBeat,
+        instrument, volume, editingSlot, showPresets, metronomeEnabled,
+        setBpm, setBeatsPerChord, setInstrument, setVolume, setEditingSlot,
+        setShowPresets, setMetronomeEnabled, setChordInSlot, clearSlot,
+        loadPreset, clearAll, stopPlayback
+    } = useJamStore();
 
     // Refs for the scheduler loop
     const timerRef = useRef<number | null>(null);
@@ -210,29 +166,25 @@ const ChordProgressionPlayer = () => {
     }, []);
 
     // ─── Playback Engine (Web Audio Lookahead Scheduler) ──────────────────
-    const stopPlayback = useCallback(() => {
-        if (timerRef.current) {
-            cancelAnimationFrame(timerRef.current);
-            timerRef.current = null;
-        }
-        setIsPlaying(false);
-        setCurrentBeat(0);
-        setCurrentSlotIndex(0);
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) cancelAnimationFrame(timerRef.current);
+            useJamStore.getState().stopPlayback();
+        };
     }, []);
 
     const startPlayback = useCallback(() => {
+        const state = useJamStore.getState();
         // Collect non-empty slots
-        const nonEmpty = slots
+        const nonEmpty = state.slots
             .map((s, i) => (s.root ? i : -1))
             .filter((i) => i >= 0);
         if (nonEmpty.length === 0) return;
 
-        setIsPlaying(true);
-        setCurrentBeat(0);
-        setEditingSlot(null);
+        state.setIsPlaying(true);
+        state.setCurrentBeat(0);
+        state.setEditingSlot(null);
 
-        const beatDuration = 60 / bpm; // seconds per beat
-        const chordDuration = beatDuration * beatsPerChord; // seconds per chord
         const LOOKAHEAD = 0.15; // schedule 150ms ahead
 
         // Track the audio-time of the most recently scheduled beat
@@ -247,25 +199,32 @@ const ChordProgressionPlayer = () => {
         const beatEvents: { time: number; beat: number; slot: number }[] = [];
 
         // Schedule the very first chord
-        const firstSlot = slots[nonEmpty[0]];
-        scheduleChord(firstSlot.root, firstSlot.variant, nextBeatTime, chordDuration - 0.05, volume, instrument);
+        const firstSlot = state.slots[nonEmpty[0]];
+        const currentBeatDuration = 60 / state.bpm;
+        const currentChordDuration = currentBeatDuration * state.beatsPerChord;
+
+        scheduleChord(firstSlot.root, firstSlot.variant, nextBeatTime, currentChordDuration - 0.05, state.volume, state.instrument);
         if (metronomeRef.current) scheduleClick(nextBeatTime, true);
         beatEvents.push({ time: nextBeatTime, beat: 0, slot: nonEmpty[0] });
-        setCurrentSlotIndex(nonEmpty[0]);
+        state.setCurrentSlotIndex(nonEmpty[0]);
 
         const tick = () => {
             const now = getAudioTime();
+            const tickState = useJamStore.getState();
+            if (!tickState.isPlaying) return;
+            const bDuration = 60 / tickState.bpm;
+            const cDuration = bDuration * tickState.beatsPerChord;
 
             // Schedule future beats within the lookahead window
-            while (nextBeatTime + beatDuration < now + LOOKAHEAD) {
-                nextBeatTime += beatDuration;
+            while (nextBeatTime + bDuration < now + LOOKAHEAD) {
+                nextBeatTime += bDuration;
                 scheduledBeat++;
 
-                if (scheduledBeat >= beatsPerChord) {
+                if (scheduledBeat >= tickState.beatsPerChord) {
                     scheduledBeat = 0;
                     chordIdx = (chordIdx + 1) % nonEmpty.length;
-                    const slot = slots[nonEmpty[chordIdx]];
-                    scheduleChord(slot.root, slot.variant, nextBeatTime, chordDuration - 0.05, volume, instrument);
+                    const slot = tickState.slots[nonEmpty[chordIdx]];
+                    scheduleChord(slot.root, slot.variant, nextBeatTime, cDuration - 0.05, tickState.volume, tickState.instrument);
                     if (metronomeRef.current) scheduleClick(nextBeatTime, true);
                 } else {
                     if (metronomeRef.current) scheduleClick(nextBeatTime, false);
@@ -283,8 +242,9 @@ const ChordProgressionPlayer = () => {
                     if (beatEvents[i].beat !== displayBeat || beatEvents[i].slot !== displaySlot) {
                         displayBeat = beatEvents[i].beat;
                         displaySlot = beatEvents[i].slot;
-                        setCurrentBeat(displayBeat);
-                        setCurrentSlotIndex(displaySlot);
+                        const s = useJamStore.getState();
+                        s.setCurrentBeat(displayBeat);
+                        s.setCurrentSlotIndex(displaySlot);
                     }
                     break;
                 }
@@ -294,16 +254,14 @@ const ChordProgressionPlayer = () => {
         };
 
         timerRef.current = requestAnimationFrame(tick);
-    }, [slots, bpm, beatsPerChord, volume, instrument]);
+    }, []);
 
     // Restart when params change while playing
     useEffect(() => {
-        if (isPlaying) {
-            stopPlayback();
-            const t = setTimeout(() => startPlayback(), 60);
-            return () => clearTimeout(t);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // Now the loop reads fresh state directly, so we don't strictly need to restart
+        // but if we want instant tempo changes, it helps. Or the loop handles it! 
+        // Wait, since we are using fresh bpm directly inside tick, we actually DON'T need to restart the audio context timeline on tempo change! 
+        // The lookahead will seamlessly schedule the next beat at the new tempo.
     }, [bpm, beatsPerChord, instrument, volume]);
 
     const togglePlay = () => {
@@ -314,58 +272,10 @@ const ChordProgressionPlayer = () => {
         }
     };
 
-    // ─── Chord slot management ───────────────────────────────────────────
-    const setChordInSlot = useCallback((index: number, root: string, variant: string) => {
-        const chord = lookupChord(root, variant);
-        setSlots((prev) => {
-            const next = [...prev];
-            next[index] = {
-                root,
-                variant,
-                frets: chord?.frets ?? [],
-                fingers: chord?.fingers ?? [],
-                label: getChordLabel(root, variant),
-            };
-            return next;
-        });
-        setEditingSlot(null);
-    }, []);
-
-    const clearSlot = useCallback((index: number) => {
-        setSlots((prev) => {
-            const next = [...prev];
-            next[index] = emptySlot();
-            return next;
-        });
-    }, []);
-
-    const loadPreset = useCallback((preset: PresetProgression) => {
-        if (isPlaying) stopPlayback();
-        const newSlots: ChordSlot[] = preset.slots.map((s) => {
-            const chord = lookupChord(s.root, s.variant);
-            return {
-                root: s.root,
-                variant: s.variant,
-                frets: chord?.frets ?? [],
-                fingers: chord?.fingers ?? [],
-                label: getChordLabel(s.root, s.variant),
-            };
-        });
-        // Pad to SLOT_COUNT
-        while (newSlots.length < SLOT_COUNT) newSlots.push(emptySlot());
-        setSlots(newSlots);
-        setShowPresets(false);
-    }, [isPlaying, stopPlayback]);
-
     const shufflePreset = useCallback(() => {
         const preset = PRESETS[Math.floor(Math.random() * PRESETS.length)];
         loadPreset(preset);
     }, [loadPreset]);
-
-    const clearAll = useCallback(() => {
-        if (isPlaying) stopPlayback();
-        setSlots(Array.from({ length: SLOT_COUNT }, emptySlot));
-    }, [isPlaying, stopPlayback]);
 
     // Scale suggestions
     const scaleHints = useMemo(() => suggestScales(slots), [slots]);

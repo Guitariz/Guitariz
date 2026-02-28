@@ -18,6 +18,7 @@ import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
+import { useChordAIStore } from "@/stores/chordAIStore";
 import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
@@ -94,9 +95,7 @@ const ChordAIPage = () => {
   const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose, tempo, setTempo, getAudioChunk } =
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showSimple, setShowSimple] = useState(false);
-  const [separateVocals, setSeparateVocals] = useState(false);
-  const [useMadmom, setUseMadmom] = useState(true);
+  const { showSimple, setShowSimple, separateVocals, setSeparateVocals, useMadmom, setUseMadmom, liveChordEnabled, setLiveChordEnabled } = useChordAIStore();
   const [dragActive, setDragActive] = useState(false);
   const [loadedInstrumentalUrl, setLoadedInstrumentalUrl] = useState<string | null>(null);
   const [isInstrumentalLoaded, setIsInstrumentalLoaded] = useState(false);
@@ -160,7 +159,6 @@ const ChordAIPage = () => {
 
   // WebSocket for real-time chord detection
   const { isConnected, currentChord: liveChord, connect, disconnect, sendAudioChunk } = useChordWebSocket();
-  const [liveChordEnabled, setLiveChordEnabled] = useState(false);
   const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${useMadmom}` : undefined;
@@ -1132,15 +1130,7 @@ const ChordAIPage = () => {
                   confidence={0.96}
                 />
 
-                {/* Confidence-Guided UI */}
-                {currentChords.length > 0 && (
-                  <ConfidenceSummary
-                    segments={currentChords}
-                    onSeek={seek}
-                  />
-                )}
-
-                <div className="pt-6 border-t border-white/5 space-y-6">
+                <div className="pt-2 space-y-6">
                   <div className="space-y-4">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
                     <div className="flex items-end justify-between gap-4">
@@ -1168,6 +1158,16 @@ const ChordAIPage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Confidence-Guided UI */}
+                {currentChords.length > 0 && (
+                  <div className="pt-6 border-t border-white/5">
+                    <ConfidenceSummary
+                      segments={currentChords}
+                      onSeek={seek}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="pt-6 border-t border-white/5 space-y-6">
