@@ -101,7 +101,8 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.170.0",
     "tonal": "^6.4.2",
-    "vaul": "^0.9.9"
+    "vaul": "^0.9.9",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
