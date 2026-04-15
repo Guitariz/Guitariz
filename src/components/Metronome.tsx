@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, RotateCcw, Activity } from "lucide-react";
@@ -19,6 +20,8 @@ const Metronome = () => {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [timeSignature, setTimeSignature] = useState({ num: 4, den: 4 });
   const [subdivision, setSubdivision] = useState<Subdivision>(1);
+  const [isTapping, setIsTapping] = useState(false);
+  const [tapPulseKey, setTapPulseKey] = useState(0);
 
   const intervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -27,6 +30,7 @@ const Metronome = () => {
 
   const tapTimesRef = useRef<number[]>([]);
   const tappedBpmTimeoutRef = useRef<number | null>(null);
+  const tapResetRef = useRef<number | null>(null);
   const [tappedBpm, setTappedBpm] = useState<number | null>(null);
 
   const PRESETS = [
@@ -52,6 +56,10 @@ const Metronome = () => {
       if (tappedBpmTimeoutRef.current) {
         window.clearTimeout(tappedBpmTimeoutRef.current);
         tappedBpmTimeoutRef.current = null;
+      }
+      if (tapResetRef.current) {
+        window.clearTimeout(tapResetRef.current);
+        tapResetRef.current = null;
       }
     };
   }, []);
@@ -182,6 +190,19 @@ const Metronome = () => {
       setTappedBpm(null);
       tappedBpmTimeoutRef.current = null;
     }, 2500);
+
+    // trigger visual feedback
+    setIsTapping(true);
+    setTapPulseKey((prev) => prev + 1);
+
+    // reset tapping state quickly (edge-case requirement)
+    if (tapResetRef.current) {
+      window.clearTimeout(tapResetRef.current);
+    }
+    tapResetRef.current = window.setTimeout(() => {
+      setIsTapping(false);
+      tapResetRef.current = null;
+    }, 100);
   }, []);
 
   // allow tapping with spacebar (or 'T'), ignoring when typing in inputs
@@ -212,9 +233,15 @@ const Metronome = () => {
           <div className="relative group">
             <div className="absolute -inset-8 bg-white/[0.02] rounded-[3rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative text-center">
-              <span className="text-[120px] font-light tracking-tighter text-white leading-none tabular-nums">
+              <motion.span
+                key={tapPulseKey}
+                initial={{ scale: 1 }}
+                animate={{ scale: isTapping ? [1, 1.15, 1] : 1 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="text-[120px] font-light tracking-tighter text-white leading-none tabular-nums"
+              >
                 {bpm}
-              </span>
+              </motion.span>
               <div className="text-xs uppercase tracking-[0.3em] text-muted-foreground mt-4 font-medium">
                 Beats Per Minute
               </div>
