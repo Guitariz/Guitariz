@@ -1269,18 +1269,43 @@ const ChordAIPage = () => {
                               <span>{Math.round(entry.result.tempo || 0)} BPM</span>
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 -mt-1 -mr-1 transition-all"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(entry.id);
-                            }}
-                          >
-                            <History className="w-3 h-3 group-hover:hidden" />
-                            <Trash2 className="w-3 h-3 hidden group-hover:block" />
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-400 -mt-1 -mr-1 transition-all"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <History className="w-3 h-3 group-hover:hidden" />
+                                <Trash2 className="w-3 h-3 hidden group-hover:block" />
+                              </Button>
+                            </DialogTrigger>
+
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Delete History Item</DialogTitle>
+                                <DialogDescription>
+                                  Are you sure you want to delete this history item? This cannot be undone.
+                                </DialogDescription>
+                              </DialogHeader>
+
+                              <DialogFooter>
+                                <DialogClose asChild>
+                                  <Button variant="outline">Cancel</Button>
+                                </DialogClose>
+
+                                <DialogClose asChild>
+                                  <Button
+                                      variant="destructive"
+                                      onClick={() => removeFromHistory(entry.id)}
+                                    >
+                                      Delete
+                                  </Button>
+                                </DialogClose>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                         <div className="mt-2 text-[8px] text-muted-foreground/40 italic">
                           Analyzed {new Date(entry.timestamp).toLocaleDateString()}
