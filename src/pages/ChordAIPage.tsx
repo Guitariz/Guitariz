@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import ChordTimeline from "@/components/chord-ai/ChordTimeline";
 import HorizontalChordTape from "@/components/chord-ai/HorizontalChordTape";
@@ -27,6 +26,18 @@ import { transposeChord, transposeKey } from "@/lib/transposition";
 import { Slider } from "@/components/ui/slider";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+import { Button } from "@/components/ui/button";
 
 const formatTime = (seconds: number) => {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -1179,15 +1190,42 @@ const ChordAIPage = () => {
                     <h2 className="text-sm font-bold text-white uppercase tracking-widest">Recent History</h2>
                   </div>
                   {history.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-red-400"
-                      onClick={clearHistory}
-                      title="Clear all history"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-red-400"
+                          title="Clear all history"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Clear History</DialogTitle>
+                          <DialogDescription>
+                            Are you sure you want to clear your local analysis history? This cannot be undone.
+                          </DialogDescription>
+                        </DialogHeader>
+
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+
+                          <DialogClose asChild>
+                            <Button
+                              variant="destructive"
+                              onClick={clearHistory}
+                            >
+                              Clear All
+                            </Button>
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </div>
 
