@@ -2,9 +2,122 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Scale, Hash, Globe, Play, Info, Guitar, Search, PlayCircle, Layers } from "lucide-react";
+import { Scale, Hash, Globe, Play, Info, Guitar, Search, PlayCircle, Layers, Piano } from "lucide-react";
 import { playNote } from "@/lib/chordAudio";
 import { motion, AnimatePresence } from "framer-motion";
+import { PianoKeyboard } from "@/components/piano/PianoKeyboard";
+import React from "react";
+
+// ─── Fretboard Components ─────────────────────────────────────────────────────
+
+const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+const FretNote = React.memo(({ 
+  note, 
+  rootNote, 
+  fIdx, 
+  sIdx 
+}: { 
+  note: string; 
+  rootNote: string; 
+  fIdx: number; 
+  sIdx: number 
+}) => {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div 
+            className="absolute group cursor-help transition-all duration-300 z-10" 
+            style={{ 
+              left: `${fIdx * (100 / 12)}%`, 
+              top: `${sIdx * 30}px`, 
+              transform: "translate(-50%, -50%)" 
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: fIdx * 0.03 + sIdx * 0.01 }}
+              className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[8px] border transition-all ${
+                note === rootNote 
+                  ? "bg-white text-black border-white shadow-lg scale-110" 
+                  : "bg-black/90 text-white border-white/10"
+              }`}
+            >
+              {note}
+            </motion.div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white text-[9px] font-mono">
+          {note} on Fret {fIdx}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+});
+
+FretNote.displayName = "FretNote";
+
+const GuitarFretboard = React.memo(({ 
+  scaleNotes, 
+  rootNote 
+}: { 
+  scaleNotes: string[]; 
+  rootNote: string 
+}) => {
+  const strings = ["E", "A", "D", "G", "B", "E"];
+  
+  return (
+    <div className="relative bg-[#050505] p-6 md:p-8 rounded-[1.5rem] border border-white/5 shadow-inner w-full flex justify-center overflow-hidden">
+      <div className="relative" style={{ width: "100%", height: "150px" }}>
+        {/* Strings */}
+        {Array.from({ length: 6 }, (_, idx) => (
+          <div key={idx} className="absolute w-full h-[1px] bg-white/[0.05]" style={{ top: `${idx * 30}px` }} />
+        ))}
+        {/* Frets */}
+        {Array.from({ length: 13 }, (_, idx) => (
+          <div 
+            key={idx} 
+            className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/20" : "bg-white/5"}`} 
+            style={{ left: `${idx * (100 / 12)}%` }}
+          >
+            {[3, 5, 7, 9, 12].includes(idx) && (
+              <div className="absolute left-1/2 -translate-x-1/2 -bottom-6 flex flex-col items-center opacity-10">
+                <div className="w-1 h-1 rounded-full bg-white" />
+                <span className="text-[8px] font-mono mt-1 font-bold">{idx}</span>
+              </div>
+            )}
+          </div>
+        ))}
+        {/* Notes */}
+        {strings.map((startNote, sIdx) => {
+          const openIdx = NOTES.indexOf(startNote);
+          return Array.from({ length: 13 }, (_, fIdx) => {
+            const note = NOTES[(openIdx + fIdx) % 12];
+            if (!scaleNotes.includes(note)) return null;
+            return (
+              <FretNote 
+                key={`${sIdx}-${fIdx}`} 
+                note={note} 
+                rootNote={rootNote} 
+                fIdx={fIdx} 
+                sIdx={sIdx} 
+              />
+            );
+          });
+        })}
+      </div>
+      <div className="absolute -left-6 top-8 bottom-8 flex flex-col justify-between text-[9px] font-mono text-muted-foreground/20">
+        {["e", "B", "G", "D", "A", "E"].reverse().map((s, i) => (
+          <div key={i} className="h-0 flex items-center">{s}</div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+GuitarFretboard.displayName = "GuitarFretboard";
 
 type ScaleDataBase = {
   intervals: number[];
@@ -226,13 +339,15 @@ const RAGA_SCALES = {
   }
 };
 
-const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+// ─── Scale Data ──────────────────────────────────────────────────────────────
 const ScaleExplorer = () => {
   const [rootNote, setRootNote] = useState("C");
   const [selectedScale, setSelectedScale] = useState("Major (Ionian)");
   const [scaleCategory, setScaleCategory] = useState("western");
   const [lastPlayed, setLastPlayed] = useState<string | null>(null);
   const [scaleSearchQuery, setScaleSearchQuery] = useState("");
+  const [showPiano, setShowPiano] = useState(true);
+  const [pianoOctaves, setPianoOctaves] = useState<2 | 3 | "full">(2);
 
   const currentScales = (scaleCategory === "western" ? WESTERN_SCALES : RAGA_SCALES) as Record<string, ScaleData>;
 
@@ -267,7 +382,8 @@ const ScaleExplorer = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 w-full min-h-[600px]">
+    <div className="space-y-8 w-full">
+      <div className="flex flex-col lg:flex-row gap-8 w-full min-h-[600px]">
       {/* Selection Sidebar */}
       <div className="w-full lg:w-64 flex flex-col gap-4 lg:sticky lg:top-8 h-full min-h-[750px] lg:h-[calc(100vh-4rem)]">
         <div className="glass-card rounded-2xl p-4 border-white/5 bg-[#0a0a0a]/60 flex flex-col h-full overflow-hidden shadow-xl">
@@ -423,119 +539,136 @@ const ScaleExplorer = () => {
           </div>
           <div className="p-4 md:p-6 overflow-x-auto scrollbar-hide flex justify-center">
             <div className="relative w-full max-w-[750px] flex items-center justify-center py-4">
-              <div className="relative bg-[#050505] p-6 md:p-8 rounded-[1.5rem] border border-white/5 shadow-inner w-full flex justify-center overflow-hidden">
-                <div className="relative" style={{ width: "100%", height: "150px" }}>
-                  {/* Strings */}
-                  {Array.from({ length: 6 }, (_, idx) => (
-                    <div key={idx} className="absolute w-full h-[1px] bg-white/[0.05]" style={{ top: `${idx * 30}px` }} />
-                  ))}
-                  {/* Frets */}
-                  {Array.from({ length: 13 }, (_, idx) => (
-                    <div key={idx} className={`absolute h-full w-[1px] ${idx === 0 ? "bg-white/20" : "bg-white/5"}`} style={{ left: `${idx * (100 / 12)}%` }}>
-                      {[3, 5, 7, 9, 12].includes(idx) && (
-                        <div className="absolute left-1/2 -translate-x-1/2 -bottom-6 flex flex-col items-center opacity-10">
-                          <div className="w-1 h-1 rounded-full bg-white" />
-                          <span className="text-[8px] font-mono mt-1 font-bold">{idx}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {/* Notes */}
-                  {Array.from({ length: 6 }, (_, sIdx) => {
-                    const stringNotes = ["E", "A", "D", "G", "B", "E"];
-                    const openIdx = NOTES.indexOf(stringNotes[sIdx]);
-                    return Array.from({ length: 13 }, (_, fIdx) => {
-                      const note = NOTES[(openIdx + fIdx) % 12];
-                      if (!getScaleNotes.includes(note)) return null;
-                      return (
-                        <TooltipProvider key={`${sIdx}-${fIdx}`}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="absolute group cursor-help transition-all duration-300 z-10" style={{ left: `${fIdx * (100 / 12)}%`, top: `${sIdx * 30}px`, transform: "translate(-50%, -50%)" }}>
-                                <motion.div
-                                  initial={{ scale: 0.8, opacity: 0 }}
-                                  animate={{ scale: 1, opacity: 1 }}
-                                  transition={{ delay: fIdx * 0.03 + sIdx * 0.01 }}
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[8px] border transition-all ${note === rootNote ? "bg-white text-black border-white shadow-lg scale-110" : "bg-black/90 text-white border-white/10"}`}
-                                >
-                                  {note}
-                                </motion.div>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="bg-zinc-900 border-white/10 text-white text-[9px] font-mono">
-                              {note} on Fret {fIdx}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      );
-                    });
-                  })}
-                </div>
-                <div className="absolute -left-6 top-8 bottom-8 flex flex-col justify-between text-[9px] font-mono text-muted-foreground/20">
-                  {["e", "B", "G", "D", "A", "E"].map((s, i) => <div key={i} className="h-0 flex items-center">{s}</div>)}
-                </div>
-              </div>
+              <GuitarFretboard scaleNotes={getScaleNotes} rootNote={rootNote} />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* ── Modal Degrees & Theory Grid ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {scaleCategory === "western" ? (
-            <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01]">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-primary/10 rounded-lg text-primary"><Hash className="w-3.5 h-3.5" /></div>
-                <h3 className="text-xs font-semibold text-white">Modal Degrees</h3>
+            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary"><Hash className="w-4 h-4" /></div>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Modal Degrees</h3>
               </div>
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
                   {(scaleData as WesternScaleData).chords.map((chord, idx) => (
-                    <div key={idx} className="px-2 py-1 rounded-md bg-white/[0.03] border border-white/5 text-[10px] font-mono text-white">
-                      <span className="text-muted-foreground mr-1.5">{idx + 1}.</span>{chord}
+                    <div key={idx} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-mono text-white flex items-center gap-2">
+                      <span className="text-muted-foreground/40">{idx + 1}.</span>{chord}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01]">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-accent/10 rounded-lg text-accent"><Globe className="w-3.5 h-3.5" /></div>
-                <h3 className="text-xs font-semibold text-white">Raga Details</h3>
+            <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-accent/10 rounded-xl text-accent"><Globe className="w-4 h-4" /></div>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Raga Details</h3>
               </div>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[10px] text-muted-foreground uppercase block mb-1">Time</span>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] text-muted-foreground uppercase block mb-1 font-bold tracking-widest">Time</span>
                     <span className="text-xs text-white">{(scaleData as RagaScaleData).time}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5">
-                    <span className="text-[10px] text-muted-foreground uppercase block mb-1">Mood</span>
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] text-muted-foreground uppercase block mb-1 font-bold tracking-widest">Mood</span>
                     <span className="text-xs text-white">{(scaleData as RagaScaleData).mood}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 font-mono text-[10px] space-y-2 text-center">
-                  <div className="flex items-center gap-2 justify-center">
-                    <span className="text-primary opacity-50">↑</span>
-                    <span className="tracking-widest">{(scaleData as RagaScaleData).aroha}</span>
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 font-mono text-[11px] space-y-3 text-center">
+                  <div className="flex items-center gap-3 justify-center">
+                    <span className="text-primary opacity-50 font-bold">↑</span>
+                    <span className="tracking-[0.2em]">{(scaleData as RagaScaleData).aroha}</span>
                   </div>
-                  <div className="h-px bg-white/5" />
-                  <div className="flex items-center gap-2 justify-center">
-                    <span className="text-accent opacity-50">↓</span>
-                    <span className="tracking-widest">{(scaleData as RagaScaleData).avaroha}</span>
+                  <div className="h-px bg-white/5 mx-4" />
+                  <div className="flex items-center gap-3 justify-center">
+                    <span className="text-accent opacity-50 font-bold">↓</span>
+                    <span className="tracking-[0.2em]">{(scaleData as RagaScaleData).avaroha}</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
-          <div className="glass-card rounded-2xl p-4 border-white/5 bg-white/[0.01] flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 bg-neutral-100/10 rounded-lg text-white"><Info className="w-3.5 h-3.5" /></div>
-              <h3 className="text-xs font-semibold text-white">Theory Context</h3>
+          <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01] flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-neutral-100/10 rounded-xl text-white"><Info className="w-4 h-4" /></div>
+              <h3 className="text-sm font-semibold text-white tracking-tight">Theory Context</h3>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed opacity-70">
-              This scale uses {getScaleNotes.length} notes. The relationship between the 3rd defines its core personality.
+            <p className="text-xs text-muted-foreground leading-relaxed opacity-70 font-medium">
+              This scale uses {getScaleNotes.length} notes. The relationship between the 3rd defines its core personality. Master these patterns across the full range of your instrument to unlock new melodic possibilities.
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+
+      <div className="space-y-8 w-full">
+        {/* ── Piano Keyboard Section ── */}
+        <div className="glass-card rounded-[2rem] p-1 border-white/5 bg-black/40 shadow-xl overflow-hidden">
+          <div className="p-4 md:p-5 pb-3 border-b border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Piano className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="text-xs font-bold text-white tracking-tight">Piano Keyboard</h3>
+                <span className="text-[9px] text-muted-foreground/40 font-medium uppercase tracking-tighter">Interactive • Click keys to play</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Octave toggle */}
+              <div className="flex p-0.5 bg-white/[0.03] rounded-lg border border-white/5">
+                {([2, 3, "full"] as const).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPianoOctaves(n)}
+                    className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all ${
+                      pianoOctaves === n
+                        ? "bg-white/10 text-white border border-white/10"
+                        : "text-muted-foreground hover:text-white"
+                    }`}
+                  >
+                    {n === "full" ? "Full" : `${n} Oct`}
+                  </button>
+                ))}
+              </div>
+              {/* Show/Hide toggle */}
+              <button
+                onClick={() => setShowPiano((v) => !v)}
+                className="px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border border-white/5 text-muted-foreground hover:text-white hover:border-white/10 transition-all"
+              >
+                {showPiano ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showPiano && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="p-4 md:p-6 flex justify-center">
+                  <PianoKeyboard
+                    scaleNotes={getScaleNotes}
+                    rootNote={rootNote}
+                    intervals={(currentScales[selectedScale] as { intervals: number[] }).intervals}
+                    startOctave={3}
+                    numOctaves={typeof pianoOctaves === "number" ? pianoOctaves : 2}
+                    fullRange={pianoOctaves === "full"}
+                    showLabels={true}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
