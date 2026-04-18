@@ -23,10 +23,12 @@ const Metronome = () => {
   const [isTapping, setIsTapping] = useState(false);
   const [tapPulseKey, setTapPulseKey] = useState(0);
 
-  const intervalRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const nextScheduleTickRef = useRef<number>(0);
+  const lastVisualBeatRef = useRef<number>(-1);
+
   const audioContextRef = useRef<AudioContext | null>(null);
-  // Track sub-ticks within a beat
-  const subTickRef = useRef<number>(0);
 
   const tapTimesRef = useRef<number[]>([]);
   const tappedBpmTimeoutRef = useRef<number | null>(null);
@@ -64,7 +66,7 @@ const Metronome = () => {
     };
   }, []);
 
-  const playClick = useCallback((type: "accent" | "beat" | "sub") => {
+  const playClick = useCallback((type: "accent" | "beat" | "sub", scheduleTime?: number) => {
     if (!audioContextRef.current) return;
 
     const ctx = audioContextRef.current;
@@ -85,51 +87,75 @@ const Metronome = () => {
     const gain = type === "accent" ? 0.22 : type === "beat" ? 0.12 : 0.06;
     const duration = type === "sub" ? 0.03 : 0.05;
 
-    oscillator.frequency.value = freq;
-    gainNode.gain.value = gain;
+    const time = scheduleTime !== undefined ? scheduleTime : ctx.currentTime + 0.01;
 
-    oscillator.start(ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    oscillator.stop(ctx.currentTime + duration);
+    oscillator.frequency.value = freq;
+    
+    // Set explicit gain value at required start time for correct exponential ramp
+    gainNode.gain.setValueAtTime(gain, time);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+    oscillator.start(time);
+    oscillator.stop(time + duration);
   }, []);
 
   useEffect(() => {
     if (isPlaying) {
-      // Each interval tick = one sub-division unit
-      const beatInterval = (60 / bpm) * (4 / timeSignature.den) * 1000;
-      const tickInterval = beatInterval / subdivision;
+      if (audioContextRef.current?.state === "suspended") {
+        audioContextRef.current.resume();
+      }
 
-      subTickRef.current = 0;
+      const ctx = audioContextRef.current!;
+      startTimeRef.current = ctx.currentTime + 0.05;
+      nextScheduleTickRef.current = 0;
+      lastVisualBeatRef.current = -1;
 
-      intervalRef.current = window.setInterval(() => {
-        const subTick = subTickRef.current;
-        const isNewBeat = subTick % subdivision === 0;
+      const loop = () => {
+        const beatInterval = (60 / bpm) * (4 / timeSignature.den);
+        const tickInterval = beatInterval / subdivision;
+        
+        const elapsed = ctx.currentTime - startTimeRef.current;
+        const lookahead = 0.1;
 
-        if (isNewBeat) {
-          setCurrentBeat((prev) => {
-            const nextBeat = (prev + 1) % timeSignature.num;
-            playClick(nextBeat === 0 ? "accent" : "beat");
-            return nextBeat;
-          });
-        } else {
-          playClick("sub");
+        // Schedule audio ahead
+        while ((nextScheduleTickRef.current * tickInterval) < elapsed + lookahead) {
+          const i = nextScheduleTickRef.current;
+          const isNewBeat = i % subdivision === 0;
+          const beatIndex = Math.floor(i / subdivision) % timeSignature.num;
+          
+          const timeToPlay = startTimeRef.current + i * tickInterval;
+          playClick(isNewBeat ? (beatIndex === 0 ? "accent" : "beat") : "sub", timeToPlay);
+          
+          nextScheduleTickRef.current += 1;
         }
 
-        subTickRef.current = (subTick + 1) % (timeSignature.num * subdivision);
-      }, tickInterval);
+        // Update visuals only if we've reached a new beat based on exact elapsed time
+        if (elapsed >= 0) {
+          const activeSubTick = Math.floor(elapsed / tickInterval);
+          const activeBeat = Math.floor(activeSubTick / subdivision) % timeSignature.num;
+          
+          if (activeBeat !== lastVisualBeatRef.current) {
+            setCurrentBeat(activeBeat);
+            lastVisualBeatRef.current = activeBeat;
+          }
+        }
+
+        animationFrameRef.current = requestAnimationFrame(loop);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(loop);
+
+      return () => {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
     } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
       setCurrentBeat(0);
-      subTickRef.current = 0;
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
   }, [isPlaying, bpm, timeSignature, subdivision, playClick]);
 
   const togglePlay = () => {
