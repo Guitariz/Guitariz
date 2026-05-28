@@ -40,7 +40,6 @@ const ChordsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Show toast when chord is selected
   useEffect(() => {
     if (selectedChord) {
       const handleClick = () => {
@@ -55,7 +54,7 @@ const ChordsPage = () => {
         action: (
           <Button
             onClick={handleClick}
-            className="bg-white text-black hover:bg-white/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Open on Fretboard
           </Button>
@@ -64,14 +63,9 @@ const ChordsPage = () => {
     }
   }, [selectedChord, navigate, toast]);
 
-
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
-
-
-
+    <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
-        {/* Breadcrumb */}
         <Breadcrumb items={[
           { name: "Home", url: "https://guitariz.studio/" },
           { name: "Chord Library", url: "https://guitariz.studio/chords" }
@@ -88,64 +82,63 @@ const ChordsPage = () => {
             </div>
 
             <header className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-white font-display">
+              <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-foreground font-display">
                 Chord <span className="text-muted-foreground font-thin italic">Library</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
-                A definitive collection of voicings and intervals. Filter by root, quality, or complexity to find the <span className="text-white/80">perfect color</span> for your sound.
+                A definitive collection of voicings and intervals. Filter by root, quality, or complexity to find the <span className="text-foreground/80">perfect color</span> for your sound.
               </p>
             </header>
           </div>
         </div>
 
-        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/80 shadow-2xl overflow-hidden p-1">
+        <div className="glass-card rounded-[2rem] border border-border bg-card/80 shadow-2xl overflow-hidden p-1">
           <RootChordLibrary
             onChordSelect={(chord) => setSelectedChord(chord)}
           />
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
             <BookOpen className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
-            <h3 className="text-white font-medium mb-1">Interval Mapping</h3>
+            <h3 className="text-foreground font-medium mb-1">Interval Mapping</h3>
             <p className="text-xs text-muted-foreground">See how every note functions relative to the root.</p>
           </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
             <Music className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-secondary transition-colors" />
-            <h3 className="text-white font-medium mb-1">Quick Audition</h3>
+            <h3 className="text-foreground font-medium mb-1">Quick Audition</h3>
             <p className="text-xs text-muted-foreground">Click any diagram to hear the voicing played on a piano.</p>
           </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
             <Layers className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-accent transition-colors" />
-            <h3 className="text-white font-medium mb-1">Smart Sorting</h3>
+            <h3 className="text-foreground font-medium mb-1">Smart Sorting</h3>
             <p className="text-xs text-muted-foreground">Group by families or find specific extensions instantly.</p>
           </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
-            <Bot className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-white transition-colors" />
-            <h3 className="text-white font-medium mb-1">Studio Ready</h3>
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
+            <Bot className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-foreground transition-colors" />
+            <h3 className="text-foreground font-medium mb-1">Studio Ready</h3>
             <p className="text-xs text-muted-foreground">Clean, distraction-free environment for songwriting.</p>
           </div>
         </div>
 
-        {/* SEO FAQ Section */}
         <SEOContent
           pageName="chords"
           faqs={[
             {
               question: "How do I find a chord in the library?",
-              answer: "You can use the root note selector to pick your key (e.g., C, G, Bb) and then browse through categories like Major, Minor, 7ths, and Altered chords. Each chord includes multiple voicings across the fretboard."
+              answer: "You can use the root note selector to pick your key (e.g., C, G, Bb) and then browse through categories like Major, Minor, 7ths, and Altered chords."
             },
             {
               question: "What are 'intervals' and why are they shown?",
-              answer: "Intervals show how each note in a chord relates to the root (e.g., 3rd, 5th, 7th). Understanding intervals is the foundation of music theory and helps you understand the 'color' and function of different chords."
+              answer: "Intervals show how each note in a chord relates to the root (e.g., 3rd, 5th, 7th). Understanding intervals is the foundation of music theory."
             },
             {
               question: "Can I hear these chords played?",
-              answer: "Yes! Click on any chord diagram to hear high-fidelity piano samples of that specific voicing. This helps you audition sounds before you even pick up your instrument."
+              answer: "Yes! Click on any chord diagram to hear high-fidelity piano samples of that specific voicing."
             },
             {
               question: "How do I see these chords on the interactive guitar fretboard?",
-              answer: "When you select a chord, a toast notification will appear with an 'Open on Fretboard' button. Clicking this will take you to our Fretboard simulator with that specific voicing loaded onto the virtual neck."
+              answer: "When you select a chord, a toast notification will appear with an 'Open on Fretboard' button. Clicking this will take you to our Fretboard simulator with that specific voicing loaded."
             }
           ]}
         />

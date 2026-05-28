@@ -4,12 +4,15 @@ import "./index.css";
 import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Register service worker for PWA
 registerSW({ immediate: true });
 
 createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
-        <App />
+        <ThemeProvider>
+            <App />
+        </ThemeProvider>
     </BrowserRouter>
 );

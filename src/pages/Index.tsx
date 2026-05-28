@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 
-
 // Featured AI tools (first row: 2 cards side by side)
 const featuredTools = [
   { title: "Chord AI", desc: "Neural audio chord detection and harmonic transcription.", icon: Bot, to: "/chord-ai", color: "from-violet-500/20 to-purple-500/20" },
@@ -28,7 +27,6 @@ const toolCards = [
 
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-
 
   usePageMetadata({
     title: "Guitariz - Chord AI Free, Stem Splitter AI & Music Studio Tools",
@@ -76,8 +74,6 @@ const Index = () => {
     }
   });
 
-
-
   const titleContainerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -106,13 +102,12 @@ const Index = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen relative bg-[#050505] overflow-x-hidden selection:bg-white/10">
-
+    <div ref={containerRef} className="min-h-screen relative bg-background overflow-x-hidden selection:bg-white/10">
       {/* Aesthetic Background - Clean & Optimized */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[#030303]" />
+        <div className="absolute inset-0 bg-background" />
         {/* Subtle Vignette for depth without overhead */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)] light:bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.05)_100%)]" />
       </div>
 
       <main className="pt-12 pb-24 relative z-10">
@@ -128,7 +123,7 @@ const Index = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ delay: 0.05, duration: 0.6, ease: "easeOut" }}
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
+                className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
               >
                 <Headphones className="w-3 h-3" />
                 <span>Modern Music Laboratory</span>
@@ -139,7 +134,7 @@ const Index = () => {
                   variants={titleContainerVariants}
                   initial="hidden"
                   animate="visible"
-                  className="text-7xl md:text-9xl font-light tracking-tighter text-white font-display flex flex-wrap justify-center gap-x-[0.2em] relative"
+                  className="text-7xl md:text-9xl font-light tracking-tighter text-foreground font-display flex flex-wrap justify-center gap-x-[0.2em] relative"
                   style={{ perspective: "1000px" }}
                 >
                   <span className="flex">
@@ -172,13 +167,13 @@ const Index = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-10">
-                <Button size="lg" className="h-16 px-10 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold group transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]" asChild>
+                <Button size="lg" className="h-16 px-10 rounded-2xl bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-semibold group transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]" asChild>
                   <Link to="/fretboard" aria-label="Start using the interactive fretboard lab">
                     Launch Fretboard
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" className="h-16 px-10 rounded-2xl border-white/10 bg-white/[0.02] text-white hover:bg-white/[0.05] hover:border-white/20 text-lg font-medium transition-all duration-300" asChild>
+                <Button variant="outline" size="lg" className="h-16 px-10 rounded-2xl border-border bg-card/50 text-foreground hover:bg-card/80 hover:border-border/80 text-lg font-medium transition-all duration-300" asChild>
                   <Link to="/theory" aria-label="Explore music theory and the circle of fifths">Master Theory</Link>
                 </Button>
               </div>
@@ -228,10 +223,10 @@ const Index = () => {
                     <Link
                       to={tool.to}
                       aria-label={`Open the ${tool.title} tool: ${tool.desc}`}
-                      className="block p-8 rounded-[1.75rem] glass-card transition-all duration-500 relative overflow-hidden border-2 border-white/10"
+                      className="block p-8 rounded-[1.75rem] glass-card transition-all duration-500 relative overflow-hidden border border-border"
                     >
                       {/* AI badge */}
-                      <div className="absolute top-4 right-4 z-20 px-2 py-1 rounded-full bg-white/10 text-[10px] font-bold text-white/80 uppercase tracking-widest">
+                      <div className="absolute top-4 right-4 z-20 px-2 py-1 rounded-full bg-card text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         AI Powered
                       </div>
                       {/* Gradient hover effect */}
@@ -239,18 +234,18 @@ const Index = () => {
 
                       <div className="spotlight-glow" />
                       <div className="relative z-10 space-y-4">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center group-hover:bg-white/15 group-hover:border-white/25 transition-all duration-500">
-                          <tool.icon className="w-7 h-7 text-white group-hover:scale-110 transition-transform duration-300" />
+                        <div className="w-14 h-14 rounded-2xl bg-card border border-border flex items-center justify-center group-hover:bg-card/80 group-hover:border-border/80 transition-all duration-500">
+                          <tool.icon className="w-7 h-7 text-foreground group-hover:scale-110 transition-transform duration-300" />
                         </div>
                         <div className="space-y-2">
-                          <h3 className="text-2xl font-medium text-white font-display">{tool.title}</h3>
+                          <h3 className="text-2xl font-medium text-foreground font-display">{tool.title}</h3>
                           <p className="text-sm text-muted-foreground leading-relaxed">
                             {tool.desc}
                           </p>
                         </div>
                       </div>
                       <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-                        <ArrowRight className="w-10 h-10 text-white" />
+                        <ArrowRight className="w-10 h-10 text-foreground" />
                       </div>
                     </Link>
                   </motion.div>
@@ -285,25 +280,25 @@ const Index = () => {
                     <Link
                       to={tool.to}
                       aria-label={`Open the ${tool.title} tool: ${tool.desc}`}
-                      className="block p-6 rounded-[1.75rem] glass-card transition-all duration-500 relative overflow-hidden"
+                      className="block p-6 rounded-[1.75rem] glass-card transition-all duration-500 relative overflow-hidden border border-border"
                     >
                       {/* Gradient hover effect */}
                       <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
                       <div className="spotlight-glow" />
                       <div className="relative z-10 space-y-3">
-                        <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:bg-white/10 group-hover:border-white/20 transition-all duration-500">
-                          <tool.icon className="w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300" />
+                        <div className="w-11 h-11 rounded-xl bg-card border border-border flex items-center justify-center group-hover:bg-card/80 group-hover:border-border/80 transition-all duration-500">
+                          <tool.icon className="w-5 h-5 text-foreground group-hover:scale-110 transition-transform duration-300" />
                         </div>
                         <div className="space-y-1.5">
-                          <h3 className="text-lg font-medium text-white font-display">{tool.title}</h3>
+                          <h3 className="text-lg font-medium text-foreground font-display">{tool.title}</h3>
                           <p className="text-xs text-muted-foreground leading-relaxed">
                             {tool.desc}
                           </p>
                         </div>
                       </div>
                       <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-20 transition-opacity duration-300">
-                        <ArrowRight className="w-8 h-8 text-white" />
+                        <ArrowRight className="w-8 h-8 text-foreground" />
                       </div>
                     </Link>
                   </motion.div>
