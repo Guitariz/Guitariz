@@ -1,6 +1,6 @@
-import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { motion } from "framer-motion";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -21,45 +21,63 @@ const TabsContext = React.createContext<TabsContextValue>({
   tabOrder: { current: [] },
 });
 
-interface TabsProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root> {
+interface TabsProps extends React.ComponentPropsWithoutRef<
+  typeof TabsPrimitive.Root
+> {
   indicatorClassName?: string;
 }
 
 const Tabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   TabsProps
->(({ value, defaultValue, onValueChange, indicatorClassName, ...props }, ref) => {
-  const [internalValue, setInternalValue] = React.useState(defaultValue ?? "");
-  const [prevValue, setPrevValue] = React.useState("");
-  const tabOrder = React.useRef<string[]>([]);
-  const id = React.useId();
+>(
+  (
+    { value, defaultValue, onValueChange, indicatorClassName, ...props },
+    ref,
+  ) => {
+    const [internalValue, setInternalValue] = React.useState(
+      defaultValue ?? "",
+    );
+    const [prevValue, setPrevValue] = React.useState("");
+    const tabOrder = React.useRef<string[]>([]);
+    const id = React.useId();
 
-  const activeValue = value !== undefined ? value : internalValue;
+    const activeValue = value !== undefined ? value : internalValue;
 
-  const registerValue = React.useCallback((val: string) => {
-    if (!tabOrder.current.includes(val)) {
-      tabOrder.current = [...tabOrder.current, val];
-    }
-  }, []);
+    const registerValue = React.useCallback((val: string) => {
+      if (!tabOrder.current.includes(val)) {
+        tabOrder.current = [...tabOrder.current, val];
+      }
+    }, []);
 
-  const handleValueChange = (newValue: string) => {
-    setPrevValue(activeValue);
-    if (value === undefined) setInternalValue(newValue);
-    onValueChange?.(newValue);
-  };
+    const handleValueChange = (newValue: string) => {
+      setPrevValue(activeValue);
+      if (value === undefined) setInternalValue(newValue);
+      onValueChange?.(newValue);
+    };
 
-  return (
-    <TabsContext.Provider value={{ activeValue, prevValue, indicatorClassName, layoutId: id, registerValue, tabOrder }}>
-      <TabsPrimitive.Root
-        ref={ref}
-        value={value}
-        defaultValue={defaultValue}
-        onValueChange={handleValueChange}
-        {...props}
-      />
-    </TabsContext.Provider>
-  );
-});
+    return (
+      <TabsContext.Provider
+        value={{
+          activeValue,
+          prevValue,
+          indicatorClassName,
+          layoutId: id,
+          registerValue,
+          tabOrder,
+        }}
+      >
+        <TabsPrimitive.Root
+          ref={ref}
+          value={value}
+          defaultValue={defaultValue}
+          onValueChange={handleValueChange}
+          {...props}
+        />
+      </TabsContext.Provider>
+    );
+  },
+);
 Tabs.displayName = "Tabs";
 
 const TabsList = React.forwardRef<
@@ -81,7 +99,8 @@ const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
 >(({ className, value, children, ...props }, ref) => {
-  const { activeValue, indicatorClassName, layoutId, registerValue } = React.useContext(TabsContext);
+  const { activeValue, indicatorClassName, layoutId, registerValue } =
+    React.useContext(TabsContext);
   const isActive = activeValue === value;
 
   React.useEffect(() => {
@@ -103,7 +122,7 @@ const TabsTrigger = React.forwardRef<
           layoutId={`tab-pill-${layoutId}`}
           className={cn(
             "absolute inset-0 rounded-sm",
-            indicatorClassName ?? "bg-background shadow-sm",
+            indicatorClassName ?? "bg-white/10 shadow-sm",
           )}
           transition={{ type: "spring", duration: 0.2, bounce: 0 }}
         />
@@ -150,4 +169,4 @@ const TabsContent = React.forwardRef<
 });
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+export { Tabs, TabsContent, TabsList, TabsTrigger };
