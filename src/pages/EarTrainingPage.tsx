@@ -7,10 +7,8 @@ import { IntervalGame } from "@/components/ear-training/IntervalGame";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 
-// --- Types ---
 type GameMode = "INTERVALS" | "CHORDS" | "FRETBOARD" | "PERFECT_PITCH" | null;
 
-// --- Game Card Component ---
 const GameCard = ({
     title,
     description,
@@ -34,22 +32,20 @@ const GameCard = ({
             "absolute inset-0 rounded-[2.5rem] bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl",
             color
         )} />
-        <div className="relative h-full bg-[#0A0A0A] border border-white/5 rounded-[2.5rem] p-8 overflow-hidden hover:border-white/10 transition-colors">
-            <div className={cn("inline-flex p-4 rounded-2xl mb-6 bg-white/5", color.replace("bg-", "text-").replace("from-", "text-").split(" ")[0])}>
+        <div className="relative h-full bg-card border border-border rounded-[2.5rem] p-8 overflow-hidden hover:border-border/80 transition-colors">
+            <div className={cn("inline-flex p-4 rounded-2xl mb-6 bg-card/50", color.replace("bg-", "text-").replace("from-", "text-").split(" ")[0])}>
                 <Icon className="w-8 h-8" />
             </div>
-            <h3 className="text-3xl font-bold text-white mb-3 tracking-tight">{title}</h3>
+            <h3 className="text-3xl font-bold text-foreground mb-3 tracking-tight">{title}</h3>
             <p className="text-muted-foreground leading-relaxed">{description}</p>
 
-            <div className="mt-8 flex items-center text-sm font-bold uppercase tracking-widest text-white/40 group-hover:text-white transition-colors">
+            <div className="mt-8 flex items-center text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
                 <span>Play Now</span>
                 <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </div>
         </div>
     </motion.div>
 );
-
-// --- Page Component ---
 
 const EarTrainingPage = () => {
     const [activeGame, setActiveGame] = useState<GameMode>(null);
@@ -77,11 +73,8 @@ const EarTrainingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#030303] relative overflow-hidden selection:bg-emerald-500/30">
-
-
+        <div className="min-h-screen bg-background relative overflow-hidden selection:bg-emerald-500/30">
             <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
-                {/* Breadcrumb */}
                 {activeGame === null && (
                     <Breadcrumb items={[
                         { name: "Home", url: "https://guitariz.studio/" },
@@ -89,7 +82,6 @@ const EarTrainingPage = () => {
                     ]} />
                 )}
 
-                {/* Header / Arcade Banner - Only show on Hub */}
                 <AnimatePresence>
                     {activeGame === null && (
                         <motion.div
@@ -101,30 +93,29 @@ const EarTrainingPage = () => {
                             <motion.div
                                 initial={{ y: -20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-[#111] mb-6"
+                                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-card/50 mb-6"
                             >
                                 <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">Ear Training Arcade</span>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">Ear Training Arcade</span>
                             </motion.div>
 
-                            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter mb-6">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/50">Level Up</span> <br />
+                            <h1 className="text-5xl md:text-8xl font-black text-foreground tracking-tighter mb-6">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-foreground via-foreground to-foreground/50">Level Up</span> <br />
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Your Ears</span>
                             </h1>
 
-                            <p className="text-xl text-neutral-400 max-w-2xl font-light leading-relaxed">
+                            <p className="text-xl text-muted-foreground max-w-2xl font-light leading-relaxed">
                                 Master the language of music through gamified challenges. Train daily to unlock your true potential.
                             </p>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Game Hub Navigation Toggle - Only show on Hub */}
                 {activeGame === null && (
                     <div className="sticky top-6 z-40 flex justify-center mb-12">
                         <motion.div
                             layout
-                            className="bg-[#111] border border-white/10 p-1.5 rounded-full shadow-2xl flex items-center gap-1"
+                            className="bg-card border border-border p-1.5 rounded-full shadow-2xl flex items-center gap-1"
                         >
                             {[
                                 { id: null, label: "Hub", icon: Grid3X3 },
@@ -139,17 +130,17 @@ const EarTrainingPage = () => {
                                         onClick={() => setActiveGame(tab.id as GameMode)}
                                         className={cn(
                                             "relative px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all",
-                                            isActive ? "text-black" : "text-white/60 hover:text-white"
+                                            isActive ? "text-black" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
                                         {isActive && (
                                             <motion.div
                                                 layoutId="nav-pill-game"
-                                                className="absolute inset-0 bg-white rounded-full shadow-lg"
+                                                className="absolute inset-0 bg-foreground rounded-full shadow-lg"
                                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
-                                        <tab.icon className={cn("w-4 h-4 relative z-10", isActive && "text-black")} />
+                                        <tab.icon className={cn("w-4 h-4 relative z-10", isActive && "text-background")} />
                                         <span className="relative z-10">{tab.label}</span>
                                     </button>
                                 );
@@ -158,7 +149,6 @@ const EarTrainingPage = () => {
                     </div>
                 )}
 
-                {/* Main Content Area */}
                 <AnimatePresence mode="wait">
                     {activeGame === null && (
                         <motion.div
@@ -203,50 +193,47 @@ const EarTrainingPage = () => {
                         <IntervalGame key="game-intervals" onExit={handleExitGame} />
                     )}
 
-                    {/* Placeholders for other games */}
                     {activeGame === "CHORDS" && (
                         <motion.div key="game-chords" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
-                            <h2 className="text-3xl text-white">Chord Crusher Coming Soon</h2>
+                            <h2 className="text-3xl text-foreground">Chord Crusher Coming Soon</h2>
                             <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
                         </motion.div>
                     )}
 
                     {activeGame === "FRETBOARD" && (
                         <motion.div key="game-fretboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
-                            <h2 className="text-3xl text-white">Fretboard Hunter Coming Soon</h2>
+                            <h2 className="text-3xl text-foreground">Fretboard Hunter Coming Soon</h2>
                             <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
                         </motion.div>
                     )}
 
                     {activeGame === "PERFECT_PITCH" && (
                         <motion.div key="game-pitch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
-                            <h2 className="text-3xl text-white">Perfect Pitch Training Coming Soon</h2>
+                            <h2 className="text-3xl text-foreground">Perfect Pitch Training Coming Soon</h2>
                             <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-
-                {/* SEO FAQ Section */}
                 {activeGame === null && (
                     <SEOContent
                         pageName="ear-training"
                         faqs={[
                             {
                                 question: "What is ear training and why is it important for musicians?",
-                                answer: "Ear training is the process of connecting music theory (intervals, chords, scales) with actual sounds. It allows musicians to 'hear' what they see on a page and 'translate' what they hear in their head into their instrument. It's the key to improvisation, transcribing songs by ear, and better communication within a band."
+                                answer: "Ear training is the process of connecting music theory with actual sounds. It allows musicians to 'hear' what they see on a page and 'translate' what they hear into their instrument."
                             },
                             {
                                 question: "How does the Ear Training Arcade help me learn?",
-                                answer: "Our Arcade uses gamification to make practice engaging. By playing 'Interval Master' or 'Chord Crusher', you get instant feedback on your progress. Studies show that short, daily sessions of 10-15 minutes are much more effective than long, infrequent ones."
+                                answer: "Our Arcade uses gamification to make practice engaging. Short, daily sessions of 10-15 minutes are much more effective than long, infrequent ones."
                             },
                             {
                                 question: "What is the difference between relative pitch and perfect pitch?",
-                                answer: "Relative pitch is the ability to identify a note relative to a known reference (like an interval). Perfect pitch (absolute pitch) is the ability to identify a note without any reference. Most successful musicians rely heavily on relative pitch, which is highly trainable."
+                                answer: "Relative pitch is the ability to identify a note relative to a known reference. Perfect pitch is the ability to identify a note without any reference."
                             },
                             {
                                 question: "Is this tool suitable for singing practice?",
-                                answer: "Yes! Training your ear to recognize intervals and chords directly improves your intonation and ability to harmonize when singing. It's a foundational skill for vocalists and instrumentalists alike."
+                                answer: "Yes! Training your ear to recognize intervals and chords directly improves your intonation and ability to harmonize when singing."
                             }
                         ]}
                     />

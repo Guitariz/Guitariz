@@ -2,42 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark mode (default) */
 :root {
   --background: 0 0% 2%;
   --foreground: 0 0% 98%;
-
   --card: 0 0% 3%;
   --card-foreground: 0 0% 98%;
-
   --popover: 0 0% 3%;
   --popover-foreground: 0 0% 98%;
-
   --primary: 0 0% 98%;
   --primary-foreground: 0 0% 2%;
-
   --secondary: 0 0% 12%;
   --secondary-foreground: 0 0% 98%;
-
   --muted: 0 0% 12%;
   --muted-foreground: 0 0% 60%;
-
   --accent: 0 0% 15%;
   --accent-foreground: 0 0% 98%;
-
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-
   --border: 0 0% 12%;
   --input: 0 0% 12%;
   --ring: 0 0% 83%;
-
   --radius: 1.25rem;
-
-  /* Premium Design Tokens */
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shine: rgba(255, 255, 255, 0.03);
   --accent-glow: hsla(210, 100%, 50%, 0.15);
   --studio-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+/* Light mode */
+.light {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 70%;
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shine: rgba(0, 0, 0, 0.02);
+  --accent-glow: hsla(210, 100%, 50%, 0.05);
+  --studio-gradient: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%);
 }
 
 @layer base {
@@ -46,7 +63,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "ss02" 1;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -54,13 +72,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Typography Hierarchy */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     @apply font-display;
     font-weight: 500;
     line-height: 1.2;
@@ -94,98 +106,73 @@
     @apply text-base leading-relaxed;
   }
 
-  /* Accessibility: Focus States */
   *:focus-visible {
     @apply outline-none ring-2 ring-white/20 ring-offset-2 ring-offset-background;
     transition: all 0.2s ease;
   }
 
-  /* Smooth Scrolling */
-  html {
-    scroll-behavior: smooth;
+  .light *:focus-visible {
+    @apply ring-black/20 ring-offset-white;
   }
 
-  /* Selection Styling */
   ::selection {
-    @apply bg-white/10 text-white;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .light ::selection {
+    background-color: rgba(0, 0, 0, 0.1);
+    color: black;
   }
 }
 
+/* Glass Card */
 .glass-card {
-  @apply bg-[#080808]/80 border border-white/5;
+  background-color: rgba(8, 8, 8, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
 }
 
-.glass-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.02) 0%,
-      transparent 100%);
-  pointer-events: none;
+.light .glass-card {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-.glass-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.03),
-      transparent);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-
-
-/* Aggressively Optimized Utilities */
-@layer utilities {
-  .transition-smooth {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .transition-premium {
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .hover-lift {
-    transition: transform 0.2s ease;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-2px);
-  }
-
-  .hover-scale {
-    transition: transform 0.2s ease;
-  }
-
-  .hover-scale:hover {
-    transform: scale(1.02);
-  }
-
-  .hover-glow:hover {
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
-  }
-
-  .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:ring-offset-1 focus-visible:ring-offset-background;
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border: 4px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border: 4px solid transparent;
+  background-clip: content-box;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Spotlight Card */
 .spotlight-card {
   @apply relative overflow-hidden;
 }
@@ -206,154 +193,17 @@
   opacity: 1;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+.light .spotlight-glow {
+  background: radial-gradient(600px circle at var(--x) var(--y),
+      rgba(0, 0, 0, 0.03),
+      transparent 40%);
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 10px;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  transition: background 0.3s;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 10px;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  transition: background 0.3s;
-}
-
-.custom-scrollbar-visible::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
-
-/* Global Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border: 4px solid transparent;
-  background-clip: content-box;
-  border-radius: 9999px;
-  transition: background-color 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border: 4px solid transparent;
-  background-clip: content-box;
-}
-
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Premium High-Fidelity Utilities */
-.perspective-container {
-  perspective: 1200px;
-}
-
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-
-.glass-pill {
-  @apply bg-white/5 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full shadow-lg;
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-  *,
-  ::before,
-  ::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-html {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-/* 3D Fretboard Loading Animations */
+/* Animations */
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
   }
-
   100% {
     transform: translateX(100%);
   }
@@ -363,11 +213,9 @@ html {
   0% {
     width: 0%;
   }
-
   50% {
     width: 70%;
   }
-
   100% {
     width: 100%;
   }
@@ -380,3 +228,156 @@ html {
 .animate-loading-bar {
   animation: loading-bar 1.5s ease-in-out infinite;
 }
+
+/* ============================================ */
+/* LIGHT MODE FIXES */
+/* ============================================ */
+
+/* Fix background colors */
+.light .bg-\[\#050505\],
+.light .bg-\[\#030303\],
+.light .bg-\[\#0a0a0a\],
+.light .bg-\[\#080808\] {
+  background-color: #ffffff !important;
+}
+
+/* Fix text colors */
+.light .text-white,
+.light .text-white\/80,
+.light .text-white\/70,
+.light .text-white\/60 {
+  color: #000000 !important;
+}
+
+.light .text-muted-foreground,
+.light .text-white\/40,
+.light .text-white\/30 {
+  color: #666666 !important;
+}
+
+/* Fix borders */
+.light .border-white\/10,
+.light .border-white\/20,
+.light .border-white\/5 {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Fix icon backgrounds */
+.light .bg-white\/5,
+.light .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* CRITICAL: Fix buttons that become invisible in light mode */
+.light button.bg-white,
+.light button[class*="bg-white"]:not([class*="bg-white/"]),
+.light .bg-white.text-black,
+.light a.bg-white {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.light button.bg-white:hover,
+.light a.bg-white:hover {
+  background-color: #333333 !important;
+}
+
+/* Fix all button text */
+.light button,
+.light .button,
+.light [role="button"] {
+  color: #000000 !important;
+}
+
+.light button span,
+.light button .text-white {
+  color: inherit !important;
+}
+
+/* Fix outline buttons */
+.light button.bg-transparent,
+.light button[class*="outline"] {
+  color: #000000 !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Fix Master Theory button */
+.light .border-white\/10.bg-white\/\[0\.02\] {
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+/* Fix main CTA buttons */
+.light .h-16.px-10.rounded-2xl {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+/* Fix links */
+.light a:not([class*="bg-"]) {
+  color: #000000 !important;
+}
+
+/* Fix input fields */
+.light input,
+.light textarea {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+/* Fix SVG icons */
+.light svg {
+  color: #000000 !important;
+}
+
+/* Fix radial gradient background */
+.light .bg-\[radial-gradient\(circle_at_center\,
+transparent_0\%\2c rgba\(0\2c 0\2c 0\2c 0\.4\)_100\%\)\] {
+  background: transparent !important;
+}
+
+/* Fix footer */
+.light footer {
+  background-color: #f8f8f8 !important;
+  border-top-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Fix cards */
+.light .rounded-xl,
+.light .rounded-2xl,
+.light .rounded-lg {
+  background-color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Ensure all text is visible */
+.light p,
+.light h1,
+.light h2,
+.light h3,
+.light h4,
+.light h5,
+.light h6,
+.light span:not([class*="text-primary"]),
+.light div:not([class*="bg-"]):not([class*="border"]) {
+  color: #000000 !important;
+}
+
+/* Keep gradient text effects */
+.light .text-gradient {
+  background-image: linear-gradient(135deg, #000 0%, rgba(0, 0, 0, 0.7) 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

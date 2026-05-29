@@ -1,4 +1,3 @@
-
 import CircleOfFifths from "@/components/CircleOfFifths";
 import { Disc, Layers } from "lucide-react";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
@@ -33,10 +32,7 @@ const TheoryPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
-
-
-
+    <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div className="space-y-4">
@@ -49,58 +45,56 @@ const TheoryPage = () => {
             </div>
 
             <header className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-white font-display">
+              <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-foreground font-display">
                 Circle of <span className="text-muted-foreground font-thin italic">Fifths</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
-                Visualize key relationships and chord families. The <span className="text-white/80">fundamental map</span> for composition and modulation.
+                Visualize key relationships and chord families. The <span className="text-foreground/80">fundamental map</span> for composition and modulation.
               </p>
             </header>
           </div>
         </div>
 
-        {/* Breadcrumb */}
         <Breadcrumb items={[
           { name: "Home", url: "https://guitariz.studio/" },
           { name: "Theory Lab", url: "https://guitariz.studio/theory" }
         ]} />
 
-        <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/90 shadow-2xl overflow-hidden p-4 md:p-8">
+        <div className="glass-card rounded-[2rem] border border-border bg-card/90 shadow-2xl overflow-hidden p-4 md:p-8">
           <CircleOfFifths />
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
             <Layers className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
-            <h3 className="text-white font-medium mb-1">Key Modulation</h3>
+            <h3 className="text-foreground font-medium mb-1">Key Modulation</h3>
             <p className="text-xs text-muted-foreground">Find relative majors and minors with a single glance.</p>
           </div>
-          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+          <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
             <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-secondary transition-colors" />
-            <h3 className="text-white font-medium mb-1">Functional Harmony</h3>
+            <h3 className="text-foreground font-medium mb-1">Functional Harmony</h3>
             <p className="text-xs text-muted-foreground">Identify subdominant and dominant chords in any key.</p>
           </div>
         </div>
 
-        {/* SEO FAQ Section */}
         <SEOContent
           pageName="theory"
           faqs={[
             {
               question: "What is the Circle of Fifths used for?",
-              answer: "The Circle of Fifths is a fundamental tool in music theory used to visualize the relationships between the 12 semi-tones of the chromatic scale, their corresponding key signatures, and the associated major and minor keys. It helps musicians understand modulation, chord progressions, and harmonic structure."
+              answer: "The Circle of Fifths is a fundamental tool in music theory used to visualize the relationships between the 12 semi-tones of the chromatic scale, their corresponding key signatures, and the associated major and minor keys."
             },
             {
               question: "How do I use this interactive Circle of Fifths?",
-              answer: "Click on any key in the circle to see its primary chords (I, IV, V, vi, ii, iii). It's designed to help you quickly find chords that sound good together when composing or transposing music."
+              answer: "Click on any key in the circle to see its primary chords (I, IV, V, vi, ii, iii). It's designed to help you quickly find chords that sound good together."
             },
             {
               question: "What are secondary dominants?",
-              answer: "Secondary dominants are chords that function as the dominant (V) of a chord other than the tonic. Our tool helps you visualize these relationships by showing the 'V of V' positions within any selected key."
+              answer: "Secondary dominants are chords that function as the dominant (V) of a chord other than the tonic. Our tool helps you visualize these relationships."
             },
             {
               question: "Is this tool suitable for beginners?",
-              answer: "Yes! While the Circle of Fifths can seem complex at first, our interactive lab makes it easy to see how keys are related by the number of sharps and flats. It's a great companion for students learning music theory."
+              answer: "Yes! While the Circle of Fifths can seem complex at first, our interactive lab makes it easy to see how keys are related."
             }
           ]}
         />

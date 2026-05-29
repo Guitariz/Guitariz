@@ -19,6 +19,8 @@ import {
     Split,
     Sparkles,
     Github,
+    Sun,
+    Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
@@ -49,7 +51,7 @@ const menuCategories: MenuCategory[] = [
     {
         title: "Instruments",
         items: [
-            { label: "Fretboard", icon: Grid3X3, href: "/fretboard", description: "Interactive guitar neck & piano" },
+            { label: "Fretboard", icon: Guitar, href: "/fretboard", description: "Interactive guitar neck & piano" },
             { label: "Tuner", icon: Guitar, href: "/tuner", description: "Chromatic tuner with cent precision" },
             { label: "Metronome", icon: Clock, href: "/metronome", description: "High-precision timing engine" },
             { label: "Jam Studio", icon: Music, href: "/jam", description: "Loop chord progressions & solo" },
@@ -67,8 +69,6 @@ const menuCategories: MenuCategory[] = [
 ];
 
 const allItems = menuCategories.flatMap(c => c.items);
-
-// Flat item index for keyboard navigation
 const flatItems = [{ label: "Home", icon: Home, href: "/", description: "Dashboard" }, ...allItems];
 
 export const GlobalMenu = () => {
@@ -77,16 +77,39 @@ export const GlobalMenu = () => {
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const location = useLocation();
     const { isInstalled, isInstallable, promptInstall } = usePWAInstall();
+    
+    // Theme state - true = light mode, false = dark mode
+    const [isLightMode, setIsLightMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'light') return true;
+        if (saved === 'dark') return false;
+        return window.matchMedia('(prefers-color-scheme: light)').matches;
+    });
+
+    // Apply theme class to html element
+    useEffect(() => {
+        if (isLightMode) {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            localStorage.setItem('theme', 'dark');
+        }
+    }, [isLightMode]);
+
+    const toggleTheme = () => {
+        setIsLightMode(!isLightMode);
+    };
 
     const close = useCallback(() => {
         setIsOpen(false);
         setFocusedIndex(-1);
     }, []);
 
-    // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Prevent opening while typing in an input
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
             if (e.key === "Escape" && isOpen) {
@@ -103,7 +126,6 @@ export const GlobalMenu = () => {
                     setFocusedIndex(prev => (prev - 1 + flatItems.length) % flatItems.length);
                 } else if (e.key === "Enter" && focusedIndex >= 0) {
                     e.preventDefault();
-                    // Trigger navigation via programmatic click on the focused link
                     const link = document.querySelector(`[data-menu-index="${focusedIndex}"]`) as HTMLAnchorElement;
                     link?.click();
                 }
@@ -114,13 +136,11 @@ export const GlobalMenu = () => {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, focusedIndex, close]);
 
-    // Prevent page scroll (including Lenis) when menu is open
     useEffect(() => {
         if (!isOpen) return;
 
         document.body.style.overflow = "hidden";
 
-        // Stop wheel/touch from reaching Lenis
         const stopPropagation = (e: Event) => {
             e.stopPropagation();
         };
@@ -143,24 +163,43 @@ export const GlobalMenu = () => {
 
     return (
         <>
-            {/* Floating Menu Button */}
-            <motion.button
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={() => setIsOpen(true)}
-                className="fixed top-5 right-5 z-[90] w-12 h-12 bg-[#111]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
-                aria-label="Open navigation menu"
-            >
-                <Menu className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
-            </motion.button>
+            {/* Floating Buttons Container */}
+            <div className="fixed top-5 right-5 z-[90] flex items-center gap-3">
+                {/* Theme Toggle Button - Sun for Light mode, Moon for Dark mode */}
+                <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={toggleTheme}
+                    className="w-12 h-12 bg-[#111]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
+                    aria-label="Toggle theme"
+                >
+                    {isLightMode ? (
+                        <Sun className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                    ) : (
+                        <Moon className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                    )}
+                </motion.button>
+
+                {/* Main Menu Button */}
+                <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={() => setIsOpen(true)}
+                    className="w-12 h-12 bg-[#111]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
+                    aria-label="Open navigation menu"
+                >
+                    <Menu className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                </motion.button>
+            </div>
 
             {/* Full-Screen Overlay */}
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop with blur */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -170,7 +209,6 @@ export const GlobalMenu = () => {
                             onClick={close}
                         />
 
-                        {/* Menu Panel - Slide from right */}
                         <motion.div
                             initial={{ x: "100%", opacity: 0.5 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -179,25 +217,16 @@ export const GlobalMenu = () => {
                             className="fixed top-0 right-0 h-full w-[420px] max-w-[92vw] z-[101] flex flex-col overscroll-contain"
                             id="global-menu-panel"
                         >
-                            {/* Glass panel background */}
                             <div className="absolute inset-0 bg-[#070707]/95 backdrop-blur-2xl border-l border-white/[0.06]" />
-                            {/* Subtle top gradient accent */}
                             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                            {/* Ambient glow */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
                             <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-500/[0.03] rounded-full blur-[80px] pointer-events-none" />
 
-                            {/* Content */}
                             <div className="relative z-10 flex flex-col h-full min-h-0">
-                                {/* Header */}
                                 <div className="flex items-center justify-between px-6 py-5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-white/10 to-white/[0.03] border border-white/[0.08] flex items-center justify-center overflow-hidden">
-                                            <img
-                                                src="/logo.png"
-                                                alt="Guitariz"
-                                                className="w-6 h-6 rounded-md"
-                                            />
+                                            <img src="/logo.png" alt="Guitariz" className="w-6 h-6 rounded-md" />
                                         </div>
                                         <div>
                                             <span className="text-sm font-semibold text-white tracking-tight">Guitariz</span>
@@ -215,12 +244,9 @@ export const GlobalMenu = () => {
                                     </motion.button>
                                 </div>
 
-                                {/* Divider */}
                                 <div className="mx-6 h-[1px] bg-gradient-to-r from-white/[0.06] via-white/[0.04] to-transparent" />
 
-                                {/* Scrollable Nav */}
-                                <nav className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 py-4" aria-label="Main navigation">
-                                    {/* Home Link */}
+                                <nav className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-4 py-4">
                                     <motion.div
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
@@ -259,7 +285,6 @@ export const GlobalMenu = () => {
                                         </Link>
                                     </motion.div>
 
-                                    {/* Categories */}
                                     {menuCategories.map((category, catIdx) => (
                                         <div key={category.title} className="mt-5">
                                             <motion.div
@@ -334,12 +359,9 @@ export const GlobalMenu = () => {
                                     ))}
                                 </nav>
 
-                                {/* Footer */}
                                 <div className="relative px-6 py-5 space-y-3 border-t border-white/[0.04]">
-                                    {/* Subtle glow at bottom */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
 
-                                    {/* Install / Installed */}
                                     {!isInstalled && (
                                         <motion.button
                                             whileHover={{ scale: 1.01 }}
@@ -353,7 +375,6 @@ export const GlobalMenu = () => {
                                             }}
                                             className="relative w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl transition-all overflow-hidden group"
                                         >
-                                            {/* Button gradient background */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white/[0.08] to-white/[0.04] border border-white/[0.1] rounded-xl group-hover:from-white/[0.12] group-hover:to-white/[0.06] transition-all" />
                                             <Download className={cn("w-4 h-4 text-white/80 relative z-10", isInstallable && "animate-bounce")} />
                                             <span className="text-sm font-semibold text-white/90 relative z-10">Install App</span>
@@ -367,7 +388,6 @@ export const GlobalMenu = () => {
                                         </div>
                                     )}
 
-                                    {/* Bottom bar: version + links */}
                                     <div className="flex items-center justify-between relative z-10">
                                         <div className="flex items-center gap-1.5">
                                             <Sparkles className="w-3 h-3 text-white/15" />
@@ -390,7 +410,6 @@ export const GlobalMenu = () => {
                 )}
             </AnimatePresence>
 
-            {/* Install Guide Dialog */}
             <InstallGuide isOpen={showInstallGuide} onClose={() => setShowInstallGuide(false)} />
         </>
     );

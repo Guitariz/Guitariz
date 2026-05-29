@@ -6,8 +6,7 @@ import { Disc } from "lucide-react";
 const JamPage = () => {
     usePageMetadata({
         title: "Jam Studio - Chord Progression Player | Guitariz",
-        description:
-            "Practice soloing over looping chord progressions. Pick chords, set BPM, and improvise with scale suggestions. Free online backing track generator for guitar and piano.",
+        description: "Practice soloing over looping chord progressions. Pick chords, set BPM, and improvise with scale suggestions. Free online backing track generator for guitar and piano.",
         canonicalUrl: "https://guitariz.studio/jam",
         ogImage: "https://guitariz.studio/logo.png",
         ogType: "website",
@@ -17,17 +16,15 @@ const JamPage = () => {
             name: "Guitariz Jam Studio",
             applicationCategory: "MusicApplication",
             operatingSystem: "Web",
-            description:
-                "Free chord progression player and backing track generator for improvisation practice.",
+            description: "Free chord progression player and backing track generator for improvisation practice.",
             url: "https://guitariz.studio/jam",
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
         },
     });
 
     return (
-        <div className="min-h-screen bg-transparent relative overflow-hidden selection:bg-white/10">
+        <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
             <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
-                {/* Breadcrumb */}
                 <Breadcrumb
                     items={[
                         { name: "Home", url: "https://guitariz.studio/" },
@@ -46,7 +43,7 @@ const JamPage = () => {
                         </div>
 
                         <header className="space-y-2">
-                            <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-white font-display">
+                            <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-foreground font-display">
                                 Jam{" "}
                                 <span className="text-muted-foreground font-thin italic">
                                     Studio
@@ -54,67 +51,54 @@ const JamPage = () => {
                             </h1>
                             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
                                 Build a chord progression, hit play, and{" "}
-                                <span className="text-white/80">solo over the loop</span>.
+                                <span className="text-foreground/80">solo over the loop</span>.
                                 Scale hints show you what to play.
                             </p>
                         </header>
                     </div>
                 </div>
 
-                <div className="glass-card rounded-[2rem] border border-white/5 bg-[#0a0a0a]/80 shadow-2xl overflow-visible p-4 md:p-8">
+                <div className="glass-card rounded-[2rem] border border-border bg-card/80 shadow-2xl overflow-visible p-4 md:p-8">
                     <ChordProgressionPlayer />
                 </div>
 
-                {/* Feature cards */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+                    <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
                         <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-primary transition-colors" />
-                        <h3 className="text-white font-medium mb-1">Instant Backing</h3>
-                        <p className="text-xs text-muted-foreground">
-                            Pick 4 chords and loop them at any tempo for practice.
-                        </p>
+                        <h3 className="text-foreground font-medium mb-1">Instant Backing</h3>
+                        <p className="text-xs text-muted-foreground">Pick 4 chords and loop them at any tempo for practice.</p>
                     </div>
-                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+                    <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
                         <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-secondary transition-colors" />
-                        <h3 className="text-white font-medium mb-1">8 Genre Presets</h3>
-                        <p className="text-xs text-muted-foreground">
-                            Pop, Blues, Jazz, Rock, Lofi, Folk, and more — one click to load.
-                        </p>
+                        <h3 className="text-foreground font-medium mb-1">8 Genre Presets</h3>
+                        <p className="text-xs text-muted-foreground">Pop, Blues, Jazz, Rock, Lofi, Folk, and more — one click to load.</p>
                     </div>
-                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
+                    <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
                         <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-accent transition-colors" />
-                        <h3 className="text-white font-medium mb-1">Scale Hints</h3>
-                        <p className="text-xs text-muted-foreground">
-                            Shows compatible scales so you always know what notes to play.
-                        </p>
+                        <h3 className="text-foreground font-medium mb-1">Scale Hints</h3>
+                        <p className="text-xs text-muted-foreground">Shows compatible scales so you always know what notes to play.</p>
                     </div>
-                    <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all">
-                        <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-white transition-colors" />
-                        <h3 className="text-white font-medium mb-1">Piano & Pad</h3>
-                        <p className="text-xs text-muted-foreground">
-                            Switch between warm piano and ambient pad sounds instantly.
-                        </p>
+                    <div className="p-6 rounded-2xl bg-card/30 border border-border group hover:bg-card/50 transition-all">
+                        <Disc className="w-5 h-5 text-muted-foreground mb-3 group-hover:text-foreground transition-colors" />
+                        <h3 className="text-foreground font-medium mb-1">Piano & Pad</h3>
+                        <p className="text-xs text-muted-foreground">Switch between warm piano and ambient pad sounds instantly.</p>
                     </div>
                 </div>
 
-                {/* SEO FAQ */}
                 <SEOContent
                     pageName="jam"
                     faqs={[
                         {
                             question: "How do I use the Jam Studio?",
-                            answer:
-                                "Click any chord slot to select a root note and chord quality (Major, Minor, 7th, etc.), or click a preset progression to load one instantly. Set your BPM, then hit Play to start the looping backing track. Use the scale hints to know which notes to solo with.",
+                            answer: "Click any chord slot to select a root note and chord quality, or click a preset progression to load one instantly. Set your BPM, then hit Play to start the looping backing track."
                         },
                         {
                             question: "Can I change the tempo while playing?",
-                            answer:
-                                "Yes! Drag the BPM slider while the progression is playing and it will restart at the new tempo automatically.",
+                            answer: "Yes! Drag the BPM slider while the progression is playing and it will restart at the new tempo automatically."
                         },
                         {
                             question: "What are the scale hints?",
-                            answer:
-                                "Scale hints analyze the chord roots in your progression and suggest scales that contain all those notes. This tells you which scales are safe to solo with over your progression.",
+                            answer: "Scale hints analyze the chord roots in your progression and suggest scales that contain all those notes."
                         },
                     ]}
                 />
