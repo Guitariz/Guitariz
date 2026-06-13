@@ -325,17 +325,17 @@ const CircleOfFifths = () => {
                   { id: "harmony", icon: Wand2 },
                   { id: "progress", icon: Music2 },
                 ].map(({ id, icon: Icon }) => (
-                  <TabsTrigger 
-                    key={id} 
-                    value={id} 
-                    className="flex-1 py-2 rounded-lg data-[state=active]:bg-white/10 data-[state=active]:text-white text-muted-foreground transition-all"
+                  <TabsTrigger
+                    key={id}
+                    value={id}
+                    className="flex-1 py-2 rounded-lg data-[state=active]:text-white text-muted-foreground"
                   >
                     <Icon className="w-4 h-4" />
                   </TabsTrigger>
                 ))}
               </TabsList>
 
-              <TabsContent value="overview" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <TabsContent value="overview" className="mt-0 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-white/[0.03] border border-white/5">
                     <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Relative Minor</div>
@@ -386,7 +386,7 @@ const CircleOfFifths = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="scales" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <TabsContent value="scales" className="mt-0 space-y-6">
                 <div className="space-y-6">
                   <div>
                     <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 px-1">Major Scale</div>
@@ -411,7 +411,7 @@ const CircleOfFifths = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="harmony" className="mt-0 space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <TabsContent value="harmony" className="mt-0 space-y-6">
                 <div className="space-y-3">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-widest px-1">
                     Chords that "belong" in this key
@@ -553,7 +553,7 @@ const CircleOfFifths = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="progress" className="mt-0 space-y-4 animate-in fade-in slide-in-from-bottom-2">
+              <TabsContent value="progress" className="mt-0 space-y-4">
                 {commonProgressions.map((p, i) => (
                   <div
                     key={i}
