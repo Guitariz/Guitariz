@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { InstallGuide } from "@/components/InstallGuide";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MenuItem {
     label: string;
@@ -77,30 +78,11 @@ export const GlobalMenu = () => {
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const location = useLocation();
     const { isInstalled, isInstallable, promptInstall } = usePWAInstall();
-    
-    // Theme state - true = light mode, false = dark mode
-    const [isLightMode, setIsLightMode] = useState(() => {
-        const saved = localStorage.getItem('theme');
-        if (saved === 'light') return true;
-        if (saved === 'dark') return false;
-        return window.matchMedia('(prefers-color-scheme: light)').matches;
-    });
-
-    // Apply theme class to html element
-    useEffect(() => {
-        if (isLightMode) {
-            document.documentElement.classList.add('light');
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        } else {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-            localStorage.setItem('theme', 'dark');
-        }
-    }, [isLightMode]);
+    const { resolvedTheme, setTheme } = useTheme();
+    const isLightMode = resolvedTheme === "light";
 
     const toggleTheme = () => {
-        setIsLightMode(!isLightMode);
+        setTheme(isLightMode ? "dark" : "light");
     };
 
     const close = useCallback(() => {

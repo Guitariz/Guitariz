@@ -2,13 +2,15 @@ import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 describe('App Component', () => {
     it('renders without crashing', () => {
-        // Wrap in MemoryRouter if App depends on routing context
         render(
             <MemoryRouter>
-                <App />
+                <ThemeProvider>
+                    <App />
+                </ThemeProvider>
             </MemoryRouter>
         );
         // You can add more specific assertions based on your App's content
