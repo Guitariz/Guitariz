@@ -237,7 +237,9 @@
 .light .bg-\[\#050505\],
 .light .bg-\[\#030303\],
 .light .bg-\[\#0a0a0a\],
-.light .bg-\[\#080808\] {
+.light .bg-\[\#080808\],
+.light .bg-\[\#0e0e0e\],
+.light .bg-\[\#151515\] {
   background-color: #ffffff !important;
 }
 
@@ -282,18 +284,6 @@
   background-color: #333333 !important;
 }
 
-/* Fix all button text */
-.light button,
-.light .button,
-.light [role="button"] {
-  color: #000000 !important;
-}
-
-.light button span,
-.light button .text-white {
-  color: inherit !important;
-}
-
 /* Fix outline buttons */
 .light button.bg-transparent,
 .light button[class*="outline"] {
@@ -326,11 +316,6 @@
   color: #000000 !important;
 }
 
-/* Fix SVG icons */
-.light svg {
-  color: #000000 !important;
-}
-
 /* Fix radial gradient background */
 .light .bg-\[radial-gradient\(circle_at_center\,
 transparent_0\%\2c rgba\(0\2c 0\2c 0\2c 0\.4\)_100\%\)\] {
@@ -343,24 +328,14 @@ transparent_0\%\2c rgba\(0\2c 0\2c 0\2c 0\.4\)_100\%\)\] {
   border-top-color: rgba(0, 0, 0, 0.05) !important;
 }
 
-/* Fix cards */
-.light .rounded-xl,
-.light .rounded-2xl,
-.light .rounded-lg {
-  background-color: #ffffff;
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-/* Ensure all text is visible */
-.light p,
-.light h1,
-.light h2,
-.light h3,
-.light h4,
-.light h5,
-.light h6,
-.light span:not([class*="text-primary"]),
-.light div:not([class*="bg-"]):not([class*="border"]) {
+/* Keep page copy readable without overriding component accent colors. */
+.light p:not([class*="text-"]),
+.light h1:not([class*="text-"]),
+.light h2:not([class*="text-"]),
+.light h3:not([class*="text-"]),
+.light h4:not([class*="text-"]),
+.light h5:not([class*="text-"]),
+.light h6:not([class*="text-"]) {
   color: #000000 !important;
 }
 

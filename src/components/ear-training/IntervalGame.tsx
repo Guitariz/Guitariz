@@ -127,28 +127,28 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
         >
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <Button variant="ghost" className="text-muted-foreground hover:text-white" onClick={onExit}>
+                <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onExit}>
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back
                 </Button>
 
                 {hasStarted && (
-                    <div className="flex items-center gap-6 bg-white/5 px-6 py-2 rounded-full border border-white/5 backdrop-blur-md">
+                    <div className="flex items-center gap-6 bg-card px-6 py-2 rounded-full border border-border backdrop-blur-md shadow-sm">
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Score</span>
-                            <span className="text-xl font-mono font-bold text-white">{score}</span>
+                            <span className="text-xl font-mono font-bold text-foreground">{score}</span>
                         </div>
 
-                        <div className="w-px h-8 bg-white/10" />
+                        <div className="w-px h-8 bg-border" />
 
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Streak</span>
-                            <span className={cn("text-xl font-mono font-bold", streak > 2 ? "text-amber-400" : "text-white")}>
+                            <span className={cn("text-xl font-mono font-bold", streak > 2 ? "text-amber-400" : "text-foreground")}>
                                 {streak} {streak > 2 && "🔥"}
                             </span>
                         </div>
 
-                        <div className="w-px h-8 bg-white/10" />
+                        <div className="w-px h-8 bg-border" />
 
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Level</span>
@@ -163,9 +163,9 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-[#0e0e0e] rounded-[3rem] border border-white/5 p-12 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden"
+                    className="bg-card rounded-[3rem] border border-border p-12 flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden shadow-2xl"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent" />
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
 
                     <div className="relative z-10 flex flex-col items-center text-center">
@@ -173,11 +173,11 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                             <Zap className="w-12 h-12 text-emerald-400" />
                         </div>
 
-                        <h2 className="text-4xl font-bold text-white mb-4">Interval Training</h2>
-                        <p className="text-neutral-400 mb-2 max-w-md leading-relaxed">
+                        <h2 className="text-4xl font-bold text-foreground mb-4">Interval Training</h2>
+                        <p className="text-muted-foreground mb-2 max-w-md leading-relaxed">
                             Train your ear to recognize the distance between two notes.
                         </p>
-                        <p className="text-neutral-500 text-sm mb-8">
+                        <p className="text-muted-foreground text-sm mb-8">
                             Choose your difficulty level and start training!
                         </p>
 
@@ -193,14 +193,14 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                                             "relative p-4 rounded-2xl border-2 transition-all text-left",
                                             isSelected
                                                 ? "border-emerald-500 bg-emerald-500/10"
-                                                : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                                                : "border-border bg-background/70 hover:border-foreground/20 hover:bg-accent"
                                         )}
                                     >
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className={cn("text-2xl font-mono font-bold", config.color)}>L{lvl}</span>
-                                            <span className="text-white font-semibold">{config.name}</span>
+                                            <span className="text-foreground font-semibold">{config.name}</span>
                                         </div>
-                                        <p className="text-neutral-500 text-sm">
+                                        <p className="text-muted-foreground text-sm">
                                             {config.intervals.length} intervals
                                         </p>
                                         {isSelected && (
@@ -228,8 +228,9 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                 </motion.div>
             ) : (
                 /* Game Board */
-                <div className="bg-[#0e0e0e] rounded-[3rem] border border-white/5 p-8 md:p-12 min-h-[500px] flex flex-col items-center relative overflow-hidden shadow-2xl">
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+                <div className="bg-card rounded-[3rem] border border-border p-8 md:p-12 min-h-[500px] flex flex-col items-center relative overflow-hidden shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5" />
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay" />
 
                     {/* Feedback Flash */}
                     <AnimatePresence>
@@ -248,7 +249,7 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                     </AnimatePresence>
 
                     {/* Round Counter */}
-                    <div className="absolute top-6 left-6 text-neutral-600 text-sm font-mono">
+                    <div className="absolute top-6 left-6 text-muted-foreground text-sm font-mono">
                         Round {roundCount}
                     </div>
 
@@ -267,10 +268,10 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                                 "w-36 h-36 rounded-full border-4 flex items-center justify-center transition-all shadow-[0_0_50px_rgba(0,0,0,0.5)] mb-6",
                                 isPlaying
                                     ? "border-emerald-400/50 bg-emerald-400/10 scale-105"
-                                    : "border-white/10 bg-[#151515] hover:border-white/30"
+                                    : "border-border bg-background hover:border-foreground/30"
                             )}
                         >
-                            <Volume2 className={cn("w-14 h-14 transition-all duration-300", isPlaying ? "text-emerald-400 animate-pulse" : "text-white/80")} />
+                            <Volume2 className={cn("w-14 h-14 transition-all duration-300", isPlaying ? "text-emerald-400 animate-pulse" : "text-foreground/80")} />
                         </motion.button>
 
                         <div className="h-8 flex items-center justify-center">
@@ -285,7 +286,7 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                                     <span>It was: {targetInterval?.label}</span>
                                 </motion.div>
                             ) : (
-                                <span className="text-white/30 text-sm font-medium uppercase tracking-widest">Tap to replay</span>
+                                <span className="text-muted-foreground text-sm font-medium uppercase tracking-widest">Tap to replay</span>
                             )}
                         </div>
                     </div>
@@ -296,7 +297,7 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                             const isSelected = lastGuessed === interval.label;
                             const isTarget = targetInterval?.label === interval.label;
 
-                            let variantClass = "border-white/10 bg-white/[0.03] hover:bg-white/10 hover:border-emerald-500/30 hover:text-white text-neutral-400";
+                            let variantClass = "border-border bg-background text-muted-foreground hover:bg-accent hover:border-emerald-500/30 hover:text-foreground";
 
                             if (feedback === "CORRECT" && isTarget) {
                                 variantClass = "border-emerald-500 bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.4)]";
@@ -326,7 +327,7 @@ export const IntervalGame = ({ onExit }: { onExit: () => void }) => {
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-8 z-10"
                         >
-                            <Button onClick={generateRound} className="px-8 rounded-full bg-white/10 hover:bg-white/20">
+                            <Button onClick={generateRound} variant="secondary" className="px-8 rounded-full">
                                 Next Round <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                             </Button>
                         </motion.div>

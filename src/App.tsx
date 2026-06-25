@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { GlobalMenu } from "@/components/GlobalMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { MusicCursorTrail } from "@/components/MusicCursorTrail";
 import Lenis from "lenis";
 
 const Index = lazy(() => import("./pages/Index"));
@@ -87,7 +88,9 @@ const App = () => {
         <InstallPrompt />
 
         {/* Premium Deep Black Foundation */}
-        <div className="fixed inset-0 z-[-1] bg-[#020202]" />
+        <div className="fixed inset-0 z-[-1] bg-background" />
+
+        <MusicCursorTrail />
 
         <Toaster />
         <Sonner />

@@ -72,6 +72,17 @@ const EarTrainingPage = () => {
         setActiveGame(null);
     };
 
+    const returnToHubButton = (
+        <button
+            type="button"
+            onClick={handleExitGame}
+            className="mt-5 inline-flex h-12 min-w-40 items-center justify-center rounded-full px-7 text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            style={{ backgroundColor: "#000000", color: "#ffffff" }}
+        >
+            Back to Hub
+        </button>
+    );
+
     return (
         <div className="min-h-screen bg-background relative overflow-hidden selection:bg-emerald-500/30">
             <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
@@ -130,7 +141,7 @@ const EarTrainingPage = () => {
                                         onClick={() => setActiveGame(tab.id as GameMode)}
                                         className={cn(
                                             "relative px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all",
-                                            isActive ? "text-black" : "text-muted-foreground hover:text-foreground"
+                                            isActive ? "!text-background [&_svg]:!text-background" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
                                         {isActive && (
@@ -140,8 +151,8 @@ const EarTrainingPage = () => {
                                                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                             />
                                         )}
-                                        <tab.icon className={cn("w-4 h-4 relative z-10", isActive && "text-background")} />
-                                        <span className="relative z-10">{tab.label}</span>
+                                        <tab.icon className="w-4 h-4 relative z-10" />
+                                        <span className="relative z-10 text-current">{tab.label}</span>
                                     </button>
                                 );
                             })}
@@ -196,21 +207,21 @@ const EarTrainingPage = () => {
                     {activeGame === "CHORDS" && (
                         <motion.div key="game-chords" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
                             <h2 className="text-3xl text-foreground">Chord Crusher Coming Soon</h2>
-                            <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
+                            {returnToHubButton}
                         </motion.div>
                     )}
 
                     {activeGame === "FRETBOARD" && (
                         <motion.div key="game-fretboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
                             <h2 className="text-3xl text-foreground">Fretboard Hunter Coming Soon</h2>
-                            <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
+                            {returnToHubButton}
                         </motion.div>
                     )}
 
                     {activeGame === "PERFECT_PITCH" && (
                         <motion.div key="game-pitch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20">
                             <h2 className="text-3xl text-foreground">Perfect Pitch Training Coming Soon</h2>
-                            <Button className="mt-4" onClick={handleExitGame}>Back to Hub</Button>
+                            {returnToHubButton}
                         </motion.div>
                     )}
                 </AnimatePresence>
