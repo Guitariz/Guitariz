@@ -214,10 +214,10 @@ export const GlobalMenu = () => {
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: "100%", opacity: 0 }}
                             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                            className="fixed top-0 right-0 h-full w-[420px] max-w-[92vw] z-[101] flex flex-col overscroll-contain"
+                            className="guitariz-menu-panel fixed top-0 right-0 h-full w-[420px] max-w-[92vw] z-[101] flex flex-col overscroll-contain"
                             id="global-menu-panel"
                         >
-                            <div className="absolute inset-0 bg-[#070707]/95 backdrop-blur-2xl border-l border-white/[0.06]" />
+                            <div className="guitariz-menu-surface absolute inset-0 bg-[#070707]/95 backdrop-blur-2xl border-l border-white/[0.06]" />
                             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/[0.03] rounded-full blur-[100px] pointer-events-none" />
                             <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-500/[0.03] rounded-full blur-[80px] pointer-events-none" />
@@ -225,19 +225,19 @@ export const GlobalMenu = () => {
                             <div className="relative z-10 flex flex-col h-full min-h-0">
                                 <div className="flex items-center justify-between px-6 py-5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-white/10 to-white/[0.03] border border-white/[0.08] flex items-center justify-center overflow-hidden">
+                                        <div className="guitariz-menu-logo w-9 h-9 rounded-xl bg-gradient-to-br from-white/10 to-white/[0.03] border border-white/[0.08] flex items-center justify-center overflow-hidden">
                                             <img src="/logo.png" alt="Guitariz" className="w-6 h-6 rounded-md" />
                                         </div>
                                         <div>
-                                            <span className="text-sm font-semibold text-white tracking-tight">Guitariz</span>
-                                            <span className="text-[10px] text-white/30 ml-1.5 font-medium">Studio</span>
+                                            <span className="guitariz-menu-brand text-sm font-semibold text-white tracking-tight">Guitariz</span>
+                                            <span className="guitariz-menu-kicker text-[10px] text-white/30 ml-1.5 font-medium">Studio</span>
                                         </div>
                                     </div>
                                     <motion.button
                                         whileHover={{ scale: 1.1, rotate: 90 }}
                                         whileTap={{ scale: 0.9 }}
                                         onClick={close}
-                                        className="w-9 h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center transition-colors border border-white/[0.06]"
+                                        className="guitariz-menu-close w-9 h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center transition-colors border border-white/[0.06]"
                                         aria-label="Close menu"
                                     >
                                         <X className="w-4 h-4 text-white/60" />
@@ -257,24 +257,24 @@ export const GlobalMenu = () => {
                                             onClick={close}
                                             data-menu-index={0}
                                             className={cn(
-                                                "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all group relative",
+                                                "guitariz-menu-link flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all group relative",
                                                 focusedIndex === 0 && "ring-1 ring-white/20",
                                                 location.pathname === "/"
-                                                    ? "bg-white/[0.06] text-white"
+                                                    ? "is-active bg-white/[0.06] text-white"
                                                     : "text-white/50 hover:text-white hover:bg-white/[0.04]"
                                             )}
                                         >
                                             <div className={cn(
-                                                "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
+                                                "guitariz-menu-icon w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
                                                 location.pathname === "/"
-                                                    ? "bg-white/10 border border-white/10"
+                                                    ? "is-active bg-white/10 border border-white/10"
                                                     : "bg-white/[0.03] border border-white/[0.05] group-hover:bg-white/[0.06] group-hover:border-white/[0.1]"
                                             )}>
                                                 <Home className="w-4 h-4" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-sm font-medium">Home</span>
-                                                <p className="text-[11px] text-white/30 truncate">Dashboard & overview</p>
+                                                <p className="guitariz-menu-description text-[11px] text-white/30 truncate">Dashboard & overview</p>
                                             </div>
                                             {location.pathname === "/" && (
                                                 <motion.div
@@ -291,7 +291,7 @@ export const GlobalMenu = () => {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: 0.1 + catIdx * 0.05 }}
-                                                className="flex items-center gap-2 px-4 mb-2"
+                                                    className="guitariz-menu-category flex items-center gap-2 px-4 mb-2"
                                             >
                                                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/25">
                                                     {category.title}
@@ -318,17 +318,17 @@ export const GlobalMenu = () => {
                                                                 onClick={close}
                                                                 data-menu-index={currentFlatIndex}
                                                                 className={cn(
-                                                                    "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all group relative",
+                                                                    "guitariz-menu-link flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all group relative",
                                                                     isFocused && "ring-1 ring-white/20",
                                                                     isActive
-                                                                        ? "bg-white/[0.06] text-white"
+                                                                        ? "is-active bg-white/[0.06] text-white"
                                                                         : "text-white/50 hover:text-white hover:bg-white/[0.04]"
                                                                 )}
                                                             >
                                                                 <div className={cn(
-                                                                    "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
+                                                                    "guitariz-menu-icon w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
                                                                     isActive
-                                                                        ? "bg-emerald-500/15 border border-emerald-500/20 text-emerald-400"
+                                                                        ? "is-active bg-emerald-500/15 border border-emerald-500/20 text-emerald-400"
                                                                         : "bg-white/[0.03] border border-white/[0.05] group-hover:bg-white/[0.06] group-hover:border-white/[0.1]"
                                                                 )}>
                                                                     <item.icon className="w-4 h-4" />
@@ -337,12 +337,12 @@ export const GlobalMenu = () => {
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-sm font-medium">{item.label}</span>
                                                                         {item.badge && (
-                                                                            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-gradient-to-r from-violet-500/20 to-blue-500/20 text-violet-300 border border-violet-500/20">
+                                                                            <span className="guitariz-menu-badge px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-gradient-to-r from-violet-500/20 to-blue-500/20 text-violet-300 border border-violet-500/20">
                                                                                 {item.badge}
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[11px] text-white/30 truncate">{item.description}</p>
+                                                                    <p className="guitariz-menu-description text-[11px] text-white/30 truncate">{item.description}</p>
                                                                 </div>
                                                                 {isActive && (
                                                                     <motion.div

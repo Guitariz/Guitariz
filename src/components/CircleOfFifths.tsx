@@ -183,7 +183,7 @@ const CircleOfFifths = () => {
   }, [selectedKeyData]);
 
   return (
-    <div className="w-full">
+    <div className="w-full theory-circle">
       <div className="grid lg:grid-cols-12 gap-12">
         {/* Circle Visualization */}
         <div className="lg:col-span-7 flex flex-col">
@@ -194,14 +194,15 @@ const CircleOfFifths = () => {
             </div>
             <button 
               onClick={() => setShowRelativeMinor(!showRelativeMinor)}
-              className="text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-2"
+              className="theory-minor-toggle text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-2"
             >
               <div className={cn(
-                "w-8 h-4 rounded-full transition-colors relative",
+                "theory-minor-track w-8 h-4 rounded-full transition-colors relative",
+                showRelativeMinor && "is-on",
                 showRelativeMinor ? "bg-white/20" : "bg-white/5"
               )}>
                 <div className={cn(
-                  "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                  "theory-minor-thumb absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
                   showRelativeMinor ? "left-4" : "left-0.5"
                 )} />
               </div>
@@ -215,17 +216,17 @@ const CircleOfFifths = () => {
             <div className="absolute inset-[20%] rounded-full border border-white/5 pointer-events-none" />
             
             {/* Circle labels */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
+            <div className="theory-circle-label theory-circle-label-top absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
               Sharps →
             </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
+            <div className="theory-circle-label theory-circle-label-bottom absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground uppercase tracking-widest">
               ← Flats
             </div>
             
             {/* Center Display with key signature info */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div 
-                className="w-36 h-36 rounded-full bg-white/[0.04] border-2 border-white/10 backdrop-blur-xl flex flex-col items-center justify-center transition-all cursor-pointer hover:bg-white/[0.08]"
+                className="theory-center-key w-36 h-36 rounded-full bg-white/[0.04] border-2 border-white/10 backdrop-blur-xl flex flex-col items-center justify-center transition-all cursor-pointer hover:bg-white/[0.08]"
                 onClick={() => setSelectedKey(null)}
               >
                 <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Selected Key</div>
@@ -256,16 +257,16 @@ const CircleOfFifths = () => {
               return (
                 <button
                   key={k.note}
-                  className="absolute group/key"
+                  className="theory-key-button absolute group/key"
                   style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
                   onClick={() => setSelectedKey(k.note)}
                 >
                   <div className={cn(
-                    "w-14 h-14 rounded-xl flex flex-col items-center justify-center transition-all duration-300 relative",
+                    "theory-key-tile w-14 h-14 rounded-xl flex flex-col items-center justify-center transition-all duration-300 relative",
                     isActive 
-                      ? "bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-125 z-10" 
+                      ? "is-active bg-white text-black shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-125 z-10" 
                       : isRelated
-                      ? "bg-blue-500/20 border-2 border-blue-400/40 text-white hover:border-blue-300 scale-105"
+                      ? "is-related bg-blue-500/20 border-2 border-blue-400/40 text-white hover:border-blue-300 scale-105"
                       : "bg-white/[0.02] border border-white/5 text-muted-foreground hover:border-white/20 hover:text-white hover:scale-110"
                   )}>
                     <span className="text-base font-semibold">{k.note}</span>
