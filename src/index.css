@@ -372,6 +372,168 @@ transparent_0\%\2c rgba\(0\2c 0\2c 0\2c 0\.4\)_100\%\)\] {
   color: transparent !important;
 }
 
+/* Scoped light-mode fixes for the Theory circle */
+.light .theory-circle .theory-circle-label {
+  color: #4b5563 !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 9999px !important;
+  padding: 0.2rem 0.55rem !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06) !important;
+}
+
+.light .theory-circle .theory-minor-toggle {
+  color: #525252 !important;
+}
+
+.light .theory-circle .theory-minor-toggle:hover {
+  color: #111111 !important;
+}
+
+.light .theory-circle .theory-minor-track {
+  background-color: #e5e7eb !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+.light .theory-circle .theory-minor-track.is-on {
+  background-color: #111111 !important;
+  border-color: #111111 !important;
+}
+
+.light .theory-circle .theory-minor-thumb {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24) !important;
+}
+
+.light .theory-circle .theory-center-key {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08) !important;
+}
+
+.light .theory-circle .theory-center-key:hover {
+  background-color: #f8fafc !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.light .theory-circle .theory-key-tile {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #111111 !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07) !important;
+}
+
+.light .theory-circle .theory-key-tile span {
+  color: inherit !important;
+}
+
+.light .theory-circle .theory-key-button:hover .theory-key-tile,
+.light .theory-circle .theory-key-tile.is-active {
+  background-color: #111111 !important;
+  border-color: #111111 !important;
+  color: #ffffff !important;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18) !important;
+}
+
+.light .theory-circle .theory-key-tile.is-related:not(.is-active) {
+  background-color: #eff6ff !important;
+  border-color: rgba(37, 99, 235, 0.38) !important;
+  color: #1d4ed8 !important;
+}
+
+.light .theory-circle .theory-key-button:hover .theory-key-tile.is-related {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+/* Scoped light-mode fixes for the global navigation menu */
+.light .guitariz-menu-panel .guitariz-menu-surface {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-left-color: rgba(0, 0, 0, 0.1) !important;
+  box-shadow: -24px 0 70px rgba(15, 23, 42, 0.18) !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-brand,
+.light .guitariz-menu-panel .guitariz-menu-link span {
+  color: inherit !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-kicker,
+.light .guitariz-menu-panel .guitariz-menu-description {
+  color: #64748b !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-logo,
+.light .guitariz-menu-panel .guitariz-menu-close,
+.light .guitariz-menu-panel .guitariz-menu-icon {
+  background-color: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  color: #111827 !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-close:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link {
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: #111827 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link:hover {
+  background-color: #f1f5f9 !important;
+  border-color: rgba(15, 23, 42, 0.08) !important;
+  color: #020617 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link:hover .guitariz-menu-icon {
+  background-color: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link.is-active {
+  background-color: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  color: #111827 !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08) !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link.is-active span,
+.light .guitariz-menu-panel .guitariz-menu-link.is-active svg {
+  color: #111827 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link.is-active .guitariz-menu-description {
+  color: #64748b !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link.is-active .guitariz-menu-icon {
+  background-color: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  color: #111827 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-link.is-active .guitariz-menu-icon svg {
+  color: #111827 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-category span {
+  color: #475569 !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-category div {
+  background-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+.light .guitariz-menu-panel .guitariz-menu-badge {
+  background: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
