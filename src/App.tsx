@@ -9,6 +9,8 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { GlobalMenu } from "@/components/GlobalMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import Lenis from "lenis";
+import PostHogPageView from "@/analytics/PageView";
+
 
 const Index = lazy(() => import("./pages/Index"));
 const FretboardPage = lazy(() => import("./pages/FretboardPage"));
@@ -93,6 +95,7 @@ const App = () => {
         <Sonner />
         <ErrorBoundary>
           <AnimatePresence mode="wait">
+            <PostHogPageView />
             <Routes location={location} key={location.pathname}>
               <Route
                 path="/"

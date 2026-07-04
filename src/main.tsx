@@ -5,6 +5,7 @@ import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import "./analytics/posthog";
 
 // Register service worker for PWA
 registerSW({ immediate: true });
