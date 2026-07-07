@@ -45,12 +45,14 @@ export const useChordAnalysis = (
     };
 
     const resolvedKey = computeKey();
+    
+    // Generate unique ID for this request
+    const thisRequestId = ++requestIdRef.current;
 
-    let fileToUpload: File | undefined = file ?? undefined;
-
-    // If we have a cached result passed in props or in IndexedDB, use it
-    (async () => {
+    const run = async () => {
+      // 1. If we have a cached result passed in props, use it immediately and skip fetching
       if (cachedResult && cacheKey) {
+        if (thisRequestId !== requestIdRef.current) return;
         setResult(cachedResult.result);
         setInstrumentalUrl(cachedResult.instrumentalUrl);
         setLoading(false);
@@ -58,10 +60,12 @@ export const useChordAnalysis = (
         return;
       }
 
+      // 2. If we have a cached result in IndexedDB, use it and skip fetching
       if (resolvedKey && typeof indexedDB !== "undefined") {
         try {
           const cached = await getCachedAnalysis(resolvedKey);
           if (cached && !isExpired(cached)) {
+            if (thisRequestId !== requestIdRef.current) return;
             setResult(cached.result as AnalysisResult);
             setInstrumentalUrl(cached.instrumentalUrl);
             setLoading(false);
@@ -73,47 +77,42 @@ export const useChordAnalysis = (
         }
       }
 
-      // If audio Cache Storage has the original file, we can reuse it to avoid re-upload
-      if (resolvedKey && 'caches' in window && file) {
-        try {
-          const audioKey = await computeAudioCacheKey(file);
-          const cachedBlob = await getCachedAudio(audioKey);
-          if (cachedBlob) {
-            // Construct a File so analyzeRemote receives same API
-            const cachedFile = new File([cachedBlob], file.name, { type: cachedBlob.type });
-            fileToUpload = cachedFile as File;
-          }
-        } catch (err) {
-          console.warn('useChordAnalysis: audio cache read error', err);
-        }
-      }
-    })();
+      // Only run analysis when file changes
+      if (!file) return;
 
-    // Only run analysis when file changes
-    if (!file) return;
+      if (thisRequestId !== requestIdRef.current) return;
 
-    // Cancel previous request
-    if (currentXhrRef.current) {
-      currentXhrRef.current.abort();
-      currentXhrRef.current = null;
-    }
-
-    // Generate unique ID for this request
-    const thisRequestId = ++requestIdRef.current;
-
-    const run = async () => {
       try {
         setLoading(true);
         setError(null);
         setInstrumentalUrl(undefined);
         setUploadProgress(0);
 
+        let fileToUpload: File | undefined = file;
+
+        // If audio Cache Storage has the original file, we can reuse it to avoid re-upload
+        if (resolvedKey && 'caches' in window) {
+          try {
+            const audioKey = await computeAudioCacheKey(file);
+            const cachedBlob = await getCachedAudio(audioKey);
+            if (cachedBlob) {
+              // Construct a File so analyzeRemote receives same API
+              const cachedFile = new File([cachedBlob], file.name, { type: cachedBlob.type });
+              fileToUpload = cachedFile as File;
+            }
+          } catch (err) {
+            console.warn('useChordAnalysis: audio cache read error', err);
+          }
+        }
+        
+        if (thisRequestId !== requestIdRef.current) return;
+
         // Prefer remote analysis when a file is available
         if (useRemote && fileToUpload) {
           try {
             const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
             const remote = await analyzeRemote(
-              fileToUpload!,
+              fileToUpload,
               undefined,
               separateVocals,
               useMadmom,
@@ -210,8 +209,13 @@ export const useChordAnalysis = (
 
     run();
 
-    // No cleanup needed - requestId comparison handles stale results
-    return () => {};
+    // Abort any ongoing request if dependencies change or component unmounts
+    return () => {
+      if (currentXhrRef.current) {
+        currentXhrRef.current.abort();
+        currentXhrRef.current = null;
+      }
+    };
   }, [file, useRemote, separateVocals, cacheKey, cachedResult, useMadmom, audioBuffer]);
 
   return { result, loading, error, instrumentalUrl, uploadProgress };
