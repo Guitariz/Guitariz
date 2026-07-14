@@ -390,7 +390,7 @@ export const GlobalMenu = () => {
                                     )}
 
                                     <motion.a
-                                        href="https://buymeacoffee.com/your-username-here"
+                                        href="https://ko-fi.com/abhi9vaidya"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         whileHover={{ scale: 1.01 }}
