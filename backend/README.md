@@ -1,3 +1,12 @@
+---
+title: Guitariz Backend
+emoji: 🎸
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # Chord AI Backend
 
 FastAPI service providing `/api/analyze` for the Guitariz frontend.

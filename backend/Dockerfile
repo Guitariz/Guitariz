@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     dnsutils \
     iputils-ping \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a user to avoid running as root (required by Hugging Face)
@@ -24,21 +25,24 @@ ENV PATH="/home/user/.local/bin:$PATH"
 COPY --chown=user requirements.txt .
 
 # Install CPU-only Torch first (Much smaller download, prevents build timeout)
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir torch==2.2.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install madmom separately with --no-build-isolation to use the installed Cython and numpy
-# RUN pip install --no-cache-dir --no-build-isolation madmom>=0.16.1
+RUN pip install --no-cache-dir "numpy<2.0.0" cython
+RUN pip install --no-cache-dir --no-build-isolation "madmom>=0.16.1"
 
 # Copy the rest of the backend code
 COPY --chown=user . .
 
 # Hugging Face uses port 7860
 ENV PORT=7860
+# Disable Python output buffering so logs show up immediately in HF Spaces
+ENV PYTHONUNBUFFERED=1
 # Preload models at build time (optional - can be done at runtime too)
 # This caches the models in the container image
 RUN python preload_models.py || true
-# Run the application
-CMD ["python", "main.py"]
+# Run the application with -u to force unbuffered stdout
+CMD ["python", "-u", "main.py"]

@@ -15,7 +15,7 @@ interface ChordAIState {
 export const useChordAIStore = create<ChordAIState>((set) => ({
     showSimple: false,
     separateVocals: false,
-    useMadmom: true,
+    useMadmom: false,
     liveChordEnabled: false,
 
     setShowSimple: (showSimple) => set({ showSimple }),

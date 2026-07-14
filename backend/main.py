@@ -21,13 +21,14 @@ from youtube import extract_audio, get_video_info, check_rate_limit, get_remaini
 
 # Try to import madmom, but don't fail if it's not available
 try:
-    from chord_madmom import analyze_file_madmom, MADMOM_AVAILABLE
+    from chord_madmom import analyze_file_madmom, MADMOM_AVAILABLE, MADMOM_ERROR
     if MADMOM_AVAILABLE:
         print("[Startup] ✓ madmom engine available - fast analysis enabled (~5-10s)")
     else:
         print("[Startup] ℹ madmom library not installed - using librosa engine (~1-3min)")
 except ImportError:
     MADMOM_AVAILABLE = False
+    MADMOM_ERROR = "Failed to import chord_madmom module completely"
     print("[Startup] ℹ madmom module not found - using librosa engine only")
 
 # --- NETWORK DIAGNOSTICS & PATCH ---
@@ -110,9 +111,13 @@ print("[DIAG] Diagnostics complete.\n")
 separated_files = {}
 
 # Concurrency Control
-# Limit max concurrent heavy analysis tasks to prevent OOM/CPU saturation
-MAX_CONCURRENT_ANALYSIS = 1
-analysis_semaphore = threading.Semaphore(MAX_CONCURRENT_ANALYSIS)
+# Limit max concurrent heavy Demucs tasks (stem separation) to prevent OOM
+MAX_CONCURRENT_SEPARATION = 1
+separation_semaphore = threading.Semaphore(MAX_CONCURRENT_SEPARATION)
+
+# Limit max concurrent Chord AI (madmom/librosa) tasks to prevent CPU saturation
+MAX_CONCURRENT_CHORDS = 3
+chord_semaphore = threading.Semaphore(MAX_CONCURRENT_CHORDS)
 
 def cleanup_loop():
     """Background thread to clean up old files after 1 hour."""
@@ -179,8 +184,11 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
     """
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_madmom={use_madmom})")
     
+    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
+    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    
     # Acquire semaphore (queueing if busy)
-    with analysis_semaphore:
+    with active_semaphore:
         try:
             if not file.filename:
                 raise HTTPException(status_code=400, detail="File required")
@@ -206,7 +214,7 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
                     print("[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
                     result = analyze_file_madmom(tmp_path)
                 else:
-                    # Fallback
+                    # Fallback to librosa if madmom is not available or user prefers librosa
                     print("[API] Engine: LIBROSA (Fallback) | Madmom not found")
                     result = analyze_file(tmp_path, separate_vocals=False)
                 
@@ -269,8 +277,11 @@ def analyze_youtube(
     if not video_id:
         raise HTTPException(status_code=400, detail="Invalid YouTube URL")
     
+    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
+    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    
     # Acquire semaphore (queueing if busy)
-    with analysis_semaphore:
+    with active_semaphore:
         try:
             # Extract audio from YouTube
             print(f"[YouTube] Extracting audio for video: {video_id}")
@@ -379,7 +390,7 @@ def separate_audio(
     suffix = Path(file.filename).suffix or ".tmp"
     
     # Acquire semaphore (queueing if busy)
-    with analysis_semaphore:
+    with separation_semaphore:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = Path(tmp.name)
@@ -497,7 +508,7 @@ def separate_audio_6stems(
     suffix = Path(file.filename).suffix or ".tmp"
     
     # Acquire semaphore (queueing if busy)
-    with analysis_semaphore:
+    with separation_semaphore:
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = Path(tmp.name)
@@ -557,7 +568,7 @@ def separate_audio_6stems(
 
             # Build response with download URLs for each stem
             stem_urls = {}
-            for stem_name in STEM_TYPES:
+            for stem_name in ["vocals", "drums", "bass", "guitar", "piano", "other"]:
                 if stem_name in stem_data:
                     stem_urls[f"{stem_name}Url"] = f"/api/separate-stems/download/{session_id}/{stem_name}?format={format}"
 

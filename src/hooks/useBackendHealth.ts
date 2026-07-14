@@ -8,7 +8,7 @@ export const useBackendHealth = (intervalMs: number = 30000) => {
     useEffect(() => {
         const checkHealth = async () => {
             try {
-                const apiUrl = (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
+                const apiUrl = (import.meta.env.VITE_CHORDS_API_URL || "http://localhost:7860").replace(/\/+$/, "");
                 const response = await fetch(`${apiUrl}/health`, {
                     method: "GET",
                     headers: {

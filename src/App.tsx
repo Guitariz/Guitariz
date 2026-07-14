@@ -74,6 +74,11 @@ const App = () => {
       <Analytics />
       <SpeedInsights />
       <TooltipProvider>
+        {/* Maintenance Banner */}
+        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-500 px-4 py-2 text-center text-sm font-medium sticky top-0 z-[10000] backdrop-blur-md">
+          ⚠️ Guitariz is currently undergoing scheduled maintenance. Some audio analysis features might be temporarily unavailable or slower than usual. We will be back to normal shortly!
+        </div>
+
         {/* Skip to content for accessibility */}
         <a
           href="#main-content"

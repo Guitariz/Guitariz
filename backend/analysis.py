@@ -118,6 +118,8 @@ def _get_separator_6stem():
     return _DEMUCS_6STEM_WRAPPER
 
 
+STEM_TYPES = ["vocals", "drums", "bass", "guitar", "piano", "other"]
+
 def separate_audio_stems(audio_path: Path) -> Optional[dict]:
     """Separate audio into 6 stems: vocals, drums, bass, guitar, piano, other.
     
@@ -146,7 +148,7 @@ def separate_audio_stems(audio_path: Path) -> Optional[dict]:
         print(f"6-stem audio separation failed: {e}")
         import traceback
         traceback.print_exc()
-        return None
+        raise e
 
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])

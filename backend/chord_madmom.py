@@ -12,25 +12,52 @@ import os
 
 # Try to import madmom, but don't fail if it's not available
 try:
+    # Patch collections for Python 3.10 compatibility before importing madmom
+    import collections
+    import collections.abc
+    if not hasattr(collections, 'MutableSequence'):
+        collections.MutableSequence = collections.abc.MutableSequence
+    if not hasattr(collections, 'Mapping'):
+        collections.Mapping = collections.abc.Mapping
+    if not hasattr(collections, 'MutableMapping'):
+        collections.MutableMapping = collections.abc.MutableMapping
+    if not hasattr(collections, 'Iterable'):
+        collections.Iterable = collections.abc.Iterable
+    if not hasattr(collections, 'Callable'):
+        collections.Callable = collections.abc.Callable
+
+    # Patch numpy for deprecated aliases removed in 1.24+
+    if not hasattr(np, 'float'):
+        np.float = float
+    if not hasattr(np, 'int'):
+        np.int = int
+    if not hasattr(np, 'bool'):
+        np.bool = bool
+    if not hasattr(np, 'complex'):
+        np.complex = complex
+
     import madmom
     import madmom.features.chords
     import madmom.features.key
     import madmom.features.tempo
     MADMOM_AVAILABLE = True
+    MADMOM_ERROR = None
     print("[madmom] Successfully loaded - fast analysis available")
 except ImportError as e:
     MADMOM_AVAILABLE = False
+    MADMOM_ERROR = str(e)
     print(f"[madmom] Import failed: {e}")
     print("[madmom] Not available - using librosa fallback")
 except Exception as e:
     MADMOM_AVAILABLE = False
+    MADMOM_ERROR = str(e)
     print(f"[madmom] Unexpected error: {e}")
     print("[madmom] Not available - using librosa fallback")
 
 
 # Cache directory for storing analysis results
-# Use /data if available (Hugging Face persistent volume), otherwise fallback to local cache
-CACHE_DIR = Path("/data/cache") if os.path.exists("/data") else Path("cache")
+# Use /data if available (Hugging Face persistent volume), otherwise fallback to /tmp/cache
+CACHE_DIR = Path("/data/cache") if os.path.exists("/data") else Path("/tmp/cache")
 CHORD_CACHE_DIR = CACHE_DIR / "chords"
 KEY_CACHE_DIR = CACHE_DIR / "keys"
 TEMPO_CACHE_DIR = CACHE_DIR / "tempo"
@@ -86,6 +113,24 @@ def _save_to_cache(cache_file: Path, data: any) -> None:
         pass
 
 
+_PROCESSOR_CACHE = {}
+
+def _get_processor(name: str):
+    """Cache madmom processors to avoid reloading models on every request."""
+    if name not in _PROCESSOR_CACHE:
+        if name == "chord_feat":
+            _PROCESSOR_CACHE[name] = madmom.features.chords.CNNChordFeatureProcessor()
+        elif name == "chord_recog":
+            _PROCESSOR_CACHE[name] = madmom.features.chords.CRFChordRecognitionProcessor()
+        elif name == "key":
+            _PROCESSOR_CACHE[name] = madmom.features.key.CNNKeyRecognitionProcessor()
+        elif name == "beat":
+            _PROCESSOR_CACHE[name] = madmom.features.beats.RNNBeatProcessor()
+        elif name == "tempo":
+            _PROCESSOR_CACHE[name] = madmom.features.tempo.TempoEstimationProcessor(fps=200)
+    return _PROCESSOR_CACHE[name]
+
+
 def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str, float]]:
     """
     Detect chords using madmom's CNN + CRF approach.
@@ -104,8 +149,8 @@ def detect_chords_madmom(file_path: Path) -> List[Tuple[float, float, str, float
     
     # Process with madmom
     print(f"[madmom] Detecting chords for {file_path.name}...")
-    feat_processor = madmom.features.chords.CNNChordFeatureProcessor()
-    recog_processor = madmom.features.chords.CRFChordRecognitionProcessor()
+    feat_processor = _get_processor("chord_feat")
+    recog_processor = _get_processor("chord_recog")
     
     feats = feat_processor(str(file_path))
     chords = recog_processor(feats)
@@ -173,7 +218,7 @@ def detect_key_madmom(file_path: Path) -> str:
     # Process with madmom
     print(f"[madmom] Detecting key for {file_path.name}...")
     try:
-        key_processor = madmom.features.key.CNNKeyRecognitionProcessor()
+        key_processor = _get_processor("key")
         key_prediction = key_processor(str(file_path))
         key = madmom.features.key.key_prediction_to_label(key_prediction)
         
@@ -208,10 +253,10 @@ def detect_tempo_madmom(file_path: Path) -> float:
     # Process with madmom
     print(f"[madmom] Detecting tempo for {file_path.name}...")
     try:
-        beat_processor = madmom.features.beats.RNNBeatProcessor()
+        beat_processor = _get_processor("beat")
         beats = beat_processor(str(file_path))
         
-        tempo_processor = madmom.features.tempo.TempoEstimationProcessor(fps=200)
+        tempo_processor = _get_processor("tempo")
         tempos = tempo_processor(beats)
         
         if len(tempos) > 0:
@@ -256,7 +301,8 @@ def analyze_file_madmom(file_path: Path) -> Dict:
     
     print(f"[madmom] Starting fast analysis for {file_path.name}")
     
-    # Run all detections (uses caching internally)
+    # Run sequentially instead of concurrently! 
+    # (Concurrent ML models on a 2-core CPU cause severe context-switching lag)
     chords = detect_chords_madmom(file_path)
     key_str = detect_key_madmom(file_path)
     tempo = detect_tempo_madmom(file_path)
