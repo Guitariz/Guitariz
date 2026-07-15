@@ -150,17 +150,17 @@ const WhiteKey = ({
 
     return (
       <motion.button
-        animate={isActive ? { scaleY: 0.97, y: 2 } : { scaleY: 1, y: 0 }}
-        whileTap={{ scaleY: 0.97, y: 2 }}
+        animate={isActive ? { scaleY: 0.95 } : { scaleY: 1 }}
+        whileTap={{ scaleY: 0.95 }}
         onClick={() => {
           if (onNoteClick) onNoteClick(midi);
           else playMidiNote(midi);
         }}
         className={cn(
-          "relative border border-b-2 rounded-b-xl transition-all duration-100 cursor-pointer",
+          "relative border border-b-2 rounded-b-xl transition-all duration-100 cursor-pointer origin-top",
           "hover:brightness-105",
           WHITE_KEY_ROLE_STYLES[role],
-          isActive ? "brightness-95 bg-white/80" : ""
+          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-20" : "z-10"
         )}
         style={{ width, height, zIndex: 1 }}
         aria-label={`Piano key ${label}`}
@@ -188,7 +188,7 @@ const WhiteKey = ({
             className={cn(
               "absolute bottom-2 left-1/2 -translate-x-1/2 leading-none",
               labelFontSize,
-              LABEL_COLOR[role]
+              isActive ? "text-primary-foreground font-black drop-shadow-md" : LABEL_COLOR[role]
             )}
           >
             {NOTE_NAMES[midiToPitchClass(midi)]}
@@ -229,17 +229,17 @@ const BlackKey = ({
 
     return (
       <motion.button
-        animate={isActive ? { scaleY: 0.97, y: 2 } : { scaleY: 1, y: 0 }}
-        whileTap={{ scaleY: 0.97, y: 2 }}
+        animate={isActive ? { scaleY: 0.95 } : { scaleY: 1 }}
+        whileTap={{ scaleY: 0.95 }}
         onClick={() => {
           if (onNoteClick) onNoteClick(midi);
           else playMidiNote(midi);
         }}
         className={cn(
-          "absolute pointer-events-auto rounded-b-md border transition-all duration-100 cursor-pointer",
+          "absolute pointer-events-auto rounded-b-md border transition-all duration-100 cursor-pointer origin-top",
           "hover:brightness-125",
           BLACK_KEY_ROLE_STYLES[role],
-          isActive ? "brightness-75 bg-black/80" : ""
+          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-30" : "z-20"
         )}
         style={{
           left,
