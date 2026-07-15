@@ -24,11 +24,11 @@ export interface PianoNoteInfo {
 
 export interface PianoKeyboardProps {
   /** Note names active in the scale, e.g. ["C", "E", "G", "B", "D"] */
-  scaleNotes: string[];
+  scaleNotes?: string[];
   /** Root note name, e.g. "C" */
-  rootNote: string;
+  rootNote?: string;
   /** Intervals of the scale (semitone offsets from root) */
-  intervals: number[];
+  intervals?: number[];
   /** Starting octave (default 3) */
   startOctave?: number;
   /** Number of octaves to display (default 2) */
@@ -38,6 +38,8 @@ export interface PianoKeyboardProps {
   /** Whether to show the full 88-key range */
   fullRange?: boolean;
   className?: string;
+  activeNotes?: number[];
+  onNoteClick?: (midi: number) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -128,7 +130,9 @@ const WhiteKey = ({
     showLabels, 
     width, 
     height,
-    fullRange
+    fullRange,
+    isActive,
+    onNoteClick
   }: { 
     midi: number; 
     role: IntervalRole; 
@@ -136,6 +140,8 @@ const WhiteKey = ({
     width: number; 
     height: number;
     fullRange?: boolean;
+    isActive?: boolean;
+    onNoteClick?: (midi: number) => void;
   }) => {
     const label = midiToNoteName(midi);
     const labelFontSize = fullRange ? "text-[8px]" : "text-[9px]";
@@ -144,12 +150,17 @@ const WhiteKey = ({
 
     return (
       <motion.button
+        animate={isActive ? { scaleY: 0.97, y: 2 } : { scaleY: 1, y: 0 }}
         whileTap={{ scaleY: 0.97, y: 2 }}
-        onClick={() => playMidiNote(midi)}
+        onClick={() => {
+          if (onNoteClick) onNoteClick(midi);
+          else playMidiNote(midi);
+        }}
         className={cn(
           "relative border border-b-2 rounded-b-xl transition-all duration-100 cursor-pointer",
-          "hover:brightness-105 active:brightness-95",
-          WHITE_KEY_ROLE_STYLES[role]
+          "hover:brightness-105",
+          WHITE_KEY_ROLE_STYLES[role],
+          isActive ? "brightness-95 bg-white/80" : ""
         )}
         style={{ width, height, zIndex: 1 }}
         aria-label={`Piano key ${label}`}
@@ -197,7 +208,9 @@ const BlackKey = ({
     width, 
     height, 
     left,
-    fullRange
+    fullRange,
+    isActive,
+    onNoteClick
   }: { 
     midi: number; 
     role: IntervalRole; 
@@ -206,6 +219,8 @@ const BlackKey = ({
     height: number; 
     left: number;
     fullRange?: boolean;
+    isActive?: boolean;
+    onNoteClick?: (midi: number) => void;
   }) => {
     const label = midiToNoteName(midi);
     const labelFontSize = fullRange ? "text-[7px]" : "text-[7px]";
@@ -214,12 +229,17 @@ const BlackKey = ({
 
     return (
       <motion.button
+        animate={isActive ? { scaleY: 0.97, y: 2 } : { scaleY: 1, y: 0 }}
         whileTap={{ scaleY: 0.97, y: 2 }}
-        onClick={() => playMidiNote(midi)}
+        onClick={() => {
+          if (onNoteClick) onNoteClick(midi);
+          else playMidiNote(midi);
+        }}
         className={cn(
           "absolute pointer-events-auto rounded-b-md border transition-all duration-100 cursor-pointer",
-          "hover:brightness-125 active:brightness-75",
-          BLACK_KEY_ROLE_STYLES[role]
+          "hover:brightness-125",
+          BLACK_KEY_ROLE_STYLES[role],
+          isActive ? "brightness-75 bg-black/80" : ""
         )}
         style={{
           left,
@@ -262,14 +282,16 @@ const BlackKey = ({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const PianoKeyboard = ({
-  scaleNotes,
-  rootNote,
-  intervals,
+  scaleNotes = [],
+  rootNote = "C",
+  intervals = [],
   startOctave = 3,
   numOctaves = 2,
   showLabels = true,
   fullRange = false,
   className,
+  activeNotes = [],
+  onNoteClick
 }: PianoKeyboardProps) => {
   const WHITE_KEY_WIDTH = fullRange ? 24.5 : 44;
   const BLACK_KEY_WIDTH = fullRange ? 16 : 26;
@@ -349,15 +371,17 @@ export const PianoKeyboard = ({
         {/* White Keys */}
         <div className="flex bg-[#050505] rounded-xl overflow-hidden shadow-2xl border border-white/5 relative" style={{ height: KEY_HEIGHT }}>
           {whiteKeys.map((key) => (
-            <WhiteKey
-              key={key.midi}
-              midi={key.midi}
-              role={getRole(key.midi)}
-              showLabels={showLabels}
-              width={WHITE_KEY_WIDTH}
-              height={KEY_HEIGHT}
-              fullRange={fullRange}
-            />
+              <WhiteKey
+                key={key.midi}
+                midi={key.midi}
+                role={getRole(key.midi)}
+                showLabels={showLabels}
+                width={WHITE_KEY_WIDTH}
+                height={KEY_HEIGHT}
+                fullRange={fullRange}
+                isActive={activeNotes.includes(key.midi)}
+                onNoteClick={onNoteClick}
+              />
           ))}
         </div>
 
@@ -371,16 +395,18 @@ export const PianoKeyboard = ({
             const left = whiteIdx * WHITE_KEY_WIDTH + WHITE_KEY_WIDTH * 0.68;
 
             return (
-              <BlackKey
-                key={key.midi}
-                midi={key.midi}
-                role={getRole(key.midi)}
-                showLabels={showLabels}
-                width={BLACK_KEY_WIDTH}
-                height={KEY_HEIGHT * 0.6}
-                left={left}
-                fullRange={fullRange}
-              />
+                <BlackKey
+                  key={key.midi}
+                  midi={key.midi}
+                  role={getRole(key.midi)}
+                  showLabels={showLabels}
+                  width={BLACK_KEY_WIDTH}
+                  height={KEY_HEIGHT * 0.6}
+                  left={left}
+                  fullRange={fullRange}
+                  isActive={activeNotes.includes(key.midi)}
+                  onNoteClick={onNoteClick}
+                />
             );
           })}
         </div>
