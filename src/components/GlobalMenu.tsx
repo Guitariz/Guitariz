@@ -354,7 +354,7 @@ export const GlobalMenu = () => {
                             {/* GitHub Info */}
                             <div className="flex items-center gap-4">
                                 <a
-                                    href="https://github.com/abhi9vaidya/Guitariz"
+                                    href="https://github.com/Guitariz/Guitariz"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 text-zinc-500 hover:text-zinc-350 transition-colors"

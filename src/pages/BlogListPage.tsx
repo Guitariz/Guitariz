@@ -17,7 +17,11 @@ interface BlogPost {
 }
 
 const BlogListPage: React.FC = () => {
-  usePageMetadata("BLOG");
+  usePageMetadata({
+    title: "Blog - Guitariz Studio | Music Theory & AI Production Articles",
+    description: "Learn guitar chord transcription by ear, music theory tips, circle of fifths tutorials, and AI stem separation guides.",
+    canonicalUrl: "https://guitariz.studio/blog",
+  });
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -59,8 +63,8 @@ const BlogListPage: React.FC = () => {
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         <Breadcrumb
           items={[
-            { label: "Home", href: "/" },
-            { label: "Blog", href: "/blog", active: true },
+            { name: "Home", url: "https://guitariz.studio/" },
+            { name: "Blog", url: "https://guitariz.studio/blog" },
           ]}
         />
 

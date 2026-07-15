@@ -36,8 +36,8 @@ const Footer = () => {
                         <h4 className="font-semibold text-white mb-4">Resources</h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li><Link to="/theory" className="hover:text-white transition-colors">Music Theory</Link></li>
-                            <li><a href="https://github.com/abhi9vaidya/guitariz" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Source Code</a></li>
-                            <li><a href="https://github.com/abhi9vaidya/guitariz/issues" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Report Issue</a></li>
+                             <li><a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Source Code</a></li>
+                            <li><a href="https://github.com/Guitariz/Guitariz/issues" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Report Issue</a></li>
                         </ul>
                     </div>
 
@@ -45,7 +45,7 @@ const Footer = () => {
                     <div>
                         <h4 className="font-semibold text-white mb-4">Connect</h4>
                         <div className="flex gap-4">
-                            <a href="https://github.com/abhi9vaidya/Guitariz" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors">
+                            <a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors">
                                 <Github className="w-5 h-5" />
                             </a>
                             <a href="https://x.com/GuitarizStudio" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors">

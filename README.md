@@ -280,7 +280,7 @@ Please read the [**Contributing Guide**](CONTRIBUTING.md) and our [**Code of Con
 5. Open a Pull Request
 ```
 
-Looking for a place to start? Check out issues tagged [`good first issue`](https://github.com/abhi9vaidya/guitariz/labels/good%20first%20issue) or [`help wanted`](https://github.com/abhi9vaidya/guitariz/labels/help%20wanted).
+Looking for a place to start? Check out issues tagged [`good first issue`](https://github.com/Guitariz/Guitariz/labels/good%20first%20issue) or [`help wanted`](https://github.com/Guitariz/Guitariz/labels/help%20wanted).
 
 ---
 
@@ -293,7 +293,7 @@ Looking for a place to start? Check out issues tagged [`good first issue`](https
 - [ ] Additional instrument support (Ukulele, Bass tablature)
 - [ ] User accounts with progress tracking
 
-> See the [open issues](https://github.com/abhi9vaidya/guitariz/issues) for a full list of proposed features and known issues.
+> See the [open issues](https://github.com/Guitariz/Guitariz/issues) for a full list of proposed features and known issues.
 
 ---
 
@@ -322,7 +322,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
   <br />
 
   <a href="https://guitariz.studio">Website</a> · 
-  <a href="https://github.com/abhi9vaidya/guitariz">GitHub</a> · 
+  <a href="https://github.com/Guitariz/Guitariz">GitHub</a> · 
   <a href="https://x.com/GuitarizStudio">Twitter</a> · 
   <a href="mailto:guitariz.studio@gmail.com">Contact</a>
 

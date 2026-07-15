@@ -55,7 +55,7 @@ const routes = [
           'logo': 'https://guitariz.studio/logo2.png',
           'sameAs': [
             'https://x.com/GuitarizStudio',
-            'https://github.com/abhi9vaidya/Guitariz'
+            'https://github.com/Guitariz/Guitariz'
           ]
         }
       ]

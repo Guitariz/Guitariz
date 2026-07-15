@@ -28,7 +28,11 @@ const BlogPostPage: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Dynamic Page Metadata hooks
-  usePageMetadata("BLOG_POST", post ? { title: post.title, description: post.description, canonical: `https://guitariz.studio/blog/${post.slug}` } : undefined);
+  usePageMetadata({
+    title: post ? `${post.title} | Guitariz Blog` : "Loading Article...",
+    description: post ? post.description : "Guitariz music theory and AI guide article.",
+    canonicalUrl: post ? `https://guitariz.studio/blog/${post.slug}` : "https://guitariz.studio/blog",
+  });
 
   useEffect(() => {
     fetch("/blog-posts.json")
@@ -101,9 +105,9 @@ const BlogPostPage: React.FC = () => {
       <main ref={contentRef} className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         <Breadcrumb
           items={[
-            { label: "Home", href: "/" },
-            { label: "Blog", href: "/blog" },
-            { label: post.category, href: `/blog`, active: true },
+            { name: "Home", url: "https://guitariz.studio/" },
+            { name: "Blog", url: "https://guitariz.studio/blog" },
+            { name: post.category, url: "https://guitariz.studio/blog" },
           ]}
         />
 
