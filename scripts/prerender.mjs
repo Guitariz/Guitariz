@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import matter from 'gray-matter';
+import { marked } from 'marked';
 
 const TODAY = '2026-07-15';
 
@@ -390,6 +392,116 @@ const routes = [
 ];
 
 const distDir = path.resolve(process.cwd(), 'dist');
+
+// --- BLOG COMPILATION & SCHEMA EXTRACTION ---
+const blogDir = path.resolve(process.cwd(), 'src/content/blog');
+const blogPosts = [];
+
+if (fs.existsSync(blogDir)) {
+  const files = fs.readdirSync(blogDir);
+  for (const file of files) {
+    if (file.endsWith('.md')) {
+      const slug = file.replace(/\.md$/, '');
+      const rawContent = fs.readFileSync(path.join(blogDir, file), 'utf8');
+      const { data, content } = matter(rawContent);
+      const htmlContent = marked(content);
+      
+      const post = {
+        slug,
+        title: data.title,
+        description: data.description,
+        date: data.date,
+        author: data.author,
+        coverImage: data.coverImage,
+        category: data.category,
+        tags: data.tags || [],
+        readTime: data.readTime || '3 min read',
+        html: htmlContent
+      };
+      
+      blogPosts.push(post);
+    }
+  }
+}
+
+// Sort blog posts by date descending
+blogPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+// Save JSON indexes for client-side loading
+const publicDir = path.resolve(process.cwd(), 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
+}
+fs.writeFileSync(path.join(publicDir, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
+
+const distBlogDir = path.join(distDir, 'blog');
+fs.mkdirSync(distBlogDir, { recursive: true });
+fs.writeFileSync(path.join(distDir, 'blog-posts.json'), JSON.stringify(blogPosts, null, 2));
+
+// Push Blog list page to routes
+routes.push({
+  url: '/blog',
+  title: 'Blog - Guitariz Studio | Music Theory & AI Production Articles',
+  description: 'Learn guitar chord transcription by ear, music theory tips, circle of fifths tutorials, and AI stem separation guides.',
+  canonical: 'https://guitariz.studio/blog',
+  jsonLd: JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    'name': 'Guitariz Blog',
+    'url': 'https://guitariz.studio/blog',
+    'description': 'Music theory, ear training, and AI production articles for musicians.'
+  })
+});
+
+// Push individual Blog posts to routes
+for (const post of blogPosts) {
+  routes.push({
+    url: `/blog/${post.slug}`,
+    title: `${post.title} | Guitariz Blog`,
+    description: post.description,
+    canonical: `https://guitariz.studio/blog/${post.slug}`,
+    htmlContent: post.html,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'BlogPosting',
+          '@id': `https://guitariz.studio/blog/${post.slug}#post`,
+          'headline': post.title,
+          'description': post.description,
+          'datePublished': post.date,
+          'dateModified': post.date,
+          'author': {
+            '@type': 'Person',
+            'name': post.author
+          },
+          'image': post.coverImage,
+          'publisher': {
+            '@type': 'Organization',
+            '@id': 'https://guitariz.studio/#org',
+            'name': 'Guitariz Studio',
+            'logo': 'https://guitariz.studio/logo2.png'
+          },
+          'mainEntityOfPage': `https://guitariz.studio/blog/${post.slug}`
+        }
+      ]
+    })
+  });
+}
+
+// Generate sitemap.xml dynamically!
+let sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+for (const r of routes) {
+  const isMain = r.url === '/';
+  const priority = isMain ? '1.0' : (r.url.startsWith('/blog/') ? '0.6' : (r.url === '/blog' ? '0.8' : '0.8'));
+  const freq = isMain ? 'weekly' : (r.url.startsWith('/blog/') ? 'monthly' : 'weekly');
+  sitemapXml += `  <url>\n    <loc>https://guitariz.studio${r.url === '/' ? '/' : r.url}</loc>\n    <lastmod>${TODAY}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${priority}</priority>\n  </url>\n`;
+}
+sitemapXml += `</urlset>\n`;
+fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml);
+fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml);
+console.log('Generated fresh sitemap.xml dynamically!');
+
 const srcIndexPath = path.resolve(distDir, 'index.html');
 
 if (!fs.existsSync(srcIndexPath)) {
@@ -404,6 +516,10 @@ for (const r of routes) {
   const outIndex = r.url === '/' ? path.join(distDir, 'index.html') : path.join(outDir, 'index.html');
 
   let html = baseHtml;
+  
+  if (r.htmlContent) {
+    html = html.replace('<div id="root"></div>', `<div id="root"><article class="hidden" style="display:none;">${r.htmlContent}</article></div>`);
+  }
 
   // Replace title
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${r.title}</title>`);
