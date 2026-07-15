@@ -69,11 +69,11 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 
 | Feature | Description |
 |:--|:--|
-| **Progressive Web App** | Fully installable on desktop and mobile with offline-ready service worker support. |
-| **Dark-Mode-First UI** | Sleek glassmorphism aesthetic with Framer Motion micro-animations, designed for creative environments. |
-| **Configurable Navbar** | Switch between horizontal and vertical navigation layouts to match your workflow. |
-| **Metronome** | Professional metronome with adjustable BPM, time signatures, and visual beat indicator. |
-| **CI/CD Pipeline** | Automated linting, testing, and build validation via GitHub Actions. |
+| **Progressive Web App** | Fully installable with offline-ready service workers and advanced auto-healing cache recovery. |
+| **Markdown Blog Engine** | Built-in SEO-optimized blog system converting simple `.md` files into rich, JSON-LD structured articles. |
+| **Premium Dark Mode** | Strict, distraction-free glassmorphism aesthetic with Framer Motion micro-animations. |
+| **Advanced SEO & Analytics** | Automated dynamic sitemaps, `llms.txt` for AI crawlers, PostHog, and Ahrefs Web Analytics integration. |
+| **CI/CD Pipeline** | Automated linting, testing, prerendering, and build validation via GitHub Actions. |
 
 ---
 
@@ -118,6 +118,7 @@ graph TD
 ```
 guitariz/
 ├── src/
+│   ├── content/blog/        # Markdown blog articles
 │   ├── components/          # Reusable UI components (Fretboard, Piano, Tuner, etc.)
 │   │   ├── ui/              # shadcn/ui primitives (Button, Dialog, Toast, etc.)
 │   │   ├── chord-ai/        # Chord AI feature components
@@ -187,8 +188,8 @@ guitariz/
     <td>Vitest · React Testing Library · Ruff (Python linting)</td>
   </tr>
   <tr>
-    <td><strong>Infra</strong></td>
-    <td>Vercel (Frontend) · Docker (Backend) · GitHub Actions CI · Husky + lint-staged</td>
+    <td><strong>Infra & Analytics</strong></td>
+    <td>Vercel (Frontend) · Docker (Backend) · GitHub Actions CI · PostHog · Ahrefs</td>
   </tr>
 </table>
 
