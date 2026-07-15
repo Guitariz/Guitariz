@@ -3,7 +3,7 @@
  * Maps keyboard input to note playback with strum support
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { KeyboardFretboardOptions, FretPosition } from '@/types/keyboardTypes';
 import { playNote, playChord } from '@/lib/chordAudio';
 
@@ -25,7 +25,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
   } = options;
 
   const pressedKeys = useRef<Set<string>>(new Set());
-  const activeNotes = useRef<Map<string, FretPosition>>(new Map());
+  const [activeNotes, setActiveNotes] = useState<Map<string, FretPosition>>(new Map());
   const octaveShift = useRef<number>(0);
   const enabledRef = useRef(enabled);
 
@@ -35,7 +35,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
     onStrumDown?.();
 
     // Get currently pressed notes
-    const positions = Array.from(activeNotes.current.values());
+    const positions = Array.from(activeNotes.values());
 
     if (positions.length === 0) return;
 
@@ -53,7 +53,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
 
     // After strumming, clear accumulated notes (for chord mode)
     setTimeout(() => {
-      activeNotes.current.clear();
+      setActiveNotes(new Map());
       pressedKeys.current.clear();
     }, 150);
   }, [onStrumDown]);
@@ -90,7 +90,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
         // In chord mode, accumulate notes and wait for Enter
         const fret = noteMapping.position.fret + octaveShift.current * 12;
         const position = { ...noteMapping.position, fret };
-        activeNotes.current.set(key, position);
+        setActiveNotes(prev => new Map(prev).set(key, position));
         pressedKeys.current.add(key);
         onNoteOn?.(noteMapping.note, 0.3, position);
       } else {
@@ -99,7 +99,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
         const position = { ...noteMapping.position, fret };
         const freq = getNoteFrequency(position);
         playNote(freq, 0.9, 0.5, 'piano');
-        activeNotes.current.set(key, position);
+        setActiveNotes(prev => new Map(prev).set(key, position));
         pressedKeys.current.add(key);
         onNoteOn?.(noteMapping.note, 0.5, position);
       }
@@ -125,7 +125,11 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
     if (noteMapping) {
       const fret = noteMapping.position.fret + octaveShift.current * 12;
       const position = { ...noteMapping.position, fret };
-      activeNotes.current.delete(key);
+      setActiveNotes(prev => {
+        const next = new Map(prev);
+        next.delete(key);
+        return next;
+      });
       pressedKeys.current.delete(key);
       onNoteOff?.(noteMapping.note, position);
     }
@@ -134,7 +138,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
   useEffect(() => {
     if (!enabled) {
       pressedKeys.current.clear();
-      activeNotes.current.clear();
+      setActiveNotes(new Map());
       return;
     }
 
@@ -149,7 +153,7 @@ export const useKeyboardFretboard = (options: KeyboardFretboardOptions) => {
 
   return {
     pressedKeys: Array.from(pressedKeys.current),
-    activeNotes: Array.from(activeNotes.current.entries()),
+    activeNotes: Array.from(activeNotes.entries()),
     octaveShift: octaveShift.current,
     strumDown,
   };

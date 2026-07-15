@@ -210,22 +210,6 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
     strumSpeed,
     velocityProfile,
     chordMode,
-    onNoteOn: (note, _velocity, position) => {
-      const exists = highlightedNotes.some(
-        n => n.string === position.string && n.fret === position.fret
-      );
-      if (!exists) {
-        setHighlightedNotes(prev => [
-          ...prev,
-          { string: position.string, fret: position.fret, note }
-        ]);
-      }
-    },
-    onNoteOff: (_note, position) => {
-      setHighlightedNotes(prev =>
-        prev.filter(n => !(n.string === position.string && n.fret === position.fret))
-      );
-    },
   });
 
   // Piano keyboard integration
@@ -261,11 +245,20 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
       noteNames = midiNotes.map(midi => pitchClassToNote(midiToPitchClass(midi)));
     } else {
       // Fretboard mode: convert fretboard positions to MIDI
-      if (highlightedNotes.length === 0) {
+      const activeKeyboardFretNotes: FretNote[] = keyboardActiveNotes.map(([, pos]) => ({
+        string: pos.string,
+        fret: pos.fret,
+        note: getNoteAtFret(pos.string, pos.fret)
+      }));
+      
+      const allNotes = [...highlightedNotes, ...activeKeyboardFretNotes];
+      
+      if (allNotes.length === 0) {
         return { candidates: [], midiNotes: [], noteNames: [] };
       }
-      midiNotes = fretboardNotesToMidi(highlightedNotes);
-      noteNames = [...new Set(highlightedNotes.map(n => n.note))];
+      
+      midiNotes = fretboardNotesToMidi(allNotes);
+      noteNames = [...new Set(allNotes.map(n => n.note))];
     }
 
     const candidates = detectChords(midiNotes, {
