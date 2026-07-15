@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { IntervalGame } from "@/components/ear-training/IntervalGame";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 type GameMode = "INTERVALS" | "CHORDS" | "FRETBOARD" | "PERFECT_PITCH" | null;
 
@@ -238,6 +239,7 @@ const EarTrainingPage = () => {
                         ]}
                     />
                 )}
+                <RelatedTools currentPath="/ear-training" />
             </main>
         </div>
     );

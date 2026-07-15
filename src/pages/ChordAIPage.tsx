@@ -25,6 +25,7 @@ import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
 import { transposeChord, transposeKey } from "@/lib/transposition";
 import { Slider } from "@/components/ui/slider";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
 import {
   Dialog,
@@ -1095,6 +1096,7 @@ const ChordAIPage = () => {
             },
           ]}
         />
+        <RelatedTools currentPath="/chord-ai" />
       </main>
     </div>
   );

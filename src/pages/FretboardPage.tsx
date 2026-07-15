@@ -10,6 +10,7 @@ import type { FretNote } from "@/components/fretboard/Fretboard3D";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { chordLibraryData } from "@/data/chordData";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 const NOTES = ["E", "A", "D", "G", "B", "E"];
 const CHROMATIC = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -271,6 +272,7 @@ const FretboardPage = () => {
             }
           ]}
         />
+        <RelatedTools currentPath="/fretboard" />
       </main>
     </div>
   );

@@ -2,6 +2,7 @@ import ScaleExplorer from "@/components/ScaleExplorer";
 import { Disc, Music, Bot, Layers } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 const ScalesPage = () => {
   usePageMetadata({
@@ -107,6 +108,7 @@ const ScalesPage = () => {
             }
           ]}
         />
+        <RelatedTools currentPath="/scales" />
       </main>
     </div>
   );

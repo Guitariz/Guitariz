@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 const VocalSplitterPage = () => {
   usePageMetadata({
@@ -786,6 +787,7 @@ const VocalSplitterPage = () => {
             },
           ]}
         />
+        <RelatedTools currentPath="/vocal-splitter" />
       </main>
     </div>
   );

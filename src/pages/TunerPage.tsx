@@ -1,5 +1,6 @@
 import { Tuner } from "@/components/Tuner";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 import { GaugeCircle } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 
@@ -78,6 +79,7 @@ const TunerPage = () => {
                         ]}
                     />
                 </div>
+                <RelatedTools currentPath="/tuner" />
             </main>
         </div>
     );

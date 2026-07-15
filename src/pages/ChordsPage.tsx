@@ -7,6 +7,7 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 interface SelectedChord {
   root: string;
@@ -142,6 +143,7 @@ const ChordsPage = () => {
             }
           ]}
         />
+        <RelatedTools currentPath="/chords" />
       </main>
     </div>
   );

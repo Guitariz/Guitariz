@@ -1,6 +1,7 @@
 import ChordProgressionPlayer from "@/components/ChordProgressionPlayer";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { Breadcrumb, SEOContent } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 import { Disc } from "lucide-react";
 
 const JamPage = () => {
@@ -102,6 +103,7 @@ const JamPage = () => {
                         },
                     ]}
                 />
+                <RelatedTools currentPath="/jam" />
             </main>
         </div>
     );

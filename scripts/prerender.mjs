@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const TODAY = '2026-02-19';
+const TODAY = '2026-07-15';
 
 const routes = [
   {

@@ -2,6 +2,7 @@ import Metronome from "@/components/Metronome";
 import { Timer, Zap } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 const MetronomePage = () => {
   usePageMetadata({
@@ -89,6 +90,7 @@ const MetronomePage = () => {
             }
           ]}
         />
+        <RelatedTools currentPath="/metronome" />
       </main>
     </div>
   );

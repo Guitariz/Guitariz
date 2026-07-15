@@ -1,6 +1,7 @@
 import CircleOfFifths from "@/components/CircleOfFifths";
 import { Disc, Layers } from "lucide-react";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 
@@ -98,6 +99,7 @@ const TheoryPage = () => {
             }
           ]}
         />
+        <RelatedTools currentPath="/theory" />
       </main>
     </div>
   );

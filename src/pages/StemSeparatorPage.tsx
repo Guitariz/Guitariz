@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import RelatedTools from "@/components/RelatedTools";
 
 // Stem configuration with icons and colors
 const STEM_CONFIG = {
@@ -769,6 +770,7 @@ const StemSeparatorPage = () => {
                         },
                     ]}
                 />
+                <RelatedTools currentPath="/stem-separator" />
             </main>
         </div>
     );
