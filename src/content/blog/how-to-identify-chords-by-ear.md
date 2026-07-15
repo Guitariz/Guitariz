@@ -3,7 +3,7 @@ title: "How to Identify Guitar Chords by Ear: A Step-by-Step Guide"
 description: "Master the art of transcribing music. Learn how to identify keys, recognize chord progressions, and figure out guitar chords by ear with active listening methods."
 date: "2026-07-15"
 author: "Abhinav Vaidya"
-coverImage: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=1200&auto=format&fit=crop"
+coverImage: "https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1200&auto=format&fit=crop"
 category: "Ear Training"
 tags: ["chords", "ear training", "guitar theory"]
 readTime: "5 min read"

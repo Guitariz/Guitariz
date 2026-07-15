@@ -174,13 +174,13 @@ export const GlobalMenu = () => {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={toggleTheme}
-                    className="w-12 h-12 bg-[#111]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
+                    className="w-12 h-12 bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
                     aria-label="Toggle theme"
                 >
                     {isLightMode ? (
-                        <Sun className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                        <Sun className="w-5 h-5 text-black/70 dark:text-white/70 group-hover:text-black dark:group-hover:text-white transition-colors" />
                     ) : (
-                        <Moon className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                        <Moon className="w-5 h-5 text-black/70 dark:text-white/70 group-hover:text-black dark:group-hover:text-white transition-colors" />
                     )}
                 </motion.button>
 
@@ -191,10 +191,10 @@ export const GlobalMenu = () => {
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={() => setIsOpen(true)}
-                    className="w-12 h-12 bg-[#111]/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
+                    className="w-12 h-12 bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-black/[0.04] dark:hover:bg-white/[0.08] transition-all shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group"
                     aria-label="Open navigation menu"
                 >
-                    <Menu className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
+                    <Menu className="w-5 h-5 text-black/70 dark:text-white/70 group-hover:text-black dark:group-hover:text-white transition-colors" />
                 </motion.button>
             </div>
 
