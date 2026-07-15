@@ -1,0 +1,26 @@
+# Guitariz Studio
+> Professional music theory and AI analysis tools for musicians.
+
+Guitariz Studio is a suite of free, high-precision tools for guitarists, music producers, and music students. It requires no subscription and runs powerful AI models directly on the web and scalable backends.
+
+## AI Tools
+- [Chord AI](https://guitariz.studio/chord-ai): Extracts chords, tempo, and key signatures from any audio file using Librosa and Madmom neural networks.
+- [Vocal Splitter](https://guitariz.studio/vocal-splitter): Uses AI to isolate vocals from instrumental tracks for karaoke and remixing.
+- [Stem Separator](https://guitariz.studio/stem-separator): Uses Demucs to separate any song into 6 distinct stems (vocals, drums, bass, guitar, piano, other).
+
+## Music Theory & Practice Tools
+- [Virtual Fretboard](https://guitariz.studio/fretboard): Interactive guitar neck and piano for visualizing scales, chords, and intervals.
+- [Chord Library](https://guitariz.studio/chords): Comprehensive database of over 1000 guitar chord diagrams and voicings.
+- [Scale Explorer](https://guitariz.studio/scales): Visualizer for major, minor, pentatonic, and exotic scales/modes.
+- [Jam Studio](https://guitariz.studio/jam): Create and loop chord progressions with AI piano and pad accompaniment.
+- [Theory Lab](https://guitariz.studio/theory): Interactive Circle of Fifths for learning functional harmony.
+- [Ear Training](https://guitariz.studio/ear-training): Gamified exercises for interval and chord pitch recognition.
+- [Metronome & Tuner](https://guitariz.studio/metronome): High-precision utilities for daily practice.
+
+## Target Audience
+- Guitarists looking for scale/chord references.
+- Producers needing stem separation and chord detection.
+- Music students learning theory and ear training.
+
+## Technical Stack
+Built with React, TypeScript, Vite, Tailwind CSS, and a Python (FastAPI) backend for AI inference.
