@@ -140,44 +140,11 @@ export const GlobalMenu = () => {
         };
     }, [isOpen]);
 
-    // Framer motion variants for the fullscreen layout
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.04,
-                delayChildren: 0.1
-            }
-        },
-        exit: {
-            opacity: 0,
-            transition: {
-                staggerChildren: 0.02,
-                staggerDirection: -1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        show: { 
-            opacity: 1, 
-            y: 0, 
-            transition: { 
-                type: "spring", 
-                stiffness: 260, 
-                damping: 25 
-            } 
-        },
-        exit: { opacity: 0, y: -10, transition: { duration: 0.15 } }
-    };
-
     let flatIndex = 0;
 
     return (
         <>
-            {/* Elegant Floating Hamburger Menu Button */}
+            {/* Floating Hamburger Menu Button */}
             <div className="fixed top-5 right-5 z-[90]">
                 <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -185,109 +152,128 @@ export const GlobalMenu = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsOpen(true)}
-                    className="w-12 h-12 bg-zinc-950/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex items-center justify-center hover:bg-zinc-900 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] group"
+                    className="w-12 h-12 bg-zinc-950 border border-white/[0.08] hover:border-white/20 rounded-2xl flex items-center justify-center hover:bg-zinc-900 transition-all shadow-xl group"
                     aria-label="Open navigation menu"
                 >
                     <Menu className="w-5 h-5 text-zinc-400 group-hover:text-zinc-100 transition-colors" />
                 </motion.button>
             </div>
 
-            {/* Premium Full-Screen Overlay Menu */}
+            {/* Sidebar Drawer Overlay */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="show"
-                        exit="exit"
-                        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-3xl overflow-y-auto px-6 py-6 sm:px-12 sm:py-8 flex flex-col justify-between"
-                        id="global-menu-panel"
-                    >
-                        {/* Ambient decorative glowing backgrounds */}
-                        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-rose-500/[0.02] rounded-full blur-[120px] pointer-events-none" />
-                        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-blue-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={close}
+                            className="fixed inset-0 z-[99] bg-black/60"
+                        />
 
-                        {/* Top Header */}
-                        <motion.div variants={itemVariants} className="max-w-6xl mx-auto w-full flex items-center justify-between z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-white/[0.03] border border-white/[0.08] flex items-center justify-center overflow-hidden">
-                                    <img src="/logo.png" alt="Guitariz" className="w-7 h-7 rounded-md" />
+                        {/* Sidebar Drawer */}
+                        <motion.div
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+                            className="fixed top-0 right-0 h-full z-[100] w-full sm:w-[420px] bg-zinc-950 border-l border-zinc-900 flex flex-col shadow-2xl"
+                            id="global-menu-panel"
+                        >
+                            {/* Top Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-zinc-900">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-white/[0.08] flex items-center justify-center overflow-hidden">
+                                        <img src="/logo.png" alt="Guitariz" className="w-6 h-6 rounded-md" />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-semibold text-zinc-100 tracking-tight">Guitariz</span>
+                                        <span className="text-[10px] text-zinc-400 ml-1.5 font-bold tracking-wider uppercase bg-zinc-900 px-1.5 py-0.5 rounded border border-white/5">STUDIO</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="text-base font-semibold text-zinc-100 tracking-tight">Guitariz</span>
-                                    <span className="text-xs text-rose-500 ml-1.5 font-medium tracking-wider">STUDIO</span>
-                                </div>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.05, rotate: 90 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={close}
-                                className="w-10 h-10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center transition-colors border border-white/[0.06]"
-                                aria-label="Close menu"
-                            >
-                                <X className="w-5 h-5 text-zinc-400" />
-                            </motion.button>
-                        </motion.div>
-
-                        {/* Main Grid Content */}
-                        <div className="max-w-6xl mx-auto w-full py-12 md:py-16 my-auto z-10 grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12">
-                            {/* Dashboard / Home Link Span */}
-                            <motion.div variants={itemVariants} className="md:col-span-12">
-                                <Link
-                                    to="/"
+                                <motion.button
+                                    whileHover={{ scale: 1.05, rotate: 90 }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={close}
-                                    data-menu-index={0}
-                                    className={cn(
-                                        "flex items-center gap-4 p-4 rounded-2xl transition-all border group relative overflow-hidden",
-                                        focusedIndex === 0 ? "border-rose-500/30 bg-rose-500/[0.03]" : "border-white/[0.04] bg-white/[0.01] hover:border-white/[0.08] hover:bg-white/[0.03]",
-                                        location.pathname === "/" && "border-rose-500/20 bg-rose-500/[0.02]"
-                                    )}
+                                    className="w-9 h-9 rounded-xl bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center transition-colors border border-white/[0.06]"
+                                    aria-label="Close menu"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-rose-500/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
-                                        <Home className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-sm font-semibold text-zinc-200 group-hover:text-zinc-100 transition-colors">Home Studio Dashboard</span>
-                                        <p className="text-xs text-zinc-500 group-hover:text-zinc-400 transition-colors mt-0.5">Access all professional audio analysis and music theory tools</p>
-                                    </div>
-                                </Link>
-                            </motion.div>
+                                    <X className="w-4 h-4 text-zinc-400 hover:text-white" />
+                                </motion.button>
+                            </div>
 
-                            {/* Dynamic Category Columns */}
-                            {menuCategories.map((category, catIdx) => (
-                                <div key={category.title} className="md:col-span-4 flex flex-col gap-6">
-                                    <motion.div variants={itemVariants} className="flex items-center gap-3">
-                                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
-                                            {category.title}
-                                        </span>
-                                        <div className="flex-1 h-[1px] bg-white/[0.06]" />
-                                    </motion.div>
+                            {/* Scrollable Menu Items */}
+                            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
+                                {/* Home / Dashboard Link */}
+                                <div className="space-y-2">
+                                    <Link
+                                        to="/"
+                                        onClick={close}
+                                        data-menu-index={0}
+                                        className={cn(
+                                            "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all group relative overflow-hidden",
+                                            focusedIndex === 0 
+                                                ? "border-emerald-500/30 bg-emerald-500/[0.03]" 
+                                                : "border-white/[0.04] bg-white/[0.01] hover:border-emerald-500/20 hover:bg-white/[0.02]",
+                                            location.pathname === "/" && "border-emerald-500/30 bg-emerald-500/[0.02]"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
+                                            location.pathname === "/"
+                                                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                                : "bg-zinc-900 border border-white/[0.05] text-zinc-400 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/25 group-hover:text-emerald-400"
+                                        )}>
+                                            <Home className="w-4.5 h-4.5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <span className={cn(
+                                                "text-sm font-medium transition-colors",
+                                                location.pathname === "/" ? "text-zinc-100 font-semibold" : "text-zinc-300 group-hover:text-zinc-100"
+                                            )}>
+                                                Home Dashboard
+                                            </span>
+                                            <p className="text-[11px] text-zinc-550 group-hover:text-zinc-400 transition-colors mt-0.5 truncate">Access all tools & utilities</p>
+                                        </div>
+                                    </Link>
+                                </div>
 
-                                    <div className="flex flex-col gap-3">
-                                        {category.items.map((item, itemIdx) => {
-                                            const currentFlatIndex = ++flatIndex;
-                                            const isActive = location.pathname === item.href;
-                                            const isFocused = focusedIndex === currentFlatIndex;
+                                {/* Dynamic Category Links */}
+                                {menuCategories.map((category) => (
+                                    <div key={category.title} className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-550">
+                                                {category.title}
+                                            </span>
+                                            <div className="h-[1px] flex-1 ml-4 bg-zinc-900" />
+                                        </div>
 
-                                            return (
-                                                <motion.div key={item.label} variants={itemVariants}>
+                                        <div className="flex flex-col gap-2">
+                                            {category.items.map((item) => {
+                                                const currentFlatIndex = ++flatIndex;
+                                                const isActive = location.pathname === item.href;
+                                                const isFocused = focusedIndex === currentFlatIndex;
+
+                                                return (
                                                     <Link
+                                                        key={item.label}
                                                         to={item.href}
                                                         onClick={close}
                                                         data-menu-index={currentFlatIndex}
                                                         className={cn(
-                                                            "flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all group relative overflow-hidden",
-                                                            isFocused ? "border-rose-500/30 bg-rose-500/[0.03]" : "border-white/[0.04] bg-white/[0.01] hover:border-rose-500/20 hover:bg-white/[0.03]",
-                                                            isActive && "border-rose-500/30 bg-rose-500/[0.03]"
+                                                            "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all group relative overflow-hidden",
+                                                            isFocused 
+                                                                ? "border-emerald-500/30 bg-emerald-500/[0.03]" 
+                                                                : "border-white/[0.04] bg-white/[0.01] hover:border-emerald-500/20 hover:bg-white/[0.02]",
+                                                            isActive && "border-emerald-500/30 bg-emerald-500/[0.03]"
                                                         )}
                                                     >
-                                                        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                                         <div className={cn(
                                                             "w-9 h-9 rounded-lg flex items-center justify-center transition-all shrink-0",
                                                             isActive
-                                                                ? "bg-rose-500/15 border border-rose-500/25 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.1)]"
-                                                                : "bg-white/[0.03] border border-white/[0.05] text-zinc-400 group-hover:bg-rose-500/10 group-hover:border-rose-500/20 group-hover:text-rose-400"
+                                                                ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                                                : "bg-zinc-900 border border-white/[0.05] text-zinc-400 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/25 group-hover:text-emerald-400"
                                                         )}>
                                                             <item.icon className="w-4 h-4" />
                                                         </div>
@@ -300,75 +286,75 @@ export const GlobalMenu = () => {
                                                                     {item.label}
                                                                 </span>
                                                                 {item.badge && (
-                                                                    <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                                                    <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                                                         {item.badge}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className="text-[11px] text-zinc-500 group-hover:text-zinc-400 transition-colors mt-0.5 truncate">{item.description}</p>
+                                                            <p className="text-[11px] text-zinc-550 group-hover:text-zinc-400 transition-colors mt-0.5 truncate">{item.description}</p>
                                                         </div>
                                                     </Link>
-                                                </motion.div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
 
-                        {/* Bottom Footer Actions */}
-                        <motion.div variants={itemVariants} className="max-w-6xl mx-auto w-full pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-6 z-10 text-xs text-zinc-500">
-                            {/* Coffee link */}
-                            <a
-                                href="https://ko-fi.com/abhi9vaidya"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/[0.15] hover:bg-amber-500/[0.08] hover:border-amber-500/30 text-amber-500 transition-all font-semibold"
-                            >
-                                <Coffee className="w-4 h-4" />
-                                <span>Support: Buy me a coffee</span>
-                            </a>
-
-                            {/* PWA Install Button */}
-                            {!isInstalled ? (
-                                <button
-                                    onClick={async () => {
-                                        if (isInstallable) {
-                                            await promptInstall();
-                                        } else {
-                                            setShowInstallGuide(true);
-                                        }
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/20 text-zinc-300 transition-all"
-                                >
-                                    <Download className="w-4 h-4 text-rose-500" />
-                                    <span>Install App PWA</span>
-                                </button>
-                            ) : (
-                                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-400">
-                                    <Check className="w-4 h-4" />
-                                    <span>PWA Installed</span>
-                                </div>
-                            )}
-
-                            {/* GitHub Info */}
-                            <div className="flex items-center gap-4">
+                            {/* Pinned Sticky Footer - Always Visible */}
+                            <div className="p-6 border-t border-zinc-900 bg-zinc-950 flex flex-col gap-3">
+                                {/* Buy me a coffee */}
                                 <a
-                                    href="https://github.com/Guitariz/Guitariz"
+                                    href="https://ko-fi.com/abhi9vaidya"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-zinc-500 hover:text-zinc-350 transition-colors"
+                                    className="flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/[0.15] hover:bg-amber-500/[0.08] hover:border-amber-500/30 text-amber-500 text-xs font-semibold transition-all"
                                 >
-                                    <Github className="w-4 h-4" />
-                                    <span>Open Source GitHub</span>
+                                    <Coffee className="w-4 h-4" />
+                                    <span>Support: Buy me a coffee</span>
                                 </a>
-                                <span className="flex items-center gap-1.5 text-zinc-600 font-medium">
-                                    <Sparkles className="w-3 h-3 text-zinc-700" />
-                                    v1.7.0
-                                </span>
+
+                                {/* Install PWA */}
+                                {!isInstalled ? (
+                                    <button
+                                        onClick={async () => {
+                                            if (isInstallable) {
+                                                await promptInstall();
+                                            } else {
+                                                setShowInstallGuide(true);
+                                            }
+                                        }}
+                                        className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05] hover:border-white/20 text-zinc-300 text-xs font-semibold transition-all"
+                                    >
+                                        <Download className="w-4 h-4 text-emerald-400" />
+                                        <span>Install App PWA</span>
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-400 text-xs font-semibold">
+                                        <Check className="w-4 h-4" />
+                                        <span>PWA Installed</span>
+                                    </div>
+                                )}
+
+                                {/* GitHub & Version Link */}
+                                <div className="flex items-center justify-between mt-2 pt-2 text-[10px] text-zinc-550 border-t border-zinc-900/50">
+                                    <a
+                                        href="https://github.com/Guitariz/Guitariz"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 hover:text-zinc-300 transition-colors font-medium"
+                                    >
+                                        <Github className="w-3.5 h-3.5" />
+                                        <span>Open Source GitHub</span>
+                                    </a>
+                                    <span className="flex items-center gap-1.5 font-semibold">
+                                        <Sparkles className="w-3 h-3 text-zinc-700 animate-pulse" />
+                                        v1.7.0
+                                    </span>
+                                </div>
                             </div>
                         </motion.div>
-                    </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 
