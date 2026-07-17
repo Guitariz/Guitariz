@@ -6,9 +6,9 @@ import RelatedTools from "@/components/RelatedTools";
 
 const ScalesPage = () => {
   usePageMetadata({
-    title: "Guitar Scale Explorer - Interactive Scale Patterns & Modes | Guitariz",
-    description: "Explore guitar scales and modes visually. Interactive patterns for major, minor, pentatonic, and exotic scales. Master improvisation and soloing.",
-    keywords: "guitar scales, music modes, scale explorer, pentatonic scale, blues scale, major scale, minor scale, modal relationships",
+    title: "Guitar Scale Explorer - Interactive Western Modes & Indian Ragas | Guitariz",
+    description: "Explore guitar scales and modes visually. Map Western modes and Indian Classical music Ragas (Bhairav, Yaman, Bilawal) onto an interactive guitar neck.",
+    keywords: "guitar scales, music modes, scale explorer, pentatonic scale, blues scale, indian classical ragas guitar, bhairav raga guitar, hindustani music guitar, carnatic scales, raga scale patterns, indian scale on guitar",
     canonicalUrl: "https://guitariz.studio/scales",
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
@@ -97,6 +97,10 @@ const ScalesPage = () => {
             {
               question: "How do I see patterns on the guitar neck?",
               answer: "Simply select a scale and a root key from the menu. The notes will instantly populate onto the interactive fretboard."
+            },
+            {
+              question: "Does the Scale Explorer support Indian Classical music systems?",
+              answer: "Yes! The Scale Explorer supports both Western music theory (such as major, natural minor, pentatonic, and blues scales) and Indian Classical music systems (including Hindustani parent scales/Thaats and major Ragas like Bhairav, Bhairavi, Yaman, Bilawal, Darbari, and Malkauns)."
             },
             {
               question: "Can I use the Scale Explorer for piano or other instruments?",

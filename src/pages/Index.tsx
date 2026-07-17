@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
+import { SEOContent } from "@/components/SEOContent";
 
 // Featured AI tools (first row: 3 cards side by side)
 const featuredTools = [
@@ -17,7 +18,7 @@ const featuredTools = [
 const toolCards = [
   { title: "Fretboard", desc: "Interactive neck with adaptive note labeling.", icon: Music2, to: "/fretboard", color: "from-emerald-500/20 to-teal-500/20" },
   { title: "Chord Library", desc: "1,000+ voicings with interactive diagrams.", icon: Layers, to: "/chords", color: "from-blue-500/20 to-indigo-500/20" },
-  { title: "Scale Explorer", desc: "Visualize modes and exotic scales instantly.", icon: Disc, to: "/scales", color: "from-purple-500/20 to-pink-500/20" },
+  { title: "Scale Explorer", desc: "Visualize Western modes & Indian Classical Ragas instantly.", icon: Disc, to: "/scales", color: "from-purple-500/20 to-pink-500/20" },
   { title: "Theory Wheel", desc: "Interactive Circle of Fifths and key logic.", icon: BookOpen, to: "/theory", color: "from-amber-500/20 to-orange-500/20" },
   { title: "Metronome", desc: "High-precision timing with visual pulse.", icon: Music, to: "/metronome", color: "from-orange-500/20 to-red-500/20" },
   { title: "Ear Training", desc: "Gamified interval recognition and pitch training.", icon: Trophy, to: "/ear-training", color: "from-yellow-500/20 to-amber-500/20" },
@@ -26,13 +27,40 @@ const toolCards = [
   { title: "Blog & Guides", desc: "Music theory, ear training, and AI production articles.", icon: FileText, to: "/blog", color: "from-sky-500/20 to-cyan-500/20" },
 ];
 
+const homeFaqs = [
+  {
+    question: "What is Guitariz Studio?",
+    answer: "Guitariz Studio is an advanced, 100% free web-based music laboratory featuring state-of-the-art AI chord recognition (Chord AI), vocal remover & stem separation tools, and interactive music theory utilities. There are no subscriptions, paywalls, or limits."
+  },
+  {
+    question: "How accurate is the Chord AI free tool?",
+    answer: "Our free Chord AI engine uses deep learning models built on Librosa and Madmom neural networks to isolate harmonically rich instrumental parts. Modern acoustic tracks typically achieve 85% to 95% chord recognition accuracy. You can upload local MP3, WAV, or FLAC files, or analyze YouTube video audio directly."
+  },
+  {
+    question: "How do I extract vocals or split audio stems on Guitariz?",
+    answer: "The AI Stem Separator utilizes Meta's state-of-the-art Demucs deep learning model. You can split any song into up to 6 distinct stems (vocals, drums, bass, guitar, piano, and other instruments). Alternatively, the Vocal Splitter provides a quick, one-click solution to isolate vocals and instrumental tracks in your browser."
+  },
+  {
+    question: "Does the Scale Explorer support both Western and Indian music systems?",
+    answer: "Yes! The Scale Explorer maps over 100 musical scales directly onto an interactive 24-fret guitar neck and 88-key piano. It bridges traditional Western modes (like Ionian, Dorian, and Phrygian) with Indian Classical music systems (including major Hindustani and Carnatic Ragas like Bhairav, Yaman, Bhairavi, Darbari, and Malkauns) for global guitar learning."
+  },
+  {
+    question: "Can I detect chords directly from YouTube videos?",
+    answer: "Yes, you can paste any public YouTube URL into the Chord AI or Vocal Splitter search bar. Our backend securely processes the audio to extract chords or separate stems, allowing you to play along with your favorite tracks in real time."
+  },
+  {
+    question: "Is my uploaded audio data secure and private?",
+    answer: "Absolutely. All client-side tools like the virtual fretboard, tuner, metronome, and scale maps run fully locally in your browser. Uploaded audio files for Chord AI and Stem Separation are processed securely on our server to run AI models and are never permanently stored or shared."
+  }
+];
+
 const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   usePageMetadata({
-    title: "Guitariz - Chord AI Free, Stem Splitter AI & Music Studio Tools",
-    description: "The ultimate free music studio: Chord AI free, stem splitter ai, vocal remover, interactive fretboard, and more. Professional AI music tools with no subscription.",
-    keywords: "chord ai, chord ai free, stem splitter ai, vocal splitter, vocal remover, music theory, guitar chords, fretboard, scale explorer, music studio, free music tools",
+    title: "Free AI Chord Recognition, Stem Splitter & Guitar Scales | Guitariz",
+    description: "The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.",
+    keywords: "chord ai, chord ai free, free chord ai alternative, detect chords from mp3, youtube chord detector, ai guitar chord detector, stem splitter ai, vocal splitter, vocal remover, guitar scales, indian ragas guitar, music theory, free music tools",
     canonicalUrl: "https://guitariz.studio",
     ogUrl: "https://guitariz.studio",
     ogImage: "https://guitariz.studio/logo.png",
@@ -133,7 +161,7 @@ const Index = () => {
                 className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
               >
                 <Headphones className="w-3 h-3" />
-                <span>Modern Music Laboratory</span>
+                <span>Free AI Chord Recognition & Music Tools</span>
               </motion.div>
 
               <div className="space-y-6">
@@ -169,7 +197,7 @@ const Index = () => {
                   transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
                   className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light"
                 >
-                  A high-fidelity technical suite for the modern guitarist. Neural audio analysis meets <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">architectural music theory</span>.
+                  Detect chords from songs, MP3s, & YouTube with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Chord AI free</span>. Split vocal stems and explore guitar scales in Western theory and Indian Ragas—100% free.
                 </motion.p>
               </div>
 
@@ -312,6 +340,8 @@ const Index = () => {
                 ))}
               </div>
             </motion.div>
+
+            <SEOContent faqs={homeFaqs} pageName="home" />
           </div>
         </section>
       </main>

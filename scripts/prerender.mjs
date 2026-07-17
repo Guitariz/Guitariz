@@ -8,8 +8,8 @@ const TODAY = '2026-07-15';
 const routes = [
   {
     url: '/',
-    title: 'Guitariz - Chord AI Free, Stem Splitter AI & Music Studio Tools',
-    description: 'The ultimate free music studio: Chord AI free, stem splitter ai, vocal remover, interactive fretboard, and more. Professional AI music tools with no subscription.',
+    title: 'Free AI Chord Recognition, Stem Splitter & Guitar Scales - Guitariz',
+    description: 'The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.',
     canonical: 'https://guitariz.studio/',
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
