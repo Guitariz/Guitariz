@@ -23,6 +23,7 @@ const ChordAIPage = lazy(() => import("./pages/ChordAIPage"));
 const VocalSplitterPage = lazy(() => import("./pages/VocalSplitterPage"));
 const StemSeparatorPage = lazy(() => import("./pages/StemSeparatorPage"));
 const TheoryPage = lazy(() => import("./pages/TheoryPage"));
+const RagaTheoryPage = lazy(() => import("./pages/RagaTheoryPage"));
 const TunerPage = lazy(() => import("./pages/TunerPage"));
 const EarTrainingPage = lazy(() => import("./pages/EarTrainingPage"));
 const JamPage = lazy(() => import("./pages/JamPage"));
@@ -220,6 +221,18 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <TheoryPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/raga-theory"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <RagaTheoryPage />
                       </main>
                     </PageWrapper>
                   </Suspense>

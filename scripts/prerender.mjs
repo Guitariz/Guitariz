@@ -282,6 +282,45 @@ const routes = [
     })
   },
   {
+    url: '/raga-theory',
+    title: 'Indian Ragas & Western Scales: The Music Theory Bridge | Guitariz',
+    description: 'Hindustani Thaat System & Western Modes: A Comparative Guide. Compare Bilawal, Yaman, Kafi, Bhairav, and other Indian Ragas to Western music modes.',
+    canonical: 'https://guitariz.studio/raga-theory',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': 'https://guitariz.studio/raga-theory#webpage',
+          'url': 'https://guitariz.studio/raga-theory',
+          'name': 'Indian Ragas & Western Scales: The Music Theory Bridge',
+          'description': 'Bridge the Hindustani Classical music systems (the 10-Thaat classification) and Western music theory modes.'
+        },
+        {
+          '@type': 'FAQPage',
+          'mainEntity': [
+            {
+              '@type': 'Question',
+              'name': 'What is the Hindustani Thaat system?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'The Thaat system is a classification framework in Hindustani (North Indian) Classical music, formalized by Pandit Vishnu Narayan Bhatkhande. It consists of exactly ten parent scales (Thaats) from which all ragas are categorized.'
+              }
+            },
+            {
+              '@type': 'Question',
+              'name': 'How do Western modes map to Indian Thaats?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'Six Hindustani Thaats map directly to Western diatonic modes: Bilawal is equivalent to Ionian (Major Scale), Kalyan is Lydian, Khamaj is Mixolydian, Kafi is Dorian, Asavari is Aeolian (Natural Minor), and Bhairavi is Phrygian. The other four Thaats (Bhairav, Todi, Poorvi, Marwa) do not have clean Western diatonic equivalents.'
+              }
+            }
+          ]
+        }
+      ]
+    })
+  },
+  {
     url: '/theory',
     title: 'Interactive Circle of Fifths - Music Theory Lab | Guitariz',
     description: 'Master functional harmony with our interactive Circle of Fifths. Visualize key relationships, modulations, and chord families.',

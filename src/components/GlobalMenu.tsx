@@ -60,6 +60,7 @@ const menuCategories: MenuCategory[] = [
         items: [
             { label: "Chord Library", icon: Music, href: "/chords", description: "1,000+ voicings & diagrams" },
             { label: "Scale Explorer", icon: Layers, href: "/scales", description: "Visualize modes & exotic scales" },
+            { label: "Raga Theory", icon: BookOpen, href: "/raga-theory", description: "Indian Ragas & Western scales bridge" },
             { label: "Theory Lab", icon: BookOpen, href: "/theory", description: "Circle of Fifths & harmony" },
             { label: "Ear Training", icon: Trophy, href: "/ear-training", description: "Interval recognition drills" },
             { label: "Blog", icon: BookOpen, href: "/blog", description: "Music theory & AI guides" },
