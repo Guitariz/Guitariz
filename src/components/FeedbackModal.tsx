@@ -177,9 +177,6 @@ export const FeedbackModal = () => {
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
               className="relative w-full max-w-md bg-[#0a0a0a]/90 border border-white/10 backdrop-blur-2xl rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden"
             >
-              {/* Subtle Ambient Background Light */}
-              <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
               {/* Close Button */}
               <button
                 onClick={toggleModal}
@@ -256,7 +253,7 @@ export const FeedbackModal = () => {
                     <div className="mb-6 space-y-1.5">
                       <h3 className="text-xl font-semibold text-white font-display">Feedback & Ideas</h3>
                       <p className="text-xs text-zinc-500 leading-normal">
-                        Spotted a bug? Have an idea? Share it here—we'd love to hear from you.
+                        Spotted a bug? Have an idea? Share it here - we'd love to hear from you :)
                       </p>
                     </div>
 
