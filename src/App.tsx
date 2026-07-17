@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { GlobalMenu } from "@/components/GlobalMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import Lenis from "lenis";
 import PostHogPageView from "@/analytics/PageView";
 import GAPageView from "@/analytics/GAPageView";
@@ -90,6 +91,9 @@ const App = () => {
 
         {/* PWA Install Prompt */}
         <InstallPrompt />
+
+        {/* Floating Feedback Widget */}
+        <FeedbackModal />
 
         {/* Premium Deep Black Foundation */}
         <div className="fixed inset-0 z-[-1] bg-[#020202]" />
