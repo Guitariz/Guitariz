@@ -44,17 +44,20 @@ const Footer = () => {
                     {/* Social / Legal */}
                     <div>
                         <h4 className="font-semibold text-white mb-4">Connect</h4>
-                        <div className="flex gap-4">
-                            <a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors">
+                        <div className="flex gap-4 mb-4">
+                            <a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors" title="GitHub">
                                 <Github className="w-5 h-5" />
                             </a>
-                            <a href="https://x.com/GuitarizStudio" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors">
+                            <a href="https://x.com/GuitarizStudio" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors" title="X (formerly Twitter)">
                                 <Twitter className="w-5 h-5" />
                             </a>
-                            <a href="mailto:guitariz.studio@gmail.com" className="text-muted-foreground hover:text-white transition-colors">
+                            <a href="mailto:guitariz.studio@gmail.com" className="text-muted-foreground hover:text-white transition-colors" title="Email">
                                 <Mail className="w-5 h-5" />
                             </a>
                         </div>
+                        <p className="text-[10px] text-zinc-500 leading-normal">
+                            Note: We do not have any official Instagram page. Any Instagram account using the name "Guitariz" is completely unaffiliated.
+                        </p>
                     </div>
                 </div>
 

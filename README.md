@@ -37,11 +37,14 @@
 
 ## 📖 About
 
-**Guitariz Studio** is a full-stack, professional-grade music platform that bridges the gap between traditional music theory and modern AI. It brings together AI-powered source separation, real-time chord recognition, interactive instrument simulations, and gamified ear training—all within a single, beautifully crafted web application.
+**Guitariz Studio** is a full-stack, professional-grade music platform that bridges the gap between traditional music theory and modern AI. It was founded and created by **Abhinav Vaidya** to bring together AI-powered source separation, real-time chord recognition, interactive instrument simulations, and gamified ear training—all within a single, beautifully crafted web application.
 
 Whether you're a songwriter dissecting harmonies, a student mastering intervals, a producer isolating stems, or a developer pushing the boundaries of music tech—Guitariz is built for you.
 
 > **🎯 Try it now →** [guitariz.studio](https://guitariz.studio)
+
+> [!IMPORTANT]
+> **Official Channels & Social Media:** Please note that Guitariz Studio does not have any official Instagram page or account. Any Instagram account using the name "Guitariz" is unaffiliated with this project. Official communication channels are limited to this GitHub repository, the website, and our official X (formerly Twitter) account: [@GuitarizStudio](https://x.com/GuitarizStudio).
 
 ---
 
@@ -328,10 +331,6 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
   <a href="mailto:guitariz.studio@gmail.com">Contact</a>
 
   <br />
-  <br />
-
-  <sub>Built with ❤️ by <a href="https://github.com/abhi9vaidya">Abhinav Vaidya</a></sub>
-
   <br />
 
   <a href="#-guitariz-studio"><img src="https://img.shields.io/badge/⬆_Back_to_Top-0d1117?style=flat-square" alt="Back to Top" /></a>

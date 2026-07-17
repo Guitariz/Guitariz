@@ -53,6 +53,11 @@ const routes = [
           'name': 'Guitariz Studio',
           'url': 'https://guitariz.studio/',
           'logo': 'https://guitariz.studio/logo2.png',
+          'founder': {
+            '@type': 'Person',
+            'name': 'Abhinav Vaidya',
+            'url': 'https://github.com/abhi9vaidya'
+          },
           'sameAs': [
             'https://x.com/GuitarizStudio',
             'https://github.com/Guitariz/Guitariz'

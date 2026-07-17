@@ -1,7 +1,9 @@
 # Guitariz Studio
-> Professional music theory and AI analysis tools for musicians.
+> Professional music theory and AI analysis tools for musicians. Created and founded by Abhinav Vaidya.
 
 Guitariz Studio is a suite of free, high-precision tools for guitarists, music producers, and music students. It requires no subscription and runs powerful AI models directly on the web and scalable backends.
+
+Note: Guitariz Studio does not have an official Instagram page. Any Instagram account under the name "Guitariz" is unaffiliated.
 
 ## AI Tools
 - [Chord AI](https://guitariz.studio/chord-ai): Extracts chords, tempo, and key signatures from any audio file using Librosa and Madmom neural networks.
