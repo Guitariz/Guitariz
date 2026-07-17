@@ -197,7 +197,7 @@ const Index = () => {
                   transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
                   className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light"
                 >
-                  Detect chords from songs, MP3s, & YouTube with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Chord AI free</span>. Split vocal stems and explore guitar scales in Western theory and Indian Ragas—100% free.
+                  Detect chords from songs, MP3s, & YouTube with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Chord AI free</span>. Split vocal stems and explore guitar scales in Western theory and Indian Ragas - 100% free <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">:)</span>
                 </motion.p>
               </div>
 
