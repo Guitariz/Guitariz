@@ -54,7 +54,7 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 
 | Feature | Description |
 |:--|:--|
-| **Chord AI** | Upload any audio file and get real-time chord recognition powered by Hidden Markov Models via **Madmom**. |
+| **Chord AI** | Upload any audio file for high-accuracy chord recognition, powered by **Librosa** (CQT chroma, HPSS, and tuning deviation cents estimation) and HMM backups. |
 | **Stem Separator** | Isolate vocals, drums, bass, and other instruments using Meta's state-of-the-art **Demucs** deep learning model. |
 | **Vocal Splitter** | One-click vocal extraction for creating instrumentals or acapellas from any track. |
 | **Precision Tuner** | Advanced chromatic tuner with cent-level accuracy for guitar, bass, ukulele, and vocals. |
@@ -64,8 +64,9 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 | Feature | Description |
 |:--|:--|
 | **Ear Training Arcade** | Gamified modules for **interval recognition**, **chord identification**, and **perfect pitch** training with streak tracking. |
+| **Raga Theory Explorer** | Learn the bridge between Western modes (Dorian, Aeolian, etc.) and Indian Classical Thaats/Ragas (Kafi, Asavari, Bhairav, Yaman) with interactive audio neck visualization. |
 | **Scale Explorer** | Visualize 50+ Western and Eastern scales across the Circle of Fifths, with modal breakdowns and theory context. |
-| **Virtual Fretboard** | Fully interactive 24-fret guitar simulation with real-time interval mapping, note highlighting, and 3D view. |
+| **Virtual Fretboard** | Fully interactive 24-fret guitar neck featuring a drag-and-drop Capo (with dynamic pitch-shifting and dead-fret disabling), note highlighting, and 3D view. |
 | **Virtual Piano** | 88-key piano with chord/scale overlays and keyboard shortcut support. |
 
 ### 🛠️ Platform & DX
@@ -192,7 +193,7 @@ guitariz/
   </tr>
   <tr>
     <td><strong>Infra & Analytics</strong></td>
-    <td>Vercel (Frontend) · Docker (Backend) · GitHub Actions CI · PostHog · Ahrefs</td>
+    <td>Vercel (Frontend) · Cloudflare (CDN Caching & Protection) · Docker (Backend) · GitHub Actions CI · PostHog · Ahrefs</td>
   </tr>
 </table>
 
@@ -290,7 +291,7 @@ Looking for a place to start? Check out issues tagged [`good first issue`](https
 
 ## 🗺️ Roadmap
 
-- [ ] Real-time YouTube audio chord analysis
+- [ ] Metadata-only YouTube search with local audio upload-matching workflow (copyright-safe)
 - [ ] MIDI export from Chord AI detections
 - [ ] Collaborative jam rooms via WebRTC
 - [ ] Mobile-native app (React Native / Capacitor)
