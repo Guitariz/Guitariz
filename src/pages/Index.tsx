@@ -34,7 +34,7 @@ const homeFaqs = [
   },
   {
     question: "How accurate is the Chord AI free tool?",
-    answer: "Our free Chord AI engine uses deep learning models built on Librosa and Madmom neural networks to isolate harmonically rich instrumental parts. Modern acoustic tracks typically achieve 85% to 95% chord recognition accuracy. You can upload local MP3, WAV, or FLAC files, or analyze YouTube video audio directly."
+    answer: "Our free Chord AI engine uses deep learning models built on Librosa and Madmom neural networks to isolate harmonically rich instrumental parts. Modern acoustic tracks typically achieve 85% to 95% chord recognition accuracy. You can upload local MP3, WAV, FLAC, or M4A files to analyze them instantly."
   },
   {
     question: "How do I extract vocals or split audio stems on Guitariz?",
@@ -45,8 +45,8 @@ const homeFaqs = [
     answer: "Yes! The Scale Explorer maps over 100 musical scales directly onto an interactive 24-fret guitar neck and 88-key piano. It bridges traditional Western modes (like Ionian, Dorian, and Phrygian) with Indian Classical music systems (including major Hindustani and Carnatic Ragas like Bhairav, Yaman, Bhairavi, Darbari, and Malkauns) for global guitar learning."
   },
   {
-    question: "Can I detect chords directly from YouTube videos?",
-    answer: "Yes, you can paste any public YouTube URL into the Chord AI or Vocal Splitter search bar. Our backend securely processes the audio to extract chords or separate stems, allowing you to play along with your favorite tracks in real time."
+    question: "How do I analyze my favorite songs?",
+    answer: "Simply upload your local audio files (MP3, WAV, FLAC, M4A, etc.) directly into the Chord AI or Vocal Splitter. Our backend securely processes the audio in real time, allowing you to extract chords or separate vocal stems to play along."
   },
   {
     question: "Is my uploaded audio data secure and private?",
@@ -59,8 +59,8 @@ const Index = () => {
 
   usePageMetadata({
     title: "Free AI Chord Recognition, Stem Splitter & Guitar Scales | Guitariz",
-    description: "The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.",
-    keywords: "chord ai, chord ai free, free chord ai alternative, detect chords from mp3, youtube chord detector, ai guitar chord detector, stem splitter ai, vocal splitter, vocal remover, guitar scales, indian ragas guitar, music theory, free music tools",
+    description: "The best free browser-based music studio. Detect chords from MP3 & audio files with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.",
+    keywords: "chord ai, chord ai free, free chord ai alternative, detect chords from mp3, ai guitar chord detector, stem splitter ai, vocal splitter, vocal remover, guitar scales, indian ragas guitar, music theory, free music tools",
     canonicalUrl: "https://guitariz.studio",
     ogUrl: "https://guitariz.studio",
     ogImage: "https://guitariz.studio/logo.png",
@@ -197,7 +197,7 @@ const Index = () => {
                   transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
                   className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light"
                 >
-                  Detect chords from songs, MP3s, & YouTube with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Chord AI free</span>. Split vocal stems and explore guitar scales in Western theory and Indian Ragas - 100% free <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">:)</span>
+                  Detect chords from songs & MP3s with <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Chord AI free</span>. Split vocal stems and explore guitar scales in Western theory and Indian Ragas - 100% free <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">:)</span>
                 </motion.p>
               </div>
 
