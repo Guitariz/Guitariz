@@ -315,7 +315,7 @@ const StemSeparatorPage = () => {
             formData.append("file", selectedFile);
             formData.append("format", "mp3");
 
-            const apiUrl = (import.meta.env.VITE_STEMS_API_URL || "").replace(/\/+$/, "");
+            const apiUrl = (import.meta.env.VITE_STEMS_API_URL || import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
             const endpoint = `${apiUrl}/api/separate-stems`;
 
             const result = await new Promise<Record<string, string>>((resolve, reject) => {
