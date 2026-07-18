@@ -57,6 +57,37 @@ interface FretNote {
 
 // Chord patterns: intervals from root
 
+// Safe localStorage helpers (prevents crashes on malformed/corrupted values)
+const readJson = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const readString = (key: string, fallback: string): string => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const readInt = (key: string, fallback: number): number => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 type FretboardProps = {
   initialChordVoicing?: number[] | null;
 };
@@ -69,44 +100,6 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   const fretsContainerRef = useRef<HTMLDivElement>(null);
   const fretsContainerWidthRef = useRef(0);
   const instrumentRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (fretsContainerRef.current) {
-      fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
-      setIsMeasured(true);
-    }
-  }, []); // Only run once after mount, as pianoMode is undefined here
-
-  // Safe localStorage helpers (prevents crashes on malformed/corrupted values)
-  const readJson = <T,>(key: string, fallback: T): T => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return fallback;
-      return JSON.parse(raw) as T;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const readString = (key: string, fallback: string): string => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ?? fallback;
-    } catch {
-      return fallback;
-    }
-  };
-
-  const readInt = (key: string, fallback: number): number => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === null) return fallback;
-      const n = parseInt(raw, 10);
-      return Number.isFinite(n) ? n : fallback;
-    } catch {
-      return fallback;
-    }
-  };
 
   const [pianoMode, setPianoMode] = useState(() => readJson<boolean>('piano-mode', false));
   const [pianoNotes, setPianoNotes] = useState<number[]>([]);
@@ -138,6 +131,35 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   const [focusScale, setFocusScale] = useState(() => readJson<boolean>('scale-focus', false));
   const [hoverPreviewEnabled, setHoverPreviewEnabled] = useState(() => readJson<boolean>('hover-preview-enabled', true));
   const [hovered, setHovered] = useState<{ string: number; fret: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!pianoMode && fretsContainerRef.current) {
+      fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
+      setIsMeasured(true);
+    } else {
+      setIsMeasured(false);
+    }
+  }, [pianoMode]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (!pianoMode && fretsContainerRef.current) {
+        fretsContainerWidthRef.current = fretsContainerRef.current.offsetWidth;
+        const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+        barreX.set(barreFret * fretPlusNutWidth);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [pianoMode, barreFret, barreX]);
+
+  // Handle initial positioning of barreX when first measured
+  useEffect(() => {
+    if (isMeasured && fretsContainerWidthRef.current > 0) {
+      const fretPlusNutWidth = fretsContainerWidthRef.current / (FRETS + 1);
+      barreX.set(barreFret * fretPlusNutWidth);
+    }
+  }, [isMeasured, barreX, barreFret]);
 
   // Save settings to localStorage
   useEffect(() => {
@@ -202,6 +224,22 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
 
   // Handle Enter key to strum fretboard notes
   // (moved below strum helpers to avoid reference order issues)
+
+  const getNoteAtFret = useCallback((stringIndex: number, fret: number): string => {
+    const openNote = NOTES[stringIndex];
+    const openNoteIndex = CHROMATIC.indexOf(openNote);
+    const activeFret = fret === 0 ? barreFret : fret;
+    const noteIndex = (openNoteIndex + activeFret) % 12;
+    return CHROMATIC[noteIndex];
+  }, [barreFret]);
+
+  const getNotesForFret = useCallback((fret: number): FretNote[] => {
+    return NOTES.map((_, stringIndex) => ({
+      string: stringIndex,
+      fret: fret,
+      note: getNoteAtFret(stringIndex, fret)
+    }));
+  }, [getNoteAtFret]);
 
   // Fretboard keyboard integration
   const { activeNotes: keyboardActiveNotes } = useKeyboardFretboard({
@@ -269,22 +307,8 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
     });
 
     return { candidates, midiNotes, noteNames };
-  }, [highlightedNotes, pianoNotes, pianoMode, detectionStrictness, maxCandidates]);
+  }, [highlightedNotes, pianoNotes, pianoMode, detectionStrictness, maxCandidates, getNoteAtFret, keyboardActiveNotes]);
 
-  const getNoteAtFret = useCallback((stringIndex: number, fret: number): string => {
-    const openNote = NOTES[stringIndex];
-    const openNoteIndex = CHROMATIC.indexOf(openNote);
-    const noteIndex = (openNoteIndex + fret) % 12;
-    return CHROMATIC[noteIndex];
-  }, []);
-
-  const getNotesForFret = useCallback((fret: number): FretNote[] => {
-    return NOTES.map((_, stringIndex) => ({
-      string: stringIndex,
-      fret: fret,
-      note: getNoteAtFret(stringIndex, fret)
-    }));
-  }, [getNoteAtFret]);
 
   const toggleFret = (fretToToggle: number) => {
     const notesForFret = getNotesForFret(fretToToggle);
@@ -472,8 +496,9 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
 
   const getNoteFrequency = useCallback((stringIndex: number, fret: number): number => {
     const base = STRING_BASE_FREQ[stringIndex] ?? 110; // fallback A2
-    return base * Math.pow(2, fret / 12);
-  }, []);
+    const activeFret = fret === 0 ? barreFret : fret;
+    return base * Math.pow(2, activeFret / 12);
+  }, [barreFret]);
 
   const previewNote = useCallback((stringIndex: number, fret: number) => {
     const freq = getNoteFrequency(stringIndex, fret);
@@ -487,12 +512,12 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
     // Convert pattern to a 6-fret array for playChord
     const frets = [-1, -1, -1, -1, -1, -1];
     pattern.forEach(p => {
-      frets[p.string] = p.fret;
+      frets[p.string] = p.fret === 0 ? barreFret : p.fret;
     });
 
     // Use optimized playChord with arpeggiation and correct timing
     playChord(frets, 0.45, 'piano', 'down');
-  }, [getStrumPattern]);
+  }, [getStrumPattern, barreFret]);
 
   const strumUp = useCallback(() => {
     const pattern = getStrumPattern();
@@ -500,12 +525,12 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
 
     const frets = [-1, -1, -1, -1, -1, -1];
     pattern.forEach(p => {
-      frets[p.string] = p.fret;
+      frets[p.string] = p.fret === 0 ? barreFret : p.fret;
     });
 
     // Use optimized playChord for upstrum
     playChord(frets, 0.45, 'piano', 'up');
-  }, [getStrumPattern]);
+  }, [getStrumPattern, barreFret]);
 
   // Allow Enter to strum highlighted frets when keyboard control is off
   useEffect(() => {
@@ -818,11 +843,11 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                       </div>
                     </div>
 
-                    {NOTES.map((openNote, stringIndex) => (
+                    {NOTES.map((_openNote, stringIndex) => (
                       <div key={stringIndex} className="flex items-center gap-2">
                         {/* Open string note */}
                         <div className="w-10 text-center font-bold text-xs text-muted-foreground/50 italic">
-                          {openNote}
+                          {getNoteAtFret(stringIndex, 0)}
                         </div>
 
                         {/* Frets */}
@@ -898,6 +923,7 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                           {/* Frets 1-12 */}
                           {Array.from({ length: FRETS }).map((_, fret) => {
                             const fretNumber = fret + 1;
+                            const isBehindCapo = fretNumber < barreFret;
                             const note = getNoteAtFret(stringIndex, fretNumber);
                             const scaleLabel = getScaleLabelForNote(note);
                             const isInScale = getScaleContext.enabled && !!scaleLabel;
@@ -912,36 +938,45 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                                 {/* Fret wire */}
                                 <div className="absolute left-0 w-[1.5px] h-10 bg-white/10" />
 
+                                {/* Capo Bar segment on this fret string space */}
+                                {fretNumber === barreFret && (
+                                  <div className="absolute top-0 bottom-0 w-3 bg-amber-500/80 dark:bg-amber-600/80 border-x border-amber-400/50 z-20 shadow-[0_0_10px_rgba(245,158,11,0.5)] rounded-sm pointer-events-none" />
+                                )}
+
                                 <motion.button
-                                  whileHover={{ scale: 1.15, shadow: "0 0 20px rgba(255,255,255,0.2)" }}
-                                  whileTap={{ scale: 0.9 }}
+                                  whileHover={isBehindCapo ? {} : { scale: 1.15, shadow: "0 0 20px rgba(255,255,255,0.2)" }}
+                                  whileTap={isBehindCapo ? {} : { scale: 0.9 }}
+                                  disabled={isBehindCapo}
                                   onClick={() => toggleNote(stringIndex, fretNumber)}
                                   onMouseEnter={() => {
+                                    if (isBehindCapo) return;
                                     setHovered({ string: stringIndex, fret: fretNumber });
                                     if (!pianoMode && hoverPreviewEnabled) previewNote(stringIndex, fretNumber);
                                   }}
                                   onMouseLeave={() => setHovered(null)}
                                   className={cn(
                                     "relative w-9 h-9 rounded-full border-2 transition-all duration-300 group z-10",
-                                    isHighlighted
-                                      ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.5)]"
-                                      : isActive
-                                        ? "bg-primary border-primary text-primary-foreground shadow-[0_0_20px_hsla(var(--primary),0.5)]"
-                                        : isInScale
-                                          ? isRoot
-                                            ? "border-primary bg-primary/30 text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]"
-                                            : "border-accent/60 bg-accent/20 text-white hover:border-accent"
-                                          : isDimmed
-                                            ? "border-white/5 opacity-20 filter grayscale"
-                                            : "border-white/10 hover:border-white/30 bg-white/5 text-white/70",
-                                    isHovered && !isDimmed ? "ring-2 ring-white/20 ring-offset-2 ring-offset-black/50" : ""
+                                    isBehindCapo
+                                      ? "border-white/5 bg-black/40 text-white/10 cursor-not-allowed opacity-25 z-0"
+                                      : isHighlighted
+                                        ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.5)]"
+                                        : isActive
+                                          ? "bg-primary border-primary text-primary-foreground shadow-[0_0_20px_hsla(var(--primary),0.5)]"
+                                          : isInScale
+                                            ? isRoot
+                                              ? "border-primary bg-primary/30 text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                                              : "border-accent/60 bg-accent/20 text-white hover:border-accent"
+                                            : isDimmed
+                                              ? "border-white/5 opacity-20 filter grayscale"
+                                              : "border-white/10 hover:border-white/30 bg-white/5 text-white/70",
+                                    isHovered && !isDimmed && !isBehindCapo ? "ring-2 ring-white/20 ring-offset-2 ring-offset-black/50" : ""
                                   )}
                                 >
                                   <motion.span
                                     layout
                                     className={cn(
                                       "text-[11px] font-black transition-opacity",
-                                      isDimmed ? "opacity-0" : "opacity-100",
+                                      isDimmed || isBehindCapo ? "opacity-0" : "opacity-100",
                                       isHighlighted ? "text-black" : ""
                                     )}
                                   >
