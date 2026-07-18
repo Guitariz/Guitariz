@@ -59,6 +59,10 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 | **Vocal Splitter** | One-click vocal extraction for creating instrumentals or acapellas from any track. |
 | **Precision Tuner** | Advanced chromatic tuner with cent-level accuracy for guitar, bass, ukulele, and vocals. |
 
+> **Note:** Chord AI requires the backend server to be running before chord detection will work.
+>
+> **Note:** Stem Separator requires the backend services to be available before separation can start.
+
 ### 🎮 Interactive Learning
 
 | Feature | Description |
@@ -236,25 +240,87 @@ The app will be available at **`http://localhost:5173`**.
 
 Required only for **Chord AI**, **Stem Separator**, and **Vocal Splitter** features.
 
+Supported Python versions:
+
+- Python `3.10+`
+- If you switch Python versions later, recreate the virtual environment and reinstall dependencies
+
+Step-by-step setup:
+
+1. Go to the backend folder.
+2. Create a virtual environment with your installed Python version.
+3. Activate the virtual environment.
+4. Install the Python dependencies.
+5. Start the FastAPI server.
+
+macOS / Linux:
+
 ```bash
 cd backend
-
-# Create and activate a virtual environment
-python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
+python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Start the FastAPI server
 python main.py
 ```
 
-> **Note:** First launch will download the Demucs model (~300 MB). Subsequent starts are instant.
+Windows PowerShell:
+
+```powershell
+cd backend
+py -3 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python main.py
+```
+
+Windows Command Prompt:
+
+```cmd
+cd backend
+py -3 -m venv .venv
+.venv\Scripts\activate.bat
+pip install -r requirements.txt
+python main.py
+```
+
+> **Note:** The first launch downloads the Demucs pretrained model automatically. The download is about 300 MB, so startup can take longer the first time.
+
+## ❓ Troubleshooting FAQ
+
+### Demucs model download on first run
+
+> Demucs downloads its pretrained model automatically the first time you run the backend.
+>
+> The download is approximately 300 MB, so the first startup may take longer than later runs.
+
+### Python version compatibility
+
+> Using an unsupported Python version can cause dependency install errors or runtime failures.
+>
+> The project supports Python `3.10+`.
+>
+> If you change Python versions, recreate `.venv` and reinstall the backend requirements.
+
+### Port already in use
+
+> This error means another process is already using the backend port.
+>
+> Check which process is bound to that port, stop it, and start the backend again.
+>
+> If your setup supports a configurable backend port, switch to an unused one.
+
+Example checks:
+
+```bash
+# macOS / Linux
+lsof -i :<PORT>
+
+# Windows PowerShell
+Get-NetTCPConnection -LocalPort <PORT>
+
+# Windows Command Prompt
+netstat -ano | findstr :<PORT>
+```
 
 ### Available Scripts
 
