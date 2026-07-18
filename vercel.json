@@ -64,14 +64,14 @@
   ],
   "redirects": [
     {
-      "source": "/(.*)",
+      "source": "/:path*",
       "has": [
         {
           "type": "host",
           "value": "guitariz.vercel.app"
         }
       ],
-      "destination": "https://guitariz.studio/$1",
+      "destination": "https://guitariz.studio/:path*",
       "permanent": true
     }
   ]
