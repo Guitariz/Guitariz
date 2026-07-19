@@ -21,7 +21,7 @@ If you want the power of Chord AI without downloading any apps or typing in cred
 
 ### Why it stands out:
 * **Stateless and Private:** Your files are processed entirely in memory and are deleted immediately after analysis. Your data is 100% private.
-* **YouTube Integration:** Paste any YouTube link, and the AI will analyze and display the chords synced with the video.
+* **Interactive Chord Diagrams:** View real-time guitar fingerings and diagrams synced with the playback of your song.
 * **Transposition Controls:** Pitch-shift the audio and transpose chords instantly to match your preferred key or vocal range.
 * **Detailed Confidence Scores:** View an analytical graph displaying how confident the neural network is on each chord detection.
 
