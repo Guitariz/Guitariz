@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
-import { Wand2, Upload, Mic, Music2, Download, Loader2, Activity } from "lucide-react";
+import { Wand2, Upload, Mic, Music2, Download, Loader2, Activity, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
+import { Link } from "react-router-dom";
 
 const VocalSplitterPage = () => {
   usePageMetadata({
@@ -738,6 +739,28 @@ const VocalSplitterPage = () => {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="mt-8 p-8 rounded-[2.5rem] border border-rose-500/20 bg-rose-500/5 space-y-3 relative overflow-hidden group hover:border-rose-500/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold text-rose-450 uppercase tracking-[0.2em] flex items-center gap-1.5">
+                <Wand2 className="w-3.5 h-3.5 text-rose-500" />
+                <span>Producer Guides</span>
+              </h4>
+              <h3 className="text-xl font-light text-white tracking-tight">
+                Curious how stem separation works behind the scenes?
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed font-light max-w-2xl">
+                Learn how artificial neural networks like Meta's Demucs isolate clean vocals and instruments from mixed tracks.
+              </p>
+            </div>
+            <Link 
+              to="/blog/how-to-isolate-bass-and-vocals" 
+              className="inline-flex items-center gap-1.5 text-xs text-white bg-rose-600 hover:bg-rose-500 transition-all font-medium py-3 px-6 rounded-2xl shadow-lg shadow-rose-950/25 shrink-0"
+            >
+              Read the Demucs Tutorial <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
 

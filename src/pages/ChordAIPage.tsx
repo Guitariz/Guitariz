@@ -18,7 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { useChordAIStore } from "@/stores/chordAIStore";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -1046,6 +1047,23 @@ const ChordAIPage = () => {
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              <div className="p-8 rounded-[2rem] border border-rose-500/20 bg-rose-500/5 space-y-3 relative overflow-hidden group hover:border-rose-500/30 transition-all">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+                <h4 className="text-[10px] font-bold text-rose-450 uppercase tracking-[0.2em] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Ear Training Tips</span>
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed font-light">
+                  Struggling to translate what you hear onto the fretboard? 
+                </p>
+                <Link 
+                  to="/blog/how-to-identify-chords-by-ear" 
+                  className="inline-flex items-center gap-1.5 text-xs text-white hover:text-rose-400 transition-colors font-medium pt-1"
+                >
+                  Read our Ear Training Guide <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
             </div>
           </div>
