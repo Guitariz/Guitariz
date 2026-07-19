@@ -29,6 +29,8 @@ const EarTrainingPage = lazy(() => import("./pages/EarTrainingPage"));
 const JamPage = lazy(() => import("./pages/JamPage"));
 const BlogListPage = lazy(() => import("./pages/BlogListPage"));
 const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import GuitarizLoader from "@/components/ui/loader";
@@ -293,6 +295,30 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <BlogPostPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/privacy"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <PrivacyPolicyPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/terms"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <TermsOfServicePage />
                       </main>
                     </PageWrapper>
                   </Suspense>
