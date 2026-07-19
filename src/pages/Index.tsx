@@ -104,6 +104,17 @@ const Index = () => {
             "https://x.com/GuitarizStudio",
             "https://github.com/Guitariz/Guitariz"
           ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": homeFaqs.map(faq => ({
+            "@type": "Question",
+            "name": faq.question,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": faq.answer
+            }
+          }))
         }
       ]
     }
