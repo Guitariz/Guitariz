@@ -432,6 +432,19 @@ const routes = [
       'url': 'https://guitariz.studio/ear-training',
       'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
     })
+  },
+  {
+    url: '/gear',
+    title: 'Recommended Gear for Musicians | Guitariz Studio',
+    description: 'Hand-picked gear recommendations for guitarists and producers. Tuners, capos, headphones, audio interfaces, and music theory books curated by Guitariz Studio.',
+    canonical: 'https://guitariz.studio/gear',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': 'https://guitariz.studio/gear#webpage',
+      'name': 'Recommended Gear for Musicians',
+      'description': 'Curated list of essential gear and accessories for musicians and producers.'
+    })
   }
 ];
 

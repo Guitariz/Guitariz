@@ -79,6 +79,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://guitariz.studio/gear</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://guitariz.studio/blog</loc>
     <lastmod>2026-07-15</lastmod>
     <changefreq>weekly</changefreq>
