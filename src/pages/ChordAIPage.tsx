@@ -197,14 +197,14 @@ const ChordAIPage = () => {
       if (separateVocals) {
         toast({
           title: "Premium Analysis Engine ",
-          description: "Vocal filtering enabled. This uses the high-precision pipeline (~2-4 mins on CPU).",
+          description: "Vocal filtering enabled. This uses the high-precision pipeline (~1-2 mins on CPU).",
         });
       } else {
         toast({
           title: useMadmom ? "Fast Analysis " : "Detailed Analysis",
           description: useMadmom
             ? "Using Madmom engine for quick results (~30-60s)."
-            : "Using Librosa engine for focused mapping (~2-3 min).",
+            : "Using Librosa engine for focused mapping (~20-30 sec).",
         });
       }
     }
@@ -1094,7 +1094,7 @@ const ChordAIPage = () => {
             },
             {
               question: "What's the difference between Fast and Accurate mode?",
-              answer: "Fast mode (Madmom) provides results in 30-60 seconds and works well for most songs. Accurate mode (Librosa) takes 2-3 minutes but offers more detailed harmonic analysis and better handles complex chord voicings and jazz harmonies. Try Fast mode first, then switch to Accurate if needed.",
+              answer: "Fast mode (Madmom) provides results in 30-60 seconds and works well for most songs. Accurate mode (Librosa) takes about 20-30 seconds and offers more detailed harmonic analysis, better handling complex chord voicings and jazz harmonies. Try Fast mode first, then switch to Accurate if needed.",
             },
             {
               question: "Can I transpose the detected chords?",
@@ -1102,7 +1102,7 @@ const ChordAIPage = () => {
             },
             {
               question: "How long does chord analysis take?",
-              answer: "Fast mode (Madmom): 30-60 seconds. Accurate mode (Librosa): 2-3 minutes. Vocal Filter mode: 3-5 minutes (includes stem separation). Processing time depends on song length and server load. All analyses run on our servers, so no local GPU is needed.",
+              answer: "Fast mode (Madmom): 30-60 seconds. Accurate mode (Librosa): 20-30 seconds. Vocal Filter mode: 1-2 minutes (includes stem separation). Processing time depends on song length and server load. All analyses run on our servers, so no local GPU is needed.",
             },
             {
               question: "Can I download the chord progressions?",

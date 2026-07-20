@@ -307,7 +307,7 @@ const StemSeparatorPage = () => {
         // Notify user immediately that processing has started
         toast({
             title: "Processing started",
-            description: "Uploading your file. 6-stem separation takes 5-10 minutes on CPU.",
+            description: "Uploading your file. 6-stem separation takes 2-3 minutes on CPU.",
         });
 
         try {
@@ -533,7 +533,7 @@ const StemSeparatorPage = () => {
                             </p>
                             <div className="mt-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 max-w-2xl mx-auto">
                                 <p className="text-xs text-amber-200/80">
-                                    <strong className="text-amber-300">⚠️ Note:</strong> 6-stem separation takes 5-10 minutes on CPU. Please be patient.
+                                    <strong className="text-amber-300">⚠️ Note:</strong> 6-stem separation takes 2-3 minutes on CPU. Please be patient.
                                 </p>
                             </div>
                         </div>
@@ -603,7 +603,7 @@ const StemSeparatorPage = () => {
                                                 <Loader2 className="w-5 h-5 mr-2" style={{ animation: 'spin 1s linear infinite' }} />
                                                 {uploadProgress !== null && uploadProgress < 100
                                                     ? `Uploading… ${uploadProgress}%`
-                                                    : "Separating into 6 stems… (5-10 min)"}
+                                                    : "Separating into 6 stems… (2-3 min)"}
                                             </>
                                         ) : (
                                             <>
@@ -754,7 +754,7 @@ const StemSeparatorPage = () => {
                         },
                         {
                             question: "How long does 6-stem separation take?",
-                            answer: "On CPU, 6-stem separation typically takes 5-10 minutes for a 3-minute song. This is more intensive than 2-stem (vocal/instrumental) separation because it extracts more detailed components. Please be patient during processing.",
+                            answer: "On CPU, 6-stem separation typically takes 2-3 minutes for a 3-minute song. This is more intensive than 2-stem (vocal/instrumental) separation because it extracts more detailed components. Please be patient during processing.",
                         },
                         {
                             question: "What can I do with the separated stems?",

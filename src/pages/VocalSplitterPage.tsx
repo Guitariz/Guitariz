@@ -274,7 +274,7 @@ const VocalSplitterPage = () => {
     // Notify user immediately that processing has started
     toast({
       title: "Processing started",
-      description: "Uploading your file. Separation typically takes 2-3 minutes.",
+      description: "Uploading your file. Separation typically takes 1-2 minutes.",
     });
 
     try {
@@ -786,7 +786,7 @@ const VocalSplitterPage = () => {
             },
             {
               question: "How long does vocal separation take?",
-              answer: "Processing time is typically 3-5 minutes for a standard 3-4 minute song. This includes uploading, AI stem separation, and preparing both vocal and instrumental tracks for download. Processing is done on our servers, so no powerful computer or GPU is needed on your end.",
+              answer: "Processing time is typically 1-2 minutes for a standard 3-4 minute song. This includes uploading, AI stem separation, and preparing both vocal and instrumental tracks for download. Processing is done on our servers, so no powerful computer or GPU is needed on your end.",
             },
             {
               question: "Can I download the separated tracks?",
