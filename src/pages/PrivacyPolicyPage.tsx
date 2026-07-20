@@ -63,14 +63,25 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">4. Website Analytics</h2>
+            <h2 className="text-xl font-semibold text-white">4. Affiliate Programs Disclosure (Amazon Associates)</h2>
+            <p>
+              Guitariz Studio is a participant in the Amazon Services LLC Associates Program (and its local equivalents, such as the Amazon.in Associates Program), an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com, Amazon.in, and affiliated sites.
+            </p>
+            <ul className="list-disc pl-5 space-y-2 text-zinc-400">
+              <li>As an Amazon Associate, we earn from qualifying purchases.</li>
+              <li>When you click on affiliate links on this site and make a purchase, we may receive a small commission at no additional cost to you. This helps support the infrastructure and maintenance of our free tools.</li>
+            </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold text-white">5. Website Analytics</h2>
             <p>
               To continuously improve the experience and performance of Guitariz Studio, we monitor anonymous traffic patterns using Google Analytics and PostHog. These tools use cookies to collect general usage data (such as page views, button clicks, and country locations). No personal identity information or audio metadata is sent to these third-party trackers.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">5. GDPR & California Consumer Privacy Act (CCPA)</h2>
+            <h2 className="text-xl font-semibold text-white">6. GDPR & California Consumer Privacy Act (CCPA)</h2>
             <p>
               If you are visiting from the European Economic Area (EEA), United Kingdom, or California:
             </p>
@@ -82,14 +93,14 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">6. Changes to this Policy</h2>
+            <h2 className="text-xl font-semibold text-white">7. Changes to this Policy</h2>
             <p>
               We may update our Privacy Policy from time to time. Any changes will be posted on this page with the updated revision date.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">7. Contact Us</h2>
+            <h2 className="text-xl font-semibold text-white">8. Contact Us</h2>
             <p>
               If you have any questions about this Privacy Policy, please contact us at: 
               <br />

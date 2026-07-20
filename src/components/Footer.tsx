@@ -64,7 +64,10 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-8 border-t border-white/5 flex justify-center">
+                <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-2">
+                    <p className="text-[10px] text-zinc-500 text-center max-w-md">
+                        As an Amazon Associate, Guitariz Studio earns from qualifying purchases.
+                    </p>
                     <p className="text-xs text-muted-foreground text-center">
                         © {currentYear} Guitariz Studio. MIT License.
                     </p>
