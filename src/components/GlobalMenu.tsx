@@ -64,6 +64,7 @@ const menuCategories: MenuCategory[] = [
             { label: "Theory Lab", icon: BookOpen, href: "/theory", description: "Circle of Fifths & harmony" },
             { label: "Ear Training", icon: Trophy, href: "/ear-training", description: "Interval recognition drills" },
             { label: "Blog", icon: BookOpen, href: "/blog", description: "Music theory & AI guides" },
+            { label: "Recommended Gear", icon: Guitar, href: "/gear", description: "Curated tools & accessories" },
         ],
     },
 ];

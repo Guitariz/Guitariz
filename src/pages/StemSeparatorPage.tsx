@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
+import GearTip from "@/components/GearTip";
 
 // Stem configuration with icons and colors
 const STEM_CONFIG = {
@@ -770,6 +771,13 @@ const StemSeparatorPage = () => {
                         },
                     ]}
                 />
+                <div className="max-w-3xl mx-auto mt-8">
+                    <GearTip
+                        tip="Recording your own tracks to separate? Connect your guitar or mic with a"
+                        productName="USB Audio Interface"
+                        amazonQuery="USB audio interface guitar recording"
+                    />
+                </div>
                 <RelatedTools currentPath="/stem-separator" />
             </main>
         </div>

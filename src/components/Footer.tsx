@@ -38,6 +38,7 @@ const Footer = () => {
                             <li><Link to="/theory" className="hover:text-white transition-colors">Music Theory</Link></li>
                             <li><a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Source Code</a></li>
                             <li><a href="https://github.com/Guitariz/Guitariz/issues" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Report Issue</a></li>
+                            <li><Link to="/gear" className="hover:text-white transition-colors">Recommended Gear</Link></li>
                             <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                             <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                         </ul>

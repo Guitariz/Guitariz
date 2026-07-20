@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
+import GearTip from "@/components/GearTip";
 import { Link } from "react-router-dom";
 
 const VocalSplitterPage = () => {
@@ -810,6 +811,13 @@ const VocalSplitterPage = () => {
             },
           ]}
         />
+        <div className="max-w-3xl mx-auto mt-8">
+          <GearTip
+            tip="For the best stem listening experience, use flat-response studio headphones like the"
+            productName="Audio-Technica ATH-M20x"
+            amazonQuery="Audio Technica ATH-M20x headphones"
+          />
+        </div>
         <RelatedTools currentPath="/vocal-splitter" />
       </main>
     </div>

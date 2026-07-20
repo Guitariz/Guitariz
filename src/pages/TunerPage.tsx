@@ -3,6 +3,7 @@ import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import { GaugeCircle } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
+import GearTip from "@/components/GearTip";
 
 const TunerPage = () => {
     usePageMetadata({
@@ -50,6 +51,14 @@ const TunerPage = () => {
                     </div>
 
                     <Tuner />
+
+                    <div className="mt-6">
+                        <GearTip
+                            tip="Using a phone mic in a noisy room? For reliable tuning anywhere, we recommend a"
+                            productName="Clip-on Chromatic Tuner"
+                            amazonQuery="clip on guitar tuner chromatic"
+                        />
+                    </div>
                 </div>
 
                 <div className="mt-24 max-w-3xl mx-auto">
