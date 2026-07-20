@@ -1,6 +1,9 @@
 import { AnalysisResult, ChordSegment } from "@/types/chordAI";
 
-const defaultBase = import.meta.env.VITE_CHORDS_API_URL || import.meta.env.VITE_API_URL || "";
+const chordsEndpoint = import.meta.env.VITE_CHORD_AI_API || "";
+const defaultBase = chordsEndpoint
+  ? new URL(chordsEndpoint).origin
+  : (import.meta.env.VITE_API_URL || "");
 const defaultEndpoint = import.meta.env.VITE_CHORD_AI_API || `${defaultBase}/api/analyze`;
 
 const normalizeChords = (chords: Record<string, unknown>[], durationHint?: number): ChordSegment[] => {
@@ -24,7 +27,7 @@ export async function analyzeRemote(
   onXhrCreated?: (xhr: XMLHttpRequest) => void
 ): Promise<AnalysisResult> {
   // If we're in production and using a relative path (empty apiUrl), it will likely fail on Vercel
-  if (import.meta.env.PROD && !import.meta.env.VITE_CHORDS_API_URL && endpoint.startsWith("/api")) {
+  if (import.meta.env.PROD && !import.meta.env.VITE_CHORD_AI_API && endpoint.startsWith("/api")) {
     // Just silent check
   }
 

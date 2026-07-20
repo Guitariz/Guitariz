@@ -110,7 +110,10 @@ export const useChordAnalysis = (
         // Prefer remote analysis when a file is available
         if (useRemote && fileToUpload) {
           try {
-            const apiUrl = (import.meta.env.VITE_CHORDS_API_URL || "http://localhost:7860").replace(/\/+$/, "");
+            const chordsEndpoint = import.meta.env.VITE_CHORD_AI_API || "";
+            const apiUrl = chordsEndpoint
+              ? new URL(chordsEndpoint).origin
+              : (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
             const remote = await analyzeRemote(
               fileToUpload,
               undefined,
