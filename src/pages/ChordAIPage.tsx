@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { useChordAIStore } from "@/stores/chordAIStore";
 import { Link } from "react-router-dom";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -28,6 +28,7 @@ import { Slider } from "@/components/ui/slider";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
+import { exportChordsToMidi } from "@/lib/midiExport";
 import {
   Dialog,
   DialogTrigger,
@@ -117,6 +118,7 @@ const ChordAIPage = () => {
   const [wasVocalFilterOn, setWasVocalFilterOn] = useState(false);
   const [historyFileName, setHistoryFileName] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
+  const [isMidiDialogOpen, setIsMidiDialogOpen] = useState(false);
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isYoutubeMode] = useState(false);
@@ -757,6 +759,74 @@ const ChordAIPage = () => {
                           <Download className="w-3 h-3 mr-2" />
                           Download Stems
                         </Button>
+                      )}
+                      {result && (
+                        <Dialog open={isMidiDialogOpen} onOpenChange={setIsMidiDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[10px] font-bold uppercase tracking-widest h-8 px-3 rounded-lg hover:bg-card/50 text-purple-400"
+                            >
+                              <FileAudio className="w-3 h-3 mr-2" />
+                              Export MIDI
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md bg-card/95 border border-border backdrop-blur-xl rounded-3xl p-6">
+                            <DialogHeader className="space-y-2">
+                              <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
+                                <FileAudio className="w-5 h-5 text-purple-400" />
+                                Export MIDI Progression
+                              </DialogTitle>
+                              <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
+                                Generate a Standard MIDI File (<code className="font-mono text-purple-400">.mid</code>) to drop directly into Ableton, FL Studio, Logic, or Cubase.
+                              </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="my-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs space-y-1.5">
+                              <p className="font-bold text-amber-600 dark:text-amber-300 flex items-center gap-2 text-[11px]">
+                                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" /> AI Transcription Notice
+                              </p>
+                              <p className="text-amber-700/80 dark:text-amber-200/80 text-[11px] leading-relaxed">
+                                AI chord detection is experimental and results may not be 100% exact. Audio mix density, syncopation, or complex voicings can affect accuracy. Please double-check and fine-tune notes in your DAW.
+                              </p>
+                            </div>
+
+                            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                              <DialogClose asChild>
+                                <Button variant="ghost" size="sm" className="text-xs rounded-xl">
+                                  Cancel
+                                </Button>
+                              </DialogClose>
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all"
+                                onClick={() => {
+                                  setIsMidiDialogOpen(false);
+                                  try {
+                                    const { filename } = exportChordsToMidi(result, effectiveFileName || "progression", {
+                                      transpose,
+                                      showSimple
+                                    });
+                                    toast({
+                                      title: "MIDI Downloaded! 🎹",
+                                      description: `Saved "${filename}".`,
+                                    });
+                                  } catch (err: unknown) {
+                                    const message = err instanceof Error ? err.message : "Could not export MIDI file.";
+                                    toast({
+                                      title: "Export failed",
+                                      description: message,
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                              >
+                                Download MIDI
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       )}
                       {result && effectiveFileName && (
                         <Button

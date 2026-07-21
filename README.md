@@ -62,6 +62,7 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 | Feature | Description |
 |:--|:--|
 | **Chord AI** | Upload any audio file for high-accuracy chord recognition, powered by **Librosa** (CQT chroma, HPSS, and tuning deviation cents estimation) and HMM backups. |
+| **MIDI Export** | Export detected or transposed chord progressions directly into Standard MIDI files (`.mid`) for instant drag-and-drop import into Ableton, FL Studio, Logic, Cubase, or any DAW. |
 | **Stem Separator** | Isolate vocals, drums, bass, and other instruments using Meta's state-of-the-art **Demucs** deep learning model. |
 | **Vocal Splitter** | One-click vocal extraction for creating instrumentals or acapellas from any track. |
 | **Precision Tuner** | Advanced chromatic tuner with cent-level accuracy for guitar, bass, ukulele, and vocals. |
@@ -297,7 +298,7 @@ Looking for a place to start? Check out issues tagged [`good first issue`](https
 ## 🗺️ Roadmap
 
 - [ ] Metadata-only YouTube search with local audio upload-matching workflow (copyright-safe)
-- [ ] MIDI export from Chord AI detections
+- [x] MIDI export from Chord AI detections (DAW drag-and-drop support)
 - [ ] Collaborative jam rooms via WebRTC
 - [ ] Mobile-native app (React Native / Capacitor)
 - [ ] Additional instrument support (Ukulele, Bass tablature)
