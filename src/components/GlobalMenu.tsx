@@ -19,10 +19,12 @@ import {
     Sparkles,
     Github,
     Coffee,
+    MessageSquarePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { InstallGuide } from "@/components/InstallGuide";
+import { openFeedbackModal } from "@/components/FeedbackModal";
 
 interface MenuItem {
     label: string;
@@ -309,16 +311,28 @@ export const GlobalMenu = () => {
 
                             {/* Pinned Sticky Footer - Always Visible */}
                             <div className="p-6 border-t border-zinc-900 bg-zinc-950 flex flex-col gap-3">
-                                {/* Buy me a coffee */}
-                                <a
-                                    href="https://ko-fi.com/abhi9vaidya"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2.5 h-11 px-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/[0.15] hover:bg-amber-500/[0.08] hover:border-amber-500/30 text-amber-500 text-xs font-semibold transition-all"
-                                >
-                                    <Coffee className="w-4 h-4" />
-                                    <span>Support: Buy me a coffee</span>
-                                </a>
+                                 {/* Send Feedback / Feature Request Button */}
+                                 <button
+                                     onClick={() => {
+                                         close();
+                                         openFeedbackModal("idea");
+                                     }}
+                                     className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/30 text-emerald-400 text-xs font-semibold transition-all"
+                                 >
+                                     <MessageSquarePlus className="w-4 h-4" />
+                                     <span>Send Feedback / Ideas</span>
+                                 </button>
+
+                                 {/* Support / Buy Me a Coffee */}
+                                 <a
+                                     href="https://github.com/sponsors/Guitariz"
+                                     target="_blank"
+                                     rel="noopener noreferrer"
+                                     className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05] hover:border-white/20 text-zinc-300 text-xs font-semibold transition-all"
+                                 >
+                                     <Coffee className="w-4 h-4" />
+                                     <span>Support: Buy me a coffee</span>
+                                 </a>
 
                                 {/* Install PWA */}
                                 {!isInstalled ? (

@@ -1,6 +1,7 @@
 
 import { Github, Twitter, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
+import { openFeedbackModal } from "@/components/FeedbackModal";
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -36,6 +37,14 @@ const Footer = () => {
                         <h4 className="font-semibold text-white mb-4">Resources</h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li><Link to="/theory" className="hover:text-white transition-colors">Music Theory</Link></li>
+                            <li>
+                                <button 
+                                    onClick={() => openFeedbackModal("idea")} 
+                                    className="hover:text-emerald-400 transition-colors text-left font-medium"
+                                >
+                                    Send Feedback & Ideas
+                                </button>
+                            </li>
                             <li><a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Source Code</a></li>
                             <li><a href="https://github.com/Guitariz/Guitariz/issues" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Report Issue</a></li>
                             <li><Link to="/gear" className="hover:text-white transition-colors">Recommended Gear</Link></li>

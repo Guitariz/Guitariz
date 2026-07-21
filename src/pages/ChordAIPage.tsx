@@ -7,6 +7,8 @@ import AnalysisSummary from "@/components/chord-ai/AnalysisSummary";
 import ConfidenceSummary from "@/components/chord-ai/ConfidenceSummary";
 import { LiveChordIndicator } from "@/components/chord-ai/LiveChordIndicator";
 import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { openFeedbackModal } from "@/components/FeedbackModal";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useChordAnalysis } from "@/hooks/useChordAnalysis";
 import { useChordWebSocket } from "@/hooks/useChordWebSocket";
@@ -248,6 +250,30 @@ const ChordAIPage = () => {
           title: useMadmom ? "Fast map ready :))" : "Detailed map ready :))",
           description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM`
         });
+      }
+
+      // Track session analysis count & nudge for feedback on 2nd analysis
+      try {
+        const sessionCount = parseInt(sessionStorage.getItem("guitariz_analysis_count") || "0", 10) + 1;
+        sessionStorage.setItem("guitariz_analysis_count", sessionCount.toString());
+
+        if (sessionCount >= 2 && !sessionStorage.getItem("guitariz_feedback_prompted")) {
+          sessionStorage.setItem("guitariz_feedback_prompted", "true");
+          setTimeout(() => {
+            toast({
+              title: "Enjoying Guitariz Studio?",
+              description: "We're building new features based on musician suggestions. Share your thoughts with us :)",
+              action: (
+                <ToastAction altText="Share Feedback" onClick={() => openFeedbackModal("idea")}>
+                  Share Feedback
+                </ToastAction>
+              ),
+              duration: 8000,
+            });
+          }, 3500);
+        }
+      } catch (err) {
+        console.warn("sessionStorage unavailable", err);
       }
     }
   }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, useMadmom, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory]);
@@ -809,8 +835,13 @@ const ChordAIPage = () => {
                                       showSimple
                                     });
                                     toast({
-                                      title: "MIDI Downloaded! 🎹",
-                                      description: `Saved "${filename}".`,
+                                      title: "MIDI Exported Successfully",
+                                      description: `Saved "${filename}". Have suggestions for new export options?`,
+                                      action: (
+                                        <ToastAction altText="Feedback" onClick={() => openFeedbackModal("idea")}>
+                                          Feedback
+                                        </ToastAction>
+                                      ),
                                     });
                                   } catch (err: unknown) {
                                     const message = err instanceof Error ? err.message : "Could not export MIDI file.";
@@ -971,11 +1002,34 @@ const ChordAIPage = () => {
                 </div>
 
                 {currentChords.length > 0 && (
-                  <div className="pt-6 border-t border-border">
+                  <div className="pt-6 border-t border-border space-y-4">
                     <ConfidenceSummary
                       segments={currentChords}
                       onSeek={seek}
                     />
+
+                    <div className="flex items-center justify-between p-3 rounded-2xl border border-white/5 bg-white/[0.02] text-xs">
+                      <span className="text-[11px] text-muted-foreground font-medium">How accurate was this result?</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => {
+                            toast({
+                              title: "Thanks for rating!",
+                              description: "Glad the harmonic map was helpful.",
+                            });
+                          }}
+                          className="px-2.5 py-1 rounded-lg border border-white/10 hover:border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-400 text-[10px] font-bold transition-all"
+                        >
+                          Accurate
+                        </button>
+                        <button
+                          onClick={() => openFeedbackModal("bug")}
+                          className="px-2.5 py-1 rounded-lg border border-white/10 hover:border-amber-500/30 hover:bg-amber-500/10 text-amber-400 text-[10px] font-bold transition-all"
+                        >
+                          Needs Work
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

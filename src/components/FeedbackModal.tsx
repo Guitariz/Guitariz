@@ -27,15 +27,29 @@ export const FeedbackModal = () => {
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Handle ESC key to close modal
+  // Handle ESC key to close modal & custom trigger events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
     };
+    const handleOpenEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ category?: CategoryType }>;
+      if (customEvent.detail?.category) {
+        setCategory(customEvent.detail.category);
+      }
+      setSubmitStatus("idle");
+      setIsOpen(true);
+    };
+
     if (isOpen) {
       window.addEventListener("keydown", handleKeyDown);
     }
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("open-feedback-modal", handleOpenEvent);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("open-feedback-modal", handleOpenEvent);
+    };
   }, [isOpen]);
 
   // Reset form when opened/closed
@@ -376,6 +390,10 @@ export const FeedbackModal = () => {
       </AnimatePresence>
     </>
   );
+};
+
+export const openFeedbackModal = (category: CategoryType = "idea") => {
+  window.dispatchEvent(new CustomEvent("open-feedback-modal", { detail: { category } }));
 };
 
 export default FeedbackModal;
