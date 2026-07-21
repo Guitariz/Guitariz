@@ -9,6 +9,13 @@
 
   <br />
 
+  <a href="https://www.producthunt.com/products/guitariz-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-guitariz-studio" target="_blank" rel="noopener noreferrer">
+    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1200915&theme=neutral&t=1784653674211" alt="Guitariz Studio - Free AI Chord Recognition, 6-Stem Separator & Music Lab | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
+  </a>
+
+  <br />
+  <br />
+
   <p>
     <img src="https://img.shields.io/badge/Release-v1.7.0-4A90E2?style=for-the-badge&logo=github" alt="Release" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-45B8D1?style=for-the-badge" alt="License" /></a>

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -55,6 +55,48 @@ const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   </motion.div>
 );
 
+const ProductHuntBanner = () => {
+  const [isVisible, setIsVisible] = useState(() => {
+    return !localStorage.getItem("dismissed-ph-banner");
+  });
+
+  if (!isVisible) return null;
+
+  const handleDismiss = () => {
+    setIsVisible(false);
+    localStorage.setItem("dismissed-ph-banner", "true");
+  };
+
+  return (
+    <div className="w-full bg-[#0a0a0a] border-b border-white/[0.06] text-zinc-300 text-xs py-2.5 pl-4 pr-16 text-center z-[80] relative flex items-center justify-center gap-4">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 font-medium">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#da552f] animate-ping shrink-0" style={{ animationDuration: '2s' }} />
+          <span>We are live on Product Hunt! Support Guitariz Studio and share your feedback.</span>
+        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <a 
+            href="https://www.producthunt.com/products/guitariz-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-guitariz-studio" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[#da552f] hover:underline font-bold transition-all inline-flex items-center gap-1"
+          >
+            View Launch Page ➔
+          </a>
+          <span className="text-zinc-700">|</span>
+          <button 
+            onClick={handleDismiss}
+            className="text-zinc-500 hover:text-zinc-300 transition-colors px-1 text-[10px] uppercase font-bold tracking-wider"
+            aria-label="Dismiss banner"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const location = useLocation();
 
@@ -82,6 +124,7 @@ const App = () => {
       <Analytics />
       <SpeedInsights />
       <TooltipProvider>
+        <ProductHuntBanner />
         {/* Skip to content for accessibility */}
         <a
           href="#main-content"

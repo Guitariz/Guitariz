@@ -65,13 +65,29 @@ const Footer = () => {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-2">
-                    <p className="text-[10px] text-zinc-500 text-center max-w-md">
-                        As an Amazon Associate, Guitariz Studio earns from qualifying purchases.
-                    </p>
-                    <p className="text-xs text-muted-foreground text-center">
-                        © {currentYear} Guitariz Studio. MIT License.
-                    </p>
+                <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-6">
+                    <a 
+                        href="https://www.producthunt.com/products/guitariz-studio?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-guitariz-studio" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="hover:scale-105 transition-transform duration-200 active:scale-95 block rounded-xl overflow-hidden border border-white/5 hover:border-white/10"
+                    >
+                        <img 
+                            src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1200915&theme=dark" 
+                            alt="Guitariz Studio - Free AI Chord Recognition, 6-Stem Separator & Music Lab | Product Hunt" 
+                            width="250" 
+                            height="54" 
+                            className="w-[250px] h-[54px] block"
+                        />
+                    </a>
+                    <div className="flex flex-col items-center gap-2">
+                        <p className="text-[10px] text-zinc-500 text-center max-w-md">
+                            As an Amazon Associate, Guitariz Studio earns from qualifying purchases.
+                        </p>
+                        <p className="text-xs text-muted-foreground text-center">
+                            © {currentYear} Guitariz Studio. MIT License.
+                        </p>
+                    </div>
                 </div>
             </div>
         </footer>
