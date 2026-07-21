@@ -5,7 +5,7 @@ and formats expected by the React frontend.
 """
 
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 # Standard drop-in variables for main.py
 FAST_ENGINE_AVAILABLE = False

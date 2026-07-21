@@ -16,22 +16,6 @@ from contextlib import asynccontextmanager
 import uvicorn
 import logging
 
-class QuietScanFilter(logging.Filter):
-    """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
-    def filter(self, record: logging.LogRecord) -> bool:
-        msg = record.getMessage()
-        if " 404 " in msg or "404 Not Found" in msg:
-            return False
-        if record.args:
-            # Uvicorn passes access args as a tuple: (client_addr, method, path, http_version, status_code)
-            for arg in record.args:
-                if str(arg) == "404":
-                    return False
-        return True
-
-# Apply to uvicorn access logger
-logging.getLogger("uvicorn.access").addFilter(QuietScanFilter())
-
 from analysis import analyze_file, separate_audio_full, separate_audio_stems, STEM_TYPES
 from websocket_chords import websocket_chord_endpoint
 from youtube import extract_audio, get_video_info, check_rate_limit, get_remaining_requests, extract_video_id
@@ -47,6 +31,22 @@ except ImportError:
     FAST_ENGINE_AVAILABLE = False
     FAST_ENGINE_ERROR = "Failed to import chord_fast module completely"
     print("[Startup] ℹ Custom ONNX fast engine module not found - using legacy librosa engine only")
+
+class QuietScanFilter(logging.Filter):
+    """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if " 404 " in msg or "404 Not Found" in msg:
+            return False
+        if record.args:
+            # Uvicorn passes access args as a tuple: (client_addr, method, path, http_version, status_code)
+            for arg in record.args:
+                if str(arg) == "404":
+                    return False
+        return True
+
+# Apply to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(QuietScanFilter())
 
 # --- NETWORK DIAGNOSTICS & PATCH ---
 print("\n[DIAG] Starting Network Diagnostics (v1.9.4)...")
