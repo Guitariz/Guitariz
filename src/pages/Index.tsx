@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Music2, Layers, Disc, Music, BookOpen, Bot, Wand2, Headphones, Guitar, Trophy, Mic, FileText } from "lucide-react";
+import { ArrowRight, Music2, Layers, Disc, Music, BookOpen, Bot, Wand2, Headphones, Guitar, Trophy, Mic, FileText, Clock, Key, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
@@ -11,11 +11,14 @@ import { SEOContent } from "@/components/SEOContent";
 const featuredTools = [
   { title: "Chord AI", desc: "Neural audio chord detection and harmonic transcription.", icon: Bot, to: "/chord-ai", color: "from-violet-500/20 to-purple-500/20" },
   { title: "Stem Separator", desc: "AI 6-stem separation: vocals, drums, bass, guitar, piano, other.", icon: Mic, to: "/stem-separator", color: "from-pink-500/20 to-rose-500/20" },
-  { title: "Vocal Splitter", desc: "AI-powered vocal and instrumental separation.", icon: Wand2, to: "/vocal-splitter", color: "from-cyan-500/20 to-blue-500/20" },
+  { title: "Vocal Remover", desc: "AI-powered vocal and instrumental separation.", icon: Wand2, to: "/vocal-remover", color: "from-cyan-500/20 to-blue-500/20" },
 ];
 
 // Standard tool cards (3 per row on large screens)
 const toolCards = [
+  { title: "BPM Detector", desc: "Detect beats per minute & tap tempo for any audio file.", icon: Clock, to: "/bpm-detector", color: "from-emerald-500/20 to-teal-500/20" },
+  { title: "Key Detector", desc: "Find key signatures & scale modes from MP3 audio.", icon: Key, to: "/key-detector", color: "from-blue-500/20 to-indigo-500/20" },
+  { title: "Chord Generator", desc: "Generate chord progressions with sound preview & MIDI export.", icon: Sparkles, to: "/chord-progression-generator", color: "from-purple-500/20 to-violet-500/20" },
   { title: "Fretboard", desc: "Interactive neck with adaptive note labeling.", icon: Music2, to: "/fretboard", color: "from-emerald-500/20 to-teal-500/20" },
   { title: "Chord Library", desc: "1,000+ voicings with interactive diagrams.", icon: Layers, to: "/chords", color: "from-blue-500/20 to-indigo-500/20" },
   { title: "Scale Explorer", desc: "Visualize Western modes & Indian Classical Ragas instantly.", icon: Disc, to: "/scales", color: "from-purple-500/20 to-pink-500/20" },

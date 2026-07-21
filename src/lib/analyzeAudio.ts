@@ -62,21 +62,98 @@ function frequencyToPitchClass(freq: number): number {
 }
 
 function chooseKey(pitchHistogram: number[]): { key: string; scale: string } {
-  const rotate = (arr: number[], n: number) => arr.slice(n).concat(arr.slice(0, n));
   let best: { key: string; scale: string; score: number } = { key: "C", scale: "major", score: -Infinity };
 
   for (let tonic = 0; tonic < 12; tonic += 1) {
-    const majorScore = rotate(MAJOR_PROFILE, tonic).reduce((acc, v, idx) => acc + v * pitchHistogram[idx], 0);
+    let majorScore = 0;
+    let minorScore = 0;
+
+    for (let idx = 0; idx < 12; idx++) {
+      const interval = (idx - tonic + 12) % 12;
+      majorScore += MAJOR_PROFILE[interval] * pitchHistogram[idx];
+      minorScore += MINOR_PROFILE[interval] * pitchHistogram[idx];
+    }
+
     if (majorScore > best.score) {
       best = { key: PITCH_CLASS_NAMES[tonic], scale: "major", score: majorScore };
     }
-    const minorScore = rotate(MINOR_PROFILE, tonic).reduce((acc, v, idx) => acc + v * pitchHistogram[idx], 0);
     if (minorScore > best.score) {
       best = { key: PITCH_CLASS_NAMES[tonic], scale: "minor", score: minorScore };
     }
   }
 
   return { key: best.key, scale: best.scale };
+}
+
+export function refineKeyFromChords(key: string, scale: string, chords: ChordSegment[]): { key: string; scale: string } {
+  if (!chords || chords.length === 0) return { key, scale };
+
+  const getRoot = (chordStr: string) => {
+    if (!chordStr || chordStr === "N.C." || chordStr === "N") return null;
+    const match = chordStr.match(/^([A-G][#b]?)/);
+    return match ? match[1] : null;
+  };
+
+  const isMinorChord = (chordStr: string) => {
+    if (!chordStr) return false;
+    const root = getRoot(chordStr);
+    if (!root) return false;
+    const rest = chordStr.slice(root.length);
+    return rest.startsWith("m") && !rest.startsWith("maj");
+  };
+
+  const majorDurations: Record<string, number> = {};
+  const minorDurations: Record<string, number> = {};
+
+  for (const seg of chords) {
+    const root = getRoot(seg.chord);
+    if (!root) continue;
+    const duration = seg.end - seg.start;
+    if (isMinorChord(seg.chord)) {
+      minorDurations[root] = (minorDurations[root] || 0) + duration;
+    } else {
+      majorDurations[root] = (majorDurations[root] || 0) + duration;
+    }
+  }
+
+  const validChords = chords.filter((c) => getRoot(c.chord) !== null);
+  const firstRoot = validChords.length > 0 ? getRoot(validChords[0].chord) : null;
+  const lastRoot = validChords.length > 0 ? getRoot(validChords[validChords.length - 1].chord) : null;
+
+  const rootIdx = PITCH_CLASS_NAMES.indexOf(key);
+  if (rootIdx === -1) return { key, scale };
+
+  let relMajor: string;
+  let relMinor: string;
+
+  if (scale === "minor") {
+    relMinor = key;
+    relMajor = PITCH_CLASS_NAMES[(rootIdx + 3) % 12];
+  } else {
+    relMajor = key;
+    relMinor = PITCH_CLASS_NAMES[(rootIdx + 9) % 12];
+  }
+
+  const majorDur = majorDurations[relMajor] || 0;
+  const minorDur = minorDurations[relMinor] || 0;
+
+  const firstOrLastIsMajor = firstRoot === relMajor || lastRoot === relMajor;
+  const firstOrLastIsMinor = firstRoot === relMinor || lastRoot === relMinor;
+
+  if (firstOrLastIsMajor && !firstOrLastIsMinor) {
+    return { key: relMajor, scale: "major" };
+  }
+  if (firstOrLastIsMinor && !firstOrLastIsMajor) {
+    return { key: relMinor, scale: "minor" };
+  }
+
+  if (majorDur > minorDur) {
+    return { key: relMajor, scale: "major" };
+  } else if (minorDur > majorDur) {
+    return { key: relMinor, scale: "minor" };
+  }
+
+  return { key, scale };
 }
 
 function computeEnergyEnvelope(audioBuffer: AudioBuffer, frameSeconds = 0.05): number[] {
@@ -266,11 +343,14 @@ export async function analyzeTrack(audioBuffer: AudioBuffer): Promise<AnalyzeTra
       ? smoothed
       : [{ start: 0, end: Math.max(audioBuffer.duration, 1), chord: `${key} ${scale}`, confidence: 0.4 }];
 
+    // Refine key and scale using detected chord progressions (resolving relative major/minor)
+    const refinedKey = refineKeyFromChords(key, scale, safeChords);
+
     return {
       tempo: safeTempo,
       meter: 4,
-      key,
-      scale,
+      key: refinedKey.key,
+      scale: refinedKey.scale,
       chords: safeChords,
       simpleChords: safeChords.map(s => {
         let sc = s.chord;

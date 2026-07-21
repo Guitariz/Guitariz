@@ -109,6 +109,9 @@ const Navigation = () => {
     { icon: GaugeCircle, label: "Tuner", path: "/tuner" },
     { icon: BookOpen, label: "Theory", path: "/theory" },
     { icon: Bot, label: "Chord AI", path: "/chord-ai" },
+    { icon: Activity, label: "BPM Detector", path: "/bpm-detector" },
+    { icon: Disc, label: "Key Detector", path: "/key-detector" },
+    { icon: Wand2, label: "Vocal Remover", path: "/vocal-remover" },
   ];
 
   const location = useLocation();

@@ -9,6 +9,10 @@ interface Tool {
 
 const ALL_TOOLS: Tool[] = [
   { name: "Chord AI", path: "/chord-ai", description: "Extract chords, key & tempo from any song with AI." },
+  { name: "BPM Detector", path: "/bpm-detector", description: "Detect beats per minute and tap tempo for any audio file." },
+  { name: "Key Detector", path: "/key-detector", description: "Find key signatures and scales from MP3 or audio tracks." },
+  { name: "Vocal Remover", path: "/vocal-remover", description: "Isolate vocals and create karaoke backing tracks with AI." },
+  { name: "Chord Generator", path: "/chord-progression-generator", description: "Generate progressions with sound preview and MIDI export." },
   { name: "Vocal Splitter", path: "/vocal-splitter", description: "Isolate vocals and instrumentals from any track." },
   { name: "Stem Separator", path: "/stem-separator", description: "Split songs into 6 stems: vocals, drums, bass, guitar, piano & more." },
   { name: "Fretboard", path: "/fretboard", description: "Interactive guitar fretboard with scales, chords & sound." },

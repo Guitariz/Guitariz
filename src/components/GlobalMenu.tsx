@@ -42,6 +42,10 @@ const menuCategories: MenuCategory[] = [
         title: "AI Tools",
         items: [
             { label: "Chord AI", icon: Mic, href: "/chord-ai", description: "Neural audio chord detection", badge: "AI" },
+            { label: "BPM Detector", icon: Clock, href: "/bpm-detector", description: "Audio tempo & tap tempo engine", badge: "NEW" },
+            { label: "Key Detector", icon: Music, href: "/key-detector", description: "Find key & scale signatures", badge: "NEW" },
+            { label: "Vocal Remover", icon: Mic, href: "/vocal-remover", description: "Free online vocal remover AI", badge: "NEW" },
+            { label: "Chord Generator", icon: Sparkles, href: "/chord-progression-generator", description: "Harmonic generator & MIDI export", badge: "NEW" },
             { label: "Vocal Splitter", icon: Headphones, href: "/vocal-splitter", description: "Isolate vocals & instrumentals", badge: "AI" },
             { label: "Stem Separator", icon: Split, href: "/stem-separator", description: "6-stem track separation", badge: "AI" },
         ],

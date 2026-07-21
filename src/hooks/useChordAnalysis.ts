@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { analyzeTrack } from "@/lib/analyzeAudio";
+import { analyzeTrack, refineKeyFromChords } from "@/lib/analyzeAudio";
 import { analyzeRemote } from "@/lib/api/analyzeClient";
 import { getCachedAnalysis, setCachedAnalysis, isExpired } from "@/lib/analysisCache";
 import { computeAudioCacheKey, getCachedAudio, setCachedAudio, cacheUrlResponse } from "@/lib/audioCache";
@@ -130,6 +130,11 @@ export const useChordAnalysis = (
 
             // Only update if this is still the latest request
             if (thisRequestId === requestIdRef.current) {
+              if (remote && remote.key && remote.chords) {
+                const refined = refineKeyFromChords(remote.key, remote.scale || "major", remote.chords);
+                remote.key = refined.key;
+                remote.scale = refined.scale;
+              }
               setResult(remote);
               setUploadProgress(undefined); // Clear progress when complete
               currentXhrRef.current = null; // Clear XHR reference

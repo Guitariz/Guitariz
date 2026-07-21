@@ -15,10 +15,10 @@ import { Link } from "react-router-dom";
 
 const VocalSplitterPage = () => {
   usePageMetadata({
-    title: "AI Vocal Splitter & Stem Splitter AI - Free Vocal Remover | Guitariz",
-    description: "Separate vocals and instrumentals from any song using Stem Splitter AI. High-quality vocal remover and stem extraction for karaoke and practice.",
-    keywords: "vocal splitter, stem splitter ai, vocal remover, instrumental extractor, stem separation, karaoke maker, music ai, audio splitter",
-    canonicalUrl: "https://guitariz.studio/vocal-splitter",
+    title: "Free AI Vocal Remover & Acapella Extractor | Guitariz Studio",
+    description: "Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.",
+    keywords: "vocal remover, free online vocal remover, isolate vocals online, acapella maker free, vocal splitter, stem splitter ai, karaoke creator, remove vocals from mp3",
+    canonicalUrl: "https://guitariz.studio/vocal-remover",
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
     jsonLd: {
@@ -26,18 +26,18 @@ const VocalSplitterPage = () => {
       "@graph": [
         {
           "@type": "SoftwareApplication",
-          "name": "Guitariz Vocal Splitter",
+          "name": "Guitariz AI Vocal Remover",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "Web",
-          "description": "High-quality AI stem extraction for karaoke and remixing.",
-          "url": "https://guitariz.studio/vocal-splitter",
+          "description": "High-quality free online AI vocal remover and stem extraction tool.",
+          "url": "https://guitariz.studio/vocal-remover",
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
           "aggregateRating": {
             "@type": "AggregateRating",
             "ratingValue": "4.9",
             "bestRating": "5",
             "worstRating": "1",
-            "reviewCount": "56"
+            "reviewCount": "145"
           }
         },
         {

@@ -32,6 +32,9 @@ const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const GearPage = lazy(() => import("./pages/GearPage"));
+const BpmDetectorPage = lazy(() => import("./pages/BpmDetectorPage"));
+const KeyDetectorPage = lazy(() => import("./pages/KeyDetectorPage"));
+const ChordGeneratorPage = lazy(() => import("./pages/ChordGeneratorPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import GuitarizLoader from "@/components/ui/loader";
@@ -107,6 +110,8 @@ const App = () => {
       smoothWheel: true,
     });
 
+    (window as unknown as { lenis?: Lenis }).lenis = lenis;
+
     function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
@@ -116,8 +121,17 @@ const App = () => {
 
     return () => {
       lenis.destroy();
+      delete (window as unknown as { lenis?: Lenis }).lenis;
     };
   }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const lenis = (window as unknown as { lenis?: Lenis }).lenis;
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true });
+    }
+  }, [location.pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -255,6 +269,54 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <StemSeparatorPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/bpm-detector"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <BpmDetectorPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/key-detector"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <KeyDetectorPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/vocal-remover"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <VocalSplitterPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/chord-progression-generator"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <ChordGeneratorPage />
                       </main>
                     </PageWrapper>
                   </Suspense>
