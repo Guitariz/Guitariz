@@ -14,24 +14,40 @@ import httpx
 import dns.resolver
 from contextlib import asynccontextmanager
 import uvicorn
+import logging
+
+class QuietScanFilter(logging.Filter):
+    """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if " 404 " in msg or "404 Not Found" in msg:
+            return False
+        if record.args:
+            # Uvicorn passes access args as a tuple: (client_addr, method, path, http_version, status_code)
+            for arg in record.args:
+                if str(arg) == "404":
+                    return False
+        return True
+
+# Apply to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(QuietScanFilter())
 
 from analysis import analyze_file, separate_audio_full, separate_audio_stems, STEM_TYPES
 from websocket_chords import websocket_chord_endpoint
 from youtube import extract_audio, get_video_info, check_rate_limit, get_remaining_requests, extract_video_id
 
-# Try to import madmom, but don't fail if it's not available
+# Try to import custom fast ONNX engine, but don't fail if it's not available
 try:
-    from chord_madmom import analyze_file_madmom, MADMOM_AVAILABLE, MADMOM_ERROR
-    if MADMOM_AVAILABLE:
-        print("[Startup] ✓ madmom engine available - fast analysis enabled (~5-10s)")
+    from chord_fast import analyze_file_fast, FAST_ENGINE_AVAILABLE, FAST_ENGINE_ERROR
+    if FAST_ENGINE_AVAILABLE:
+        print("[Startup] ✓ Custom ONNX fast engine available - fast analysis enabled (~5-10s)")
     else:
-        print("[Startup] ℹ madmom library not installed - using librosa engine (~1-3min)")
+        print("[Startup] ℹ Custom ONNX fast engine not installed - using legacy librosa engine (~1-3min)")
 except ImportError:
-    MADMOM_AVAILABLE = False
-    MADMOM_ERROR = "Failed to import chord_madmom module completely"
-    print("[Startup] ℹ madmom module not found - using librosa engine only")
+    FAST_ENGINE_AVAILABLE = False
+    FAST_ENGINE_ERROR = "Failed to import chord_fast module completely"
+    print("[Startup] ℹ Custom ONNX fast engine module not found - using legacy librosa engine only")
 
-# --- NETWORK DIAGNOSTICS & PATCH ---
 # --- NETWORK DIAGNOSTICS & PATCH ---
 print("\n[DIAG] Starting Network Diagnostics (v1.9.4)...")
 
@@ -115,7 +131,7 @@ separated_files = {}
 MAX_CONCURRENT_SEPARATION = 1
 separation_semaphore = threading.Semaphore(MAX_CONCURRENT_SEPARATION)
 
-# Limit max concurrent Chord AI (madmom/librosa) tasks to prevent CPU saturation
+# Limit max concurrent Chord AI (fast/librosa) tasks to prevent CPU saturation
 MAX_CONCURRENT_CHORDS = 3
 chord_semaphore = threading.Semaphore(MAX_CONCURRENT_CHORDS)
 
@@ -180,9 +196,9 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
     Args:
         file: Audio file to analyze
         separate_vocals: If True, separate vocals before analysis for better accuracy (slower)
-        use_madmom: If True, use fast madmom engine. If False, use librosa (detailed analysis)
+        use_madmom: If True, use fast engine. If False, use legacy detailed engine (slower)
     """
-    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_madmom={use_madmom})")
+    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_fast_engine={use_madmom})")
     
     # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
     active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
@@ -209,13 +225,13 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
                     # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
                     print("[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
                     result = analyze_file(tmp_path, separate_vocals=True)
-                elif MADMOM_AVAILABLE:
-                    # FAST -> Madmom
-                    print("[API] Engine: MADMOM (Fast) | Vocal Filter: OFF")
-                    result = analyze_file_madmom(tmp_path)
+                elif FAST_ENGINE_AVAILABLE:
+                    # FAST -> Custom ONNX
+                    print("[API] Engine: CUSTOM ONNX (Fast) | Vocal Filter: OFF")
+                    result = analyze_file_fast(tmp_path)
                 else:
-                    # Fallback to librosa if madmom is not available or user prefers librosa
-                    print("[API] Engine: LIBROSA (Fallback) | Madmom not found")
+                    # Fallback to librosa if fast engine is not available
+                    print("[API] Engine: LIBROSA (Fallback) | Custom ONNX not found")
                     result = analyze_file(tmp_path, separate_vocals=False)
                 
                 # If vocal separation was used, store the instrumental file and return its URL
@@ -256,7 +272,7 @@ def analyze_youtube(
     Args:
         url: YouTube video URL
         separate_vocals: If True, separate vocals before analysis (slower, more accurate)
-        use_madmom: If True, use fast madmom engine. If False, use librosa.
+        use_madmom: If True, use fast engine. If False, use legacy detailed engine.
         client_ip: Client IP for rate limiting
     
     Returns:
@@ -294,13 +310,13 @@ def analyze_youtube(
             print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
             
             # Analyze the audio
-            print(f"[YouTube] Starting analysis (madmom={use_madmom}, vocals={separate_vocals})")
+            print(f"[YouTube] Starting analysis (use_fast_engine={use_madmom}, vocals={separate_vocals})")
             if not use_madmom:
                 result = analyze_file(audio_path, separate_vocals=separate_vocals)
             elif separate_vocals:
                 result = analyze_file(audio_path, separate_vocals=True)
-            elif MADMOM_AVAILABLE:
-                result = analyze_file_madmom(audio_path)
+            elif FAST_ENGINE_AVAILABLE:
+                result = analyze_file_fast(audio_path)
             else:
                 result = analyze_file(audio_path, separate_vocals=False)
             

@@ -196,15 +196,15 @@ const ChordAIPage = () => {
     if (analysisLoading && !hasCachedResult && currentFileId) {
       if (separateVocals) {
         toast({
-          title: "Premium Analysis Engine ",
-          description: "Vocal filtering enabled. This uses the high-precision pipeline (~1-2 mins on CPU).",
+          title: "Premium Analysis Engine",
+          description: "Vocal filtering enabled. This uses the high-precision pipeline (~2-3 mins).",
         });
       } else {
         toast({
-          title: useMadmom ? "Fast Analysis " : "Detailed Analysis",
+          title: useMadmom ? "Detailed Analysis (Fallback)" : "Detailed Analysis",
           description: useMadmom
-            ? "Using Madmom engine for quick results (~30-60s)."
-            : "Using Librosa engine for focused mapping (~20-30 sec).",
+            ? "Fast chord engine is under development. Falling back to detailed engine (~1 min)."
+            : "Using Librosa engine for focused mapping (~1 min).",
         });
       }
     }
@@ -448,7 +448,20 @@ const ChordAIPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Accurate</Label>
-                      <Switch id="engine-switch" checked={!useMadmom} onCheckedChange={(c) => setUseMadmom(!c)} disabled={analysisLoading} />
+                      <Switch 
+                        id="engine-switch" 
+                        checked={!useMadmom} 
+                        onCheckedChange={(c) => {
+                          setUseMadmom(!c);
+                          if (!c) {
+                            toast({
+                              title: "Fast Chord Engine (WIP)",
+                              description: "The custom fast neural engine is currently under active development. Running analysis will fallback to the high-accuracy engine (~1 min).",
+                            });
+                          }
+                        }} 
+                        disabled={analysisLoading} 
+                      />
                     </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="mode-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Complex</Label>

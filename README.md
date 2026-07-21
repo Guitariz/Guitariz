@@ -100,11 +100,9 @@ graph TD
     subgraph Server ["🧠 AI Service — Python / FastAPI"]
         API["FastAPI + WebSocket Server"]
         Demucs["Meta Demucs<br/>(Source Separation)"]
-        Madmom["Madmom HMM<br/>(Chord Recognition)"]
-        Librosa["Librosa<br/>(Feature Extraction)"]
+        Librosa["Librosa<br/>(Chord & Key Analysis)"]
 
         API --> Demucs
-        API --> Madmom
         API --> Librosa
     end
 
@@ -136,7 +134,7 @@ guitariz/
 ├── backend/
 │   ├── main.py              # FastAPI server + REST endpoints
 │   ├── analysis.py          # Audio feature extraction pipeline
-│   ├── chord_madmom.py      # Madmom-based chord recognition
+│   ├── chord_fast.py        # Fast chord recognition engine
 │   ├── websocket_chords.py  # Real-time WebSocket chord streaming
 │   ├── youtube.py           # YouTube audio download utilities
 │   ├── Dockerfile           # Container build for AI service
@@ -181,7 +179,7 @@ guitariz/
   </tr>
   <tr>
     <td><strong>AI / ML</strong></td>
-    <td>Python · PyTorch · Meta Demucs · Madmom · FastAPI</td>
+    <td>Python · PyTorch · Meta Demucs · FastAPI · Librosa</td>
   </tr>
   <tr>
     <td><strong>Music Theory</strong></td>
@@ -307,7 +305,6 @@ Looking for a place to start? Check out issues tagged [`good first issue`](https
 Guitariz Studio stands on the shoulders of giants in the Music Information Retrieval (MIR) community. Special thanks to the authors of these pivotal libraries:
 
 - **[Meta Demucs](https://github.com/facebookresearch/demucs)** — State-of-the-art deep learning source separation powering our Stem Separator.
-- **[Madmom](https://github.com/CPJKU/madmom)** — High-performance Hidden Markov Model implementations for chord recognition.
 - **[Librosa](https://librosa.org/)** — The backbone of server-side audio analysis and feature extraction.
 - **[Tonal.js](https://github.com/tonaljs/tonal)** — Comprehensive music theory library for client-side harmonic analysis.
 - **[shadcn/ui](https://ui.shadcn.com/)** — Beautiful, accessible component primitives built on Radix UI.

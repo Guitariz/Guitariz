@@ -30,9 +30,8 @@ RUN pip install --no-cache-dir torch==2.2.2 torchaudio==2.2.2 --index-url https:
 # Install remaining dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install madmom separately with --no-build-isolation to use the installed Cython and numpy
-RUN pip install --no-cache-dir "numpy<2.0.0" cython
-RUN pip install --no-cache-dir --no-build-isolation "madmom>=0.16.1"
+# (Optional) Pre-install cython if needed by other packages, otherwise skip
+RUN pip install --no-cache-dir "numpy<2.0.0"
 
 # Copy the rest of the backend code
 COPY --chown=user . .

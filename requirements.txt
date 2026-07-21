@@ -1,0 +1,10 @@
+# Core (needed by backend/chord_custom.py at runtime)
+numpy>=1.24
+librosa>=0.10
+soundfile>=0.12
+onnxruntime>=1.16
+
+# Training-only (Colab/Kaggle GPU box; NOT needed in the FastAPI backend deploy)
+torch>=2.1
+onnx>=1.15
+onnxscript>=0.1        # required by torch>=2.x's ONNX exporter tooling

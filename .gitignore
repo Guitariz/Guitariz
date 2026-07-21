@@ -34,3 +34,6 @@ ENV/
 env/
 cache/
 *.pkl
+
+# Synthetic Dataset
+synth_dataset/
