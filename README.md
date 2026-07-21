@@ -62,9 +62,12 @@ Whether you're a songwriter dissecting harmonies, a student mastering intervals,
 | Feature | Description |
 |:--|:--|
 | **Chord AI** | Upload any audio file for high-accuracy chord recognition, powered by **Librosa** (CQT chroma, HPSS, and tuning deviation cents estimation) and HMM backups. |
-| **MIDI Export** | Export detected or transposed chord progressions directly into Standard MIDI files (`.mid`) for instant drag-and-drop import into Ableton, FL Studio, Logic, Cubase, or any DAW. |
-| **Stem Separator** | Isolate vocals, drums, bass, and other instruments using Meta's state-of-the-art **Demucs** deep learning model. |
-| **Vocal Splitter** | One-click vocal extraction for creating instrumentals or acapellas from any track. |
+| **BPM Detector & Tap Tempo** | Detect beats per minute (BPM) from MP3/audio files or tap along manually in real-time (`/bpm-detector`). |
+| **Audio Key Finder** | Extract musical key signatures and scale modes from any song with harmonic chromagram profiling (`/key-detector`). |
+| **Vocal Remover** | One-click AI vocal & acapella extraction for karaoke backing tracks and remixing (`/vocal-remover`). |
+| **Chord Generator** | Generate progressions by key and mood with audio playback and 1-click **MIDI Export** (`/chord-progression-generator`). |
+| **MIDI Export** | Export detected or generated chord progressions directly into Standard MIDI files (`.mid`) for instant drag-and-drop import into Ableton, FL Studio, Logic, Cubase, or any DAW. |
+| **Stem Separator** | Isolate vocals, drums, bass, and other instruments using Meta's state-of-the-art **Demucs** deep learning model (`/stem-separator`). |
 | **Precision Tuner** | Advanced chromatic tuner with cent-level accuracy for guitar, bass, ukulele, and vocals. |
 
 ### 🎮 Interactive Learning
@@ -297,8 +300,9 @@ Looking for a place to start? Check out issues tagged [`good first issue`](https
 
 ## 🗺️ Roadmap
 
+- [x] MIDI export from Chord AI & Chord Generator (DAW drag-and-drop support)
+- [x] Dedicated SEO Micro-Tools (`/bpm-detector`, `/key-detector`, `/vocal-remover`, `/chord-progression-generator`)
 - [ ] Metadata-only YouTube search with local audio upload-matching workflow (copyright-safe)
-- [x] MIDI export from Chord AI detections (DAW drag-and-drop support)
 - [ ] Collaborative jam rooms via WebRTC
 - [ ] Mobile-native app (React Native / Capacitor)
 - [ ] Additional instrument support (Ukulele, Bass tablature)
