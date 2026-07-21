@@ -37,3 +37,4 @@ cache/
 
 # Synthetic Dataset
 synth_dataset/
+pyproject.toml
