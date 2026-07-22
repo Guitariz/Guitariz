@@ -228,7 +228,7 @@ const routes = [
   },
   {
     url: '/chord-progression-generator',
-    title: 'Free Chord Progression Generator & Harmonic Explorer | Guitariz',
+    title: 'Free Chord Progression Generator & Harmonic Tools | Guitariz',
     description: 'Generate inspiring chord progressions for guitar, piano, and songwriting. Choose key, mood, or genre with real-time sound playback and MIDI export.',
     canonical: 'https://guitariz.studio/chord-progression-generator',
     jsonLd: JSON.stringify({
@@ -249,7 +249,7 @@ const routes = [
   },
   {
     url: '/chordify-alternative',
-    title: 'Best Free Chordify Alternative (100% Free, No Sign-Up) | Guitariz',
+    title: 'Best Free Chordify Alternative (100% Free) | Guitariz',
     description: 'Looking for a free Chordify alternative? Guitariz offers unlimited AI chord recognition, audio uploads, interactive fretboard sync, and MIDI export 100% free.',
     canonical: 'https://guitariz.studio/chordify-alternative',
     jsonLd: JSON.stringify({
@@ -309,7 +309,7 @@ const routes = [
   },
   {
     url: '/stem-separator',
-    title: 'Stem Splitter AI - Extract Vocals, Drums, Bass, Guitar, Piano | Guitariz',
+    title: 'Stem Splitter AI - Free 6-Stem Audio Extractor | Guitariz',
     description: 'Separate any song into 6 stems with Stem Splitter AI: vocals, drums, bass, guitar, piano, and other. High-quality AI stem extraction for music production.',
     canonical: 'https://guitariz.studio/stem-separator',
     jsonLd: JSON.stringify({
