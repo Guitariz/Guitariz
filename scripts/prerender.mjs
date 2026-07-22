@@ -861,3 +861,28 @@ for (const r of routes) {
 
 console.log(`\nPrerender completed for ${routes.length} routes: ${routes.map(r => r.url).join(', ')}`);
 console.log(`lastmod date used: ${TODAY}`);
+
+// Submit URLs to IndexNow (Bing, Yandex, Seznam, Naver)
+const INDEXNOW_KEY = 'e9e48652da224d499e392612ac350cd2';
+const indexNowPayload = {
+  host: 'guitariz.studio',
+  key: INDEXNOW_KEY,
+  keyLocation: `https://guitariz.studio/${INDEXNOW_KEY}.txt`,
+  urlList: routes.map((r) => `https://guitariz.studio${r.url === '/' ? '' : r.url}`)
+};
+
+try {
+  const res = await fetch('https://api.indexnow.org/indexnow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(indexNowPayload)
+  });
+  if (res.ok) {
+    console.log(`Successfully submitted ${routes.length} URLs to IndexNow! (HTTP ${res.status})`);
+  } else {
+    console.log(`IndexNow submission response: HTTP ${res.status}`);
+  }
+} catch (e) {
+  console.log(`IndexNow submission skipped: ${e.message}`);
+}
+
