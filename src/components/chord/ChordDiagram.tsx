@@ -27,8 +27,10 @@ const ChordDiagram = memo(({ frets, fingers, chordName, compact = false }: Chord
         viewBox={`0 0 ${size} ${size}`}
         className="chord-diagram"
         role="img"
-        aria-label={`${chordName} chord diagram`}
+        aria-label={`${chordName} guitar chord diagram`}
       >
+        <title>{`${chordName} Guitar Chord Diagram`}</title>
+        <desc>{`Interactive guitar chord diagram for ${chordName} showing finger positions, muted strings, and fretboard layout.`}</desc>
         {/* Finger positions above nut */}
         <g className="finger-markers">
           {fingers.map((finger, i) => (

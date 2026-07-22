@@ -36,7 +36,7 @@ export const Tuner = () => {
     const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
     const rafRef = useRef<number | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const bufferRef = useRef<Float32Array | null>(null);
+    const bufferRef = useRef<Float32Array<ArrayBuffer> | null>(null);
 
     // --- Core Pitch Detection (Auto-Correlation) ---
 
@@ -51,7 +51,7 @@ export const Tuner = () => {
         return { noteName, octaveVal, centsVal };
     }, [referenceA4]);
 
-    const autoCorrelate = (buffer: Float32Array<ArrayBufferLike>, sampleRate: number) => {
+    const autoCorrelate = (buffer: Float32Array<ArrayBuffer>, sampleRate: number) => {
         // RMS Volume Check
         let rms = 0;
         for (let i = 0; i < buffer.length; i++) {
@@ -107,7 +107,7 @@ export const Tuner = () => {
         if (!buffer) return;
 
         analyserRef.current.getFloatTimeDomainData(buffer);
-        const ac = autoCorrelate(buffer as unknown as Float32Array, audioContextRef.current.sampleRate);
+        const ac = autoCorrelate(buffer, audioContextRef.current.sampleRate);
 
         if (ac > -1 && ac > 50 && ac < 2000) {
             // Valid frequency found
@@ -206,7 +206,11 @@ export const Tuner = () => {
     const needleAngle = Math.max(-45, Math.min(45, cents)); // +/- 45 degrees
 
     return (
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8">
+        <div
+            role="region"
+            aria-label="Precision Chromatic Instrument Tuner Pitch Meter"
+            className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8"
+        >
 
             {/* 
         MAIN DISPLAY AREA:

@@ -581,7 +581,11 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   };
 
   return (
-    <div className="relative overflow-visible bg-transparent p-0 perspective-container">
+    <div
+      role="region"
+      aria-label="Interactive Virtual Guitar Fretboard & Scale Simulator"
+      className="relative overflow-visible bg-transparent p-0 perspective-container"
+    >
       <div className="relative z-10 p-4 md:p-8">
         {/* Modern Control Panel */}
         <motion.div
