@@ -248,6 +248,66 @@ const routes = [
     })
   },
   {
+    url: '/chordify-alternative',
+    title: 'Best Free Chordify Alternative (100% Free, No Sign-Up) | Guitariz',
+    description: 'Looking for a free alternative to Chordify? Guitariz Studio offers unlimited AI chord recognition, audio file uploads, interactive fretboard sync, and MIDI export 100% free.',
+    canonical: 'https://guitariz.studio/chordify-alternative',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': 'https://guitariz.studio/chordify-alternative#webpage',
+          'name': 'Best Free Chordify Alternative - Guitariz Studio',
+          'description': 'Comprehensive comparison between Guitariz Studio and Chordify for AI chord recognition.'
+        },
+        {
+          '@type': 'FAQPage',
+          'mainEntity': [
+            {
+              '@type': 'Question',
+              'name': 'Why is Guitariz Studio the best free alternative to Chordify?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'Guitariz Studio offers unlimited AI chord recognition for MP3, WAV, and YouTube tracks with no monthly song limits, no paywalls, no ads, and no registration required.'
+              }
+            }
+          ]
+        }
+      ]
+    })
+  },
+  {
+    url: '/moises-alternative',
+    title: 'Best Free Moises AI Alternative (Unlimited 6-Stem Separation) | Guitariz',
+    description: 'Looking for a free alternative to Moises AI? Guitariz Studio provides unlimited 6-stem AI separation (vocals, drums, bass, guitar, piano), no 5-minute song caps, and free WAV downloads.',
+    canonical: 'https://guitariz.studio/moises-alternative',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': 'https://guitariz.studio/moises-alternative#webpage',
+          'name': 'Best Free Moises AI Alternative - Guitariz Studio',
+          'description': 'Comprehensive comparison between Guitariz Studio and Moises AI for stem separation.'
+        },
+        {
+          '@type': 'FAQPage',
+          'mainEntity': [
+            {
+              '@type': 'Question',
+              'name': 'Why is Guitariz Studio the best free alternative to Moises AI?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'Guitariz Studio offers unlimited 6-stem AI separation (vocals, drums, bass, guitar, piano, other) using Meta\'s Demucs model without monthly track caps, 5-minute song length restrictions, or subscription fees.'
+              }
+            }
+          ]
+        }
+      ]
+    })
+  },
+  {
     url: '/stem-separator',
     title: 'Stem Splitter AI - Extract Vocals, Drums, Bass, Guitar, Piano | Guitariz',
     description: 'Separate any song into 6 stems with Stem Splitter AI: vocals, drums, bass, guitar, piano, and other. High-quality AI stem extraction for music production.',

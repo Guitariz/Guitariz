@@ -35,6 +35,8 @@ const GearPage = lazy(() => import("./pages/GearPage"));
 const BpmDetectorPage = lazy(() => import("./pages/BpmDetectorPage"));
 const KeyDetectorPage = lazy(() => import("./pages/KeyDetectorPage"));
 const ChordGeneratorPage = lazy(() => import("./pages/ChordGeneratorPage"));
+const ChordifyAlternativePage = lazy(() => import("./pages/ChordifyAlternativePage"));
+const MoisesAlternativePage = lazy(() => import("./pages/MoisesAlternativePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 import GuitarizLoader from "@/components/ui/loader";
@@ -317,6 +319,30 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <ChordGeneratorPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/chordify-alternative"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <ChordifyAlternativePage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/moises-alternative"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <MoisesAlternativePage />
                       </main>
                     </PageWrapper>
                   </Suspense>

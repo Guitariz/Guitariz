@@ -1,4 +1,4 @@
-import { Guitar, Layers, Disc, BookOpen, Music, Bot, Wand2, Download, Menu, Activity, GaugeCircle, Trophy, Sun, Moon, Monitor } from "lucide-react";
+import { Guitar, Layers, Disc, BookOpen, Music, Bot, Wand2, Download, Menu, Activity, GaugeCircle, Trophy } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
-import { useTheme } from "@/contexts/ThemeContext";
 
 const Navigation = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null);
@@ -15,7 +14,6 @@ const Navigation = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const healthStatus = useBackendHealth();
-  const { theme, setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     // Check if already installed
@@ -205,30 +203,6 @@ const Navigation = () => {
               </div>
             )}
 
-            {/* Theme Toggle Button */}
-            <div className="relative group">
-              <button
-                onClick={() => {
-                  if (theme === 'dark') setTheme('light');
-                  else if (theme === 'light') setTheme('system');
-                  else setTheme('dark');
-                }}
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' && <Moon className="w-4 h-4 text-white/80" />}
-                {theme === 'light' && <Sun className="w-4 h-4 text-white/80" />}
-                {theme === 'system' && <Monitor className="w-4 h-4 text-white/80" />}
-              </button>
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded-md bg-black/90 border border-white/10 text-[10px] font-medium text-white/70 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                {theme === 'dark' && 'Dark mode'}
-                {theme === 'light' && 'Light mode'}
-                {theme === 'system' && `System (${resolvedTheme === 'dark' ? 'Dark' : 'Light'})`}
-                {' — Click to change'}
-              </div>
-            </div>
-
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
@@ -268,30 +242,6 @@ const Navigation = () => {
                       </Link>
                     );
                   })}
-                  
-                  {/* Theme Toggle - Mobile Menu */}
-                  <div className="pt-4 mt-4 border-t border-white/10">
-                    <button
-                      onClick={() => {
-                        if (theme === 'dark') setTheme('light');
-                        else if (theme === 'light') setTheme('system');
-                        else setTheme('dark');
-                      }}
-                      className="flex items-center justify-between w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
-                    >
-                      <span className="text-sm text-white/80">Theme</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-white/60">
-                          {theme === 'dark' && 'Dark'}
-                          {theme === 'light' && 'Light'}
-                          {theme === 'system' && `System (${resolvedTheme === 'dark' ? 'Dark' : 'Light'})`}
-                        </span>
-                        {theme === 'dark' && <Moon className="w-4 h-4 text-white/80" />}
-                        {theme === 'light' && <Sun className="w-4 h-4 text-white/80" />}
-                        {theme === 'system' && <Monitor className="w-4 h-4 text-white/80" />}
-                      </div>
-                    </button>
-                  </div>
                 </nav>
               </SheetContent>
             </Sheet>
