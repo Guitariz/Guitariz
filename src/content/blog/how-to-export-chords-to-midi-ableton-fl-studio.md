@@ -1,5 +1,5 @@
 ---
-title: "How to Export AI-Detected Chords directly into Ableton & FL Studio (MIDI Guide)"
+title: "Export AI Chords to MIDI for Ableton & FL Studio"
 description: "Learn how to instantly convert audio songs to Standard MIDI files (.mid) and import detected chord progressions directly into Ableton Live, FL Studio, or Logic Pro."
 date: "2026-07-22"
 author: "Abhinav Vaidya"

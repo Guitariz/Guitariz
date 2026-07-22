@@ -29,7 +29,7 @@ const BlogPostPage: React.FC = () => {
 
   // Dynamic Page Metadata hooks
   usePageMetadata({
-    title: post ? `${post.title} | Guitariz Blog` : "Loading Article...",
+    title: post ? `${post.title} | Guitariz` : "Loading Article...",
     description: post ? post.description : "Guitariz music theory and AI guide article.",
     canonicalUrl: post ? `https://guitariz.studio/blog/${post.slug}` : "https://guitariz.studio/blog",
   });

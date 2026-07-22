@@ -679,7 +679,7 @@ routes.push({
 for (const post of blogPosts) {
   routes.push({
     url: `/blog/${post.slug}`,
-    title: `${post.title} | Guitariz Blog`,
+    title: `${post.title} | Guitariz`,
     description: post.description,
     canonical: `https://guitariz.studio/blog/${post.slug}`,
     htmlContent: post.html,
