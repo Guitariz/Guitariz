@@ -7,7 +7,7 @@ import { Disc } from "lucide-react";
 const JamPage = () => {
     usePageMetadata({
         title: "Jam Studio - Chord Progression Player | Guitariz",
-        description: "Practice soloing over looping chord progressions. Pick chords, set BPM, and improvise with scale suggestions. Free online backing track generator for guitar and piano.",
+        description: "Practice soloing over looping chord progressions. Set BPM, pick chords, and improvise with scale suggestions on guitar and piano.",
         canonicalUrl: "https://guitariz.studio/jam",
         ogImage: "https://guitariz.studio/logo.png",
         ogType: "website",

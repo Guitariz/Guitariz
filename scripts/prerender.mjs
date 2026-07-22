@@ -512,7 +512,7 @@ const routes = [
   {
     url: '/jam',
     title: 'Jam Studio - Loop Chord Progressions with AI Piano & Pads | Guitariz',
-    description: 'Create and loop chord progressions with our free Jam Studio. Play along with AI-generated piano, pads, and metronome for the ultimate practice session.',
+    description: 'Practice soloing over looping chord progressions. Set BPM, pick chords, and improvise with scale suggestions on guitar and piano.',
     canonical: 'https://guitariz.studio/jam',
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
