@@ -279,7 +279,7 @@ const routes = [
   },
   {
     url: '/moises-alternative',
-    title: 'Best Free Moises AI Alternative (Unlimited 6-Stem Separation) | Guitariz',
+    title: 'Best Free Moises AI Alternative (Unlimited 6 Stems) | Guitariz',
     description: 'Looking for a free Moises AI alternative? Guitariz provides unlimited 6-stem AI audio separation, zero song duration limits, and free WAV downloads.',
     canonical: 'https://guitariz.studio/moises-alternative',
     jsonLd: JSON.stringify({
