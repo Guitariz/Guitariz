@@ -1,5 +1,5 @@
 ---
-title: "Introduction to Indian Ragas on Guitar: Tuning, Scales & Rhythms"
+title: "Introduction to Indian Ragas on Guitar"
 description: "Master the sound of Indian Classical Music on the guitar. Learn the ten Thaats, Raga Bilawal, Raga Yaman, and how to configure scales."
 date: "2026-07-20"
 author: "Abhinav Vaidya"
