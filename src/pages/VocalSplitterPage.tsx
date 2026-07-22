@@ -11,14 +11,17 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import GearTip from "@/components/GearTip";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const VocalSplitterPage = () => {
+  const location = useLocation();
+  const currentUrl = `https://guitariz.studio${location.pathname}`;
+
   usePageMetadata({
     title: "Free AI Vocal Remover & Acapella Extractor | Guitariz Studio",
     description: "Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.",
     keywords: "vocal remover, free online vocal remover, isolate vocals online, acapella maker free, vocal splitter, stem splitter ai, karaoke creator, remove vocals from mp3",
-    canonicalUrl: "https://guitariz.studio/vocal-remover",
+    canonicalUrl: currentUrl,
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
     jsonLd: {
@@ -30,7 +33,7 @@ const VocalSplitterPage = () => {
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "Web",
           "description": "High-quality free online AI vocal remover and stem extraction tool.",
-          "url": "https://guitariz.studio/vocal-remover",
+          "url": currentUrl,
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
           "aggregateRating": {
             "@type": "AggregateRating",
@@ -491,7 +494,7 @@ const VocalSplitterPage = () => {
           {/* Breadcrumb */}
           <Breadcrumb items={[
             { name: "Home", url: "https://guitariz.studio/" },
-            { name: "Vocal Splitter", url: "https://guitariz.studio/vocal-splitter" }
+            { name: location.pathname === "/vocal-remover" ? "Vocal Remover" : "Vocal Splitter", url: currentUrl }
           ]} />
 
           {/* Header */}

@@ -143,6 +143,111 @@ const routes = [
     })
   },
   {
+    url: '/bpm-detector',
+    title: 'Free Online BPM Detector & Tap Tempo Finder | Guitariz',
+    description: 'Detect the exact BPM (tempo) of any MP3 or audio file online for free. Features real-time AI audio tap tempo finder, metronome sync, and analysis.',
+    canonical: 'https://guitariz.studio/bpm-detector',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/bpm-detector#app',
+          'name': 'Guitariz Online BPM Detector',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Free online BPM detector and tap tempo finder for songs and audio files.',
+          'url': 'https://guitariz.studio/bpm-detector',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
+          'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': '4.9',
+            'bestRating': '5',
+            'worstRating': '1',
+            'reviewCount': '112'
+          }
+        }
+      ]
+    })
+  },
+  {
+    url: '/key-detector',
+    title: 'Free Online Key Detector & Song Scale Finder | Guitariz',
+    description: 'Find the key of any song or audio file for free. AI-powered musical key recognition and scale mode detector for musicians and producers.',
+    canonical: 'https://guitariz.studio/key-detector',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/key-detector#app',
+          'name': 'Guitariz Online Key Detector',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Free online audio key finder and scale mode detector.',
+          'url': 'https://guitariz.studio/key-detector',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
+          'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': '4.9',
+            'bestRating': '5',
+            'worstRating': '1',
+            'reviewCount': '98'
+          }
+        }
+      ]
+    })
+  },
+  {
+    url: '/vocal-remover',
+    title: 'Free AI Vocal Remover & Acapella Extractor | Guitariz Studio',
+    description: 'Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.',
+    canonical: 'https://guitariz.studio/vocal-remover',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/vocal-remover#app',
+          'name': 'Guitariz AI Vocal Remover',
+          'applicationCategory': 'MultimediaApplication',
+          'operatingSystem': 'Web',
+          'description': 'High-quality free online AI vocal remover and stem extraction tool.',
+          'url': 'https://guitariz.studio/vocal-remover',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
+          'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': '4.9',
+            'bestRating': '5',
+            'worstRating': '1',
+            'reviewCount': '145'
+          }
+        }
+      ]
+    })
+  },
+  {
+    url: '/chord-progression-generator',
+    title: 'Free Chord Progression Generator & Harmonic Explorer | Guitariz',
+    description: 'Generate inspiring chord progressions for guitar, piano, and songwriting. Choose key, mood, or genre with real-time sound playback and MIDI export.',
+    canonical: 'https://guitariz.studio/chord-progression-generator',
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/chord-progression-generator#app',
+          'name': 'Guitariz Chord Progression Generator',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Generate inspiring chord progressions for guitar, piano, and songwriting.',
+          'url': 'https://guitariz.studio/chord-progression-generator',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        }
+      ]
+    })
+  },
+  {
     url: '/stem-separator',
     title: 'Stem Splitter AI - Extract Vocals, Drums, Bass, Guitar, Piano | Guitariz',
     description: 'Separate any song into 6 stems with Stem Splitter AI: vocals, drums, bass, guitar, piano, and other. High-quality AI stem extraction for music production.',
