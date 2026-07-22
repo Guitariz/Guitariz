@@ -6,7 +6,7 @@ import RelatedTools from "@/components/RelatedTools";
 
 const ScalesPage = () => {
   usePageMetadata({
-    title: "Guitar Scale Explorer - Interactive Western Modes & Indian Ragas | Guitariz",
+    title: "Guitar Scale Explorer - Scale Patterns & Modes | Guitariz",
     description: "Explore guitar scales and modes visually. Map Western modes and Indian Classical music Ragas (Bhairav, Yaman, Bilawal) onto an interactive guitar neck.",
     keywords: "guitar scales, music modes, scale explorer, pentatonic scale, blues scale, indian classical ragas guitar, bhairav raga guitar, hindustani music guitar, carnatic scales, raga scale patterns, indian scale on guitar",
     canonicalUrl: "https://guitariz.studio/scales",

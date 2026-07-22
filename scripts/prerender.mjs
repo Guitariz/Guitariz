@@ -424,7 +424,7 @@ const routes = [
   },
   {
     url: '/scales',
-    title: 'Guitar Scale Explorer - Interactive Scale Patterns & Modes | Guitariz',
+    title: 'Guitar Scale Explorer - Scale Patterns & Modes | Guitariz',
     description: 'Explore guitar scales and modes visually. Interactive patterns for major, minor, pentatonic, and exotic scales.',
     canonical: 'https://guitariz.studio/scales',
     jsonLd: JSON.stringify({
@@ -778,7 +778,7 @@ function buildRouteBodyHtml(r) {
   return `
     <div class="prerendered-static-content" style="padding: 32px 16px; max-width: 960px; margin: 0 auto; color: #e4e4e7; font-family: system-ui, -apple-system, sans-serif;">
       <header style="margin-bottom: 24px;">
-        <h1 style="font-size: 2.25rem; font-weight: 700; tracking: -0.025em; color: #ffffff; margin-bottom: 12px;">${r.title}</h1>
+        <h2 style="font-size: 2.25rem; font-weight: 700; tracking: -0.025em; color: #ffffff; margin-bottom: 12px;">${r.title}</h2>
         <p style="font-size: 1.125rem; color: #a1a1aa; line-height: 1.6; max-width: 720px;">${r.description}</p>
       </header>
       ${stepsHtml}
