@@ -126,6 +126,12 @@ const BpmDetectorPage = () => {
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
               Detect the exact beats per minute (BPM) of any song or MP3 file online in seconds, or tap along manually to measure tempo.
             </p>
+            <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">How to find the BPM of a song online free?</h2>
+              <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                Guitariz Online BPM Detector measures the exact beats per minute (tempo) of any song or MP3 file automatically using beat-tracking algorithms. You can also tap along on your keyboard to instantly find the tempo of any track.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">

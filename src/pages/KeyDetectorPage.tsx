@@ -93,6 +93,12 @@ const KeyDetectorPage = () => {
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
               Instantly find the musical key signature and scale of any audio track or MP3 file for seamless DJ mixing, pitching, and song arrangement.
             </p>
+            <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-1">How to detect the musical key of a song?</h2>
+              <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                Guitariz Key Detector analyzes the harmonic pitch profile and chromagram of any audio file to identify its root key (e.g. A Minor, C Major) and scale mode for seamless harmonic mixing, pitching, and songwriting.
+              </p>
+            </div>
           </div>
 
           <div className="glass-card rounded-[2rem] border border-border bg-card/95 p-10 shadow-2xl space-y-8 mb-12">

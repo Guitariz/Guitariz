@@ -511,6 +511,12 @@ const VocalSplitterPage = () => {
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
                 Separate vocals and instrumentals with precision. Adjust levels independently and export clean stems for remixing or karaoke.
               </p>
+              <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 max-w-2xl mx-auto text-left">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-1">What is Guitariz AI Vocal Splitter?</h2>
+                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                  Guitariz AI Vocal Splitter is a free online acapella extractor and vocal remover. It uses machine learning to split any song into clean isolated vocal stems and instrumental backing tracks for karaoke, sampling, and music practice.
+                </p>
+              </div>
               <div className="mt-4 px-4 py-2 rounded-lg bg-white/[0.02] border border-white/5 max-w-2xl mx-auto">
                 <p className="text-xs text-muted-foreground">
                   <strong className="text-white">Note:</strong> This feature requires the backend server to be running. For local testing, start the backend with <code className="px-1 py-0.5 rounded bg-white/5 text-white">python backend/main.py</code>

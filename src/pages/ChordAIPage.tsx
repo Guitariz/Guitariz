@@ -440,6 +440,12 @@ const ChordAIPage = () => {
                 <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
                   Decode harmonic progressions and scales from raw audio using our production-grade engine.
                 </p>
+                <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">What is Guitariz Chord AI?</h2>
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                    Guitariz Chord AI is a 100% free online chord recognition tool that automatically extracts guitar chords, key signatures, and tempo (BPM) from any MP3, WAV, or YouTube audio track without subscription paywalls or login requirements.
+                  </p>
+                </div>
               </div>
             </div>
 

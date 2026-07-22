@@ -132,6 +132,12 @@ const FretboardPage = () => {
               <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
                 A high-fidelity instrument sandbox. Explore chord voicings, scale patterns, and <span className="text-foreground/80">interval relationships</span> in real-time.
               </p>
+              <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">What is the Guitariz Virtual Fretboard?</h2>
+                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                  Guitariz Virtual Fretboard is an interactive 2D & 3D instrument simulator for guitarists and pianists. It visualizes scale shapes, arpeggios, and chord fingerings across the neck with audio playback.
+                </p>
+              </div>
             </header>
           </div>
 

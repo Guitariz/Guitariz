@@ -532,6 +532,12 @@ const StemSeparatorPage = () => {
                             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-light">
                                 Separate any song into vocals, drums, bass, guitar, piano, and other. Download individual stems for remixing, practice, or production.
                             </p>
+                            <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 max-w-2xl mx-auto text-left">
+                                <h2 className="text-xs font-bold uppercase tracking-widest text-amber-400 mb-1">What is Guitariz 6-Stem AI Separator?</h2>
+                                <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                                    Guitariz 6-Stem Separator is an advanced music source isolation tool. It uses Meta's Demucs neural network to separate any song into 6 independent audio stems: vocals, drums, bass, electric guitar, piano, and background elements.
+                                </p>
+                            </div>
                             <div className="mt-4 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 max-w-2xl mx-auto">
                                 <p className="text-xs text-amber-200/80">
                                     <strong className="text-amber-300">⚠️ Note:</strong> 6-stem separation takes 2-3 minutes on CPU. Please be patient.
