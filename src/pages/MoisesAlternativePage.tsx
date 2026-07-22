@@ -8,7 +8,7 @@ import RelatedTools from "@/components/RelatedTools";
 const MoisesAlternativePage = () => {
   usePageMetadata({
     title: "Best Free Moises AI Alternative (Unlimited 6-Stem Separation) | Guitariz",
-    description: "Looking for a free alternative to Moises AI? Guitariz Studio provides unlimited 6-stem AI separation (vocals, drums, bass, guitar, piano), no 5-minute song caps, and free WAV downloads.",
+    description: "Looking for a free Moises AI alternative? Guitariz provides unlimited 6-stem AI audio separation, zero song duration limits, and free WAV downloads.",
     keywords: "free moises alternative, moises ai alternative, free stem splitter online, extract vocals drums bass guitar free, demucs online free, stem separation no limits",
     canonicalUrl: "https://guitariz.studio/moises-alternative",
     ogImage: "https://guitariz.studio/logo2.png",

@@ -8,7 +8,7 @@ import RelatedTools from "@/components/RelatedTools";
 const ChordifyAlternativePage = () => {
   usePageMetadata({
     title: "Best Free Chordify Alternative (100% Free, No Sign-Up) | Guitariz",
-    description: "Looking for a free alternative to Chordify? Guitariz Studio offers unlimited AI chord recognition, audio file uploads, interactive fretboard sync, and MIDI export 100% free.",
+    description: "Looking for a free Chordify alternative? Guitariz offers unlimited AI chord recognition, audio uploads, interactive fretboard sync, and MIDI export 100% free.",
     keywords: "free chordify alternative, chordify alternative, chordify free alternative 2026, free chord recognition app, extract chords from youtube free, ai chord identifier",
     canonicalUrl: "https://guitariz.studio/chordify-alternative",
     ogImage: "https://guitariz.studio/logo2.png",

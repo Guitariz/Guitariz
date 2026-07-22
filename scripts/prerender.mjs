@@ -250,7 +250,7 @@ const routes = [
   {
     url: '/chordify-alternative',
     title: 'Best Free Chordify Alternative (100% Free, No Sign-Up) | Guitariz',
-    description: 'Looking for a free alternative to Chordify? Guitariz Studio offers unlimited AI chord recognition, audio file uploads, interactive fretboard sync, and MIDI export 100% free.',
+    description: 'Looking for a free Chordify alternative? Guitariz offers unlimited AI chord recognition, audio uploads, interactive fretboard sync, and MIDI export 100% free.',
     canonical: 'https://guitariz.studio/chordify-alternative',
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
@@ -280,7 +280,7 @@ const routes = [
   {
     url: '/moises-alternative',
     title: 'Best Free Moises AI Alternative (Unlimited 6-Stem Separation) | Guitariz',
-    description: 'Looking for a free alternative to Moises AI? Guitariz Studio provides unlimited 6-stem AI separation (vocals, drums, bass, guitar, piano), no 5-minute song caps, and free WAV downloads.',
+    description: 'Looking for a free Moises AI alternative? Guitariz provides unlimited 6-stem AI audio separation, zero song duration limits, and free WAV downloads.',
     canonical: 'https://guitariz.studio/moises-alternative',
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
