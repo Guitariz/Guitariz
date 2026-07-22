@@ -1,5 +1,5 @@
 ---
-title: "How to Isolate Bass and Vocals: Free Demucs Tutorial"
+title: "How to Isolate Bass & Vocals with Demucs AI"
 description: "Learn how to split audio stems and isolate bass, vocals, and drums using the state-of-the-art Demucs AI models for free in your browser."
 date: "2026-07-20"
 author: "Abhinav Vaidya"

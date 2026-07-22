@@ -1,5 +1,5 @@
 ---
-title: "Moises vs. Guitariz: Free Web-Based Audio Stem Separation Compared"
+title: "Moises vs Guitariz: Free 6-Stem AI Separation"
 description: "Compare Moises AI and Guitariz Vocal Remover & Stem Separator. Learn which free audio splitter delivers better acapella extraction and multi-track isolation."
 date: "2026-07-22"
 author: "Abhinav Vaidya"
