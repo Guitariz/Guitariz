@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Scale, Hash, Globe, Play, Info, Guitar, Search, PlayCircle, Layers, Piano } from "lucide-react";
+import { Scale, Hash, Globe, Info, Guitar, Search, PlayCircle, Piano, Disc } from "lucide-react";
 import { playNote } from "@/lib/chordAudio";
 import { motion, AnimatePresence } from "framer-motion";
 import { PianoKeyboard } from "@/components/piano/PianoKeyboard";
@@ -341,13 +341,37 @@ const RAGA_SCALES = {
 
 // ─── Scale Data ──────────────────────────────────────────────────────────────
 const ScaleExplorer = () => {
-  const [rootNote, setRootNote] = useState("C");
-  const [selectedScale, setSelectedScale] = useState("Major (Ionian)");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramRoot = searchParams.get("root");
+  const paramScale = searchParams.get("scale");
+
+  const [rootNote, setRootNote] = useState(() => {
+    if (paramRoot && NOTES.includes(paramRoot.toUpperCase())) return paramRoot.toUpperCase();
+    return "C";
+  });
+
+  const [selectedScale, setSelectedScale] = useState(() => {
+    if (!paramScale) return "Major (Ionian)";
+    const decoded = decodeURIComponent(paramScale);
+    if (WESTERN_SCALES[decoded as keyof typeof WESTERN_SCALES]) return decoded;
+    const matched = Object.keys(WESTERN_SCALES).find(k => k.toLowerCase().includes(decoded.toLowerCase()));
+    return matched || "Major (Ionian)";
+  });
+
   const [scaleCategory, setScaleCategory] = useState("western");
   const [lastPlayed, setLastPlayed] = useState<string | null>(null);
   const [scaleSearchQuery, setScaleSearchQuery] = useState("");
-  const [showPiano, setShowPiano] = useState(true);
-  const [pianoOctaves, setPianoOctaves] = useState<2 | 3 | "full">(2);
+
+  // Sync state to URL search params
+  const handleSetRootNote = (note: string) => {
+    setRootNote(note);
+    setSearchParams({ root: note, scale: selectedScale });
+  };
+
+  const handleSetSelectedScale = (scale: string) => {
+    setSelectedScale(scale);
+    setSearchParams({ root: rootNote, scale });
+  };
 
   const currentScales = (scaleCategory === "western" ? WESTERN_SCALES : RAGA_SCALES) as Record<string, ScaleData>;
 
@@ -392,7 +416,7 @@ const ScaleExplorer = () => {
               <button
                 onClick={() => {
                   setScaleCategory("western");
-                  setSelectedScale("Major (Ionian)");
+                  handleSetSelectedScale("Major (Ionian)");
                 }}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "western"
                   ? "bg-white/10 text-white shadow-sm border border-white/10"
@@ -404,7 +428,7 @@ const ScaleExplorer = () => {
               <button
                 onClick={() => {
                   setScaleCategory("raga");
-                  setSelectedScale("Bhairav");
+                  handleSetSelectedScale("Bhairav");
                 }}
                 className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${scaleCategory === "raga"
                   ? "bg-white/10 text-white shadow-sm border border-white/10"
@@ -421,7 +445,7 @@ const ScaleExplorer = () => {
                 {NOTES.map((note) => (
                   <button
                     key={note}
-                    onClick={() => setRootNote(note)}
+                    onClick={() => handleSetRootNote(note)}
                     className={`h-8 rounded-lg text-xs font-mono transition-all border ${rootNote === note
                       ? "bg-white text-black border-white shadow-lg"
                       : "bg-white/[0.02] border-white/5 text-muted-foreground hover:border-white/10 hover:text-white"
@@ -451,7 +475,7 @@ const ScaleExplorer = () => {
                   {filteredScales.map((scale) => (
                     <button
                       key={scale}
-                      onClick={() => setSelectedScale(scale)}
+                      onClick={() => handleSetSelectedScale(scale)}
                       className={`w-full text-left px-3 py-1 rounded-lg text-xs font-sans transition-all border group relative overflow-hidden ${selectedScale === scale
                         ? "bg-white/[0.06] border-white/10 text-white font-normal shadow-sm"
                         : "border-transparent text-muted-foreground/60 hover:bg-white/[0.03] hover:text-white"
@@ -498,8 +522,16 @@ const ScaleExplorer = () => {
                   className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-full text-[10px] font-bold hover:bg-neutral-200 transition-all shadow-lg group disabled:opacity-50"
                 >
                   <PlayCircle className="w-3.5 h-3.5 fill-current group-hover:scale-110 transition-transform" />
-                  Audition
+                  Audition Scale
                 </button>
+
+                <Link
+                  to={`/theory?root=${rootNote}`}
+                  className="flex items-center gap-2 bg-white/10 text-white border border-white/20 px-4 py-2 rounded-full text-[10px] font-bold hover:bg-white/20 transition-all shadow-lg"
+                >
+                  <Disc className="w-3.5 h-3.5 text-primary" />
+                  Analyze {rootNote} on Circle of Fifths →
+                </Link>
               </div>
             </div>
 
@@ -550,15 +582,43 @@ const ScaleExplorer = () => {
             <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01]">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-primary/10 rounded-xl text-primary"><Hash className="w-4 h-4" /></div>
-                <h3 className="text-sm font-semibold text-white tracking-tight">Modal Degrees</h3>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Modal Degrees & Diatonic Chords</h3>
               </div>
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {(scaleData as WesternScaleData).chords.map((chord, idx) => (
-                    <div key={idx} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-mono text-white flex items-center gap-2">
-                      <span className="text-muted-foreground/40">{idx + 1}.</span>{chord}
-                    </div>
-                  ))}
+                  {(scaleData as WesternScaleData).chords.map((chord, idx) => {
+                    const scaleNote = getScaleNotes[idx] || "";
+                    const cleanRoman = chord.replace(/[°+]/g, "").trim();
+                    const isMinor = cleanRoman === cleanRoman.toLowerCase();
+                    const isDiminished = chord.includes("°") || chord.toLowerCase().includes("dim") || cleanRoman === "vii";
+                    const isAugmented = chord.includes("+");
+
+                    let suffix = "";
+                    if (isDiminished) suffix = "dim";
+                    else if (isAugmented) suffix = "aug";
+                    else if (isMinor) suffix = "m";
+
+                    const actualChord = scaleNote ? `${scaleNote}${suffix}` : "";
+
+                    return (
+                      <div
+                        key={idx}
+                        className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-[11px] font-mono text-white flex items-center gap-2 hover:border-primary/40 transition-colors cursor-pointer"
+                        onClick={() => {
+                          if (scaleNote) {
+                            const noteFreq = 440 * Math.pow(2, (NOTES.indexOf(scaleNote) - 9) / 12);
+                            playNote(noteFreq, 1.2, 0.4, "piano");
+                            setLastPlayed(scaleNote);
+                          }
+                        }}
+                        title={`Click to play root note ${scaleNote}`}
+                      >
+                        <span className="text-muted-foreground/45">{idx + 1}.</span>
+                        <span className="font-bold text-primary">{actualChord || scaleNote}</span>
+                        <span className="text-[10px] text-muted-foreground">({chord})</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -593,14 +653,84 @@ const ScaleExplorer = () => {
               </div>
             </div>
           )}
-          <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01] flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-neutral-100/10 rounded-xl text-white"><Info className="w-4 h-4" /></div>
-              <h3 className="text-sm font-semibold text-white tracking-tight">Theory Context</h3>
+          <div className="glass-card rounded-2xl p-6 border-white/5 bg-white/[0.01] flex flex-col space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-neutral-100/10 rounded-xl text-white"><Info className="w-4 h-4" /></div>
+                <h3 className="text-sm font-semibold text-white tracking-tight">Theory Context & Character</h3>
+              </div>
+              <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+                {scaleCategory}
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed opacity-70 font-medium">
-              This scale uses {getScaleNotes.length} notes. The relationship between the 3rd defines its core personality. Master these patterns across the full range of your instrument to unlock new melodic possibilities.
-            </p>
+
+            {/* Interval Construction Pill */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold block mb-1">Scale Intervals</span>
+                <span className="text-xs font-mono font-bold text-primary">
+                  {scaleData.intervals.map((semitones: number) => {
+                    const degreeMap: Record<number, string> = {
+                      0: "1",
+                      1: "b2",
+                      2: "2",
+                      3: "b3",
+                      4: "3",
+                      5: "4",
+                      6: "#4",
+                      7: "5",
+                      8: "b6",
+                      9: "6",
+                      10: "b7",
+                      11: "7"
+                    };
+                    return degreeMap[semitones] || semitones.toString();
+                  }).join(" - ")}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold block mb-1">Scale Family</span>
+                <span className="text-xs font-bold text-white capitalize">
+                  {scaleCategory === "raga" ? "Indian Raga" : ("chords" in scaleData ? scaleData.category : undefined) || "Western Scale"}
+                </span>
+              </div>
+            </div>
+
+            {/* Custom Dynamic Insight */}
+            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
+              <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-bold block">Harmonic Insight</span>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {scaleCategory === "raga" ? (
+                  <>
+                    <strong>{selectedScale}</strong> is a classical Indian raga.
+                    {selectedScale === "Bhairav" && " It represents the dawn and Shiva's meditative consciousness. It uses Komal Re (flat 2) and Komal Dha (flat 6) to evoke a deep, serious, and spiritual devotion."}
+                    {selectedScale === "Yaman" && " It is a majestic evening raga that introduces Tivra Madhyam (sharp 4th), generating a pure, romantic, and heroic mood."}
+                    {selectedScale === "Bhairavi" && " Known as the 'queen of ragas', Bhairavi uses all komal (flat) notes except Sa and Pa, producing a peaceful, meditative, and sweet mood."}
+                    {selectedScale === "Kafi" && " A light evening raga that uses flat 3rd (Ga) and flat 7th (Ni), equivalent to the Western Dorian mode. It is popular in light classical and semi-classical songs."}
+                    {selectedScale === "Bilawal" && " The standard natural major scale equivalent. It represents pure dawn, joy, and simplicity using all shuddha (natural) notes."}
+                    {selectedScale === "Darbari" && " A deep, slow, late-night raga using komal Ga, Dha, and Ni. It creates a serious, dark, and royal mood with slow oscillations (andolan)."}
+                    {selectedScale === "Bageshri" && " A beautiful late-night raga expressing yearning, love, and devotion. It omits Re and Pa in the ascent to build anticipation."}
+                    {selectedScale === "Malkauns" && " A pentatonic midnight raga that skips Re and Pa entirely, creating a serious, deeply meditative, and mysterious atmosphere."}
+                    {!["Bhairav", "Yaman", "Bhairavi", "Kafi", "Bilawal", "Darbari", "Bageshri", "Malkauns"].includes(selectedScale) && ` ${scaleData.description}`}
+                  </>
+                ) : (
+                  <>
+                    <strong>{rootNote} {selectedScale}</strong> is a Western { ("chords" in scaleData ? scaleData.category : undefined) || "scale" }.
+                    {selectedScale === "Major (Ionian)" && " The fundamental happy, bright Major scale. Used as the benchmark for Western harmony. Evokes triumph, resolution, and joy."}
+                    {selectedScale === "Natural Minor (Aeolian)" && " The natural minor scale. Melancholic, emotional, and serious. Used extensively to convey sadness, introspection, and drama."}
+                    {selectedScale === "Dorian" && " A minor scale with a raised 6th degree. It balances sadness with a bright, jazzy, and hopeful mood. Common in jazz fusion and classic rock (e.g. Santana)."}
+                    {selectedScale === "Phrygian" && " A minor scale with a flattened 2nd degree. Extremely dark, tense, and exotic. Evokes Flamenco, heavy metal riffs, and Spanish classical motifs."}
+                    {selectedScale === "Lydian" && " A major scale with a raised 4th degree (#4). Dreamy, floating, spacey, and mystical. Extensively used in sci-fi, cinematic scores, and progressive rock."}
+                    {selectedScale === "Mixolydian" && " A major scale with a flattened 7th degree (b7). Bluesy, dominant, and grounded. The ultimate classic rock and blues solo scale."}
+                    {selectedScale === "Locrian" && " A highly dissonant scale with a flattened 2nd and 5th (b5). Unstable and tense, resolving back to the tonic is difficult. Used in avant-garde and progressive metal."}
+                    {selectedScale === "Harmonic Minor" && " A minor scale with a raised 7th (leading tone). Creates a dramatic, neoclassical, and exotic feel with its large augmented 2nd interval."}
+                    {selectedScale === "Melodic Minor" && " A minor scale with a raised 6th and 7th. Often used in jazz to improvise over dominant chords, offering a sophisticated, smooth sound."}
+                    {!["Major (Ionian)", "Natural Minor (Aeolian)", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian", "Harmonic Minor", "Melodic Minor"].includes(selectedScale) && ` ${scaleData.description}`}
+                  </>
+                )}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -615,60 +745,25 @@ const ScaleExplorer = () => {
                 <Piano className="w-3.5 h-3.5 text-primary" />
               </div>
               <div className="flex flex-col">
-                <h3 className="text-xs font-bold text-white tracking-tight">Piano Keyboard</h3>
-                <span className="text-[9px] text-muted-foreground/40 font-medium uppercase tracking-tighter">Interactive • Click keys to play</span>
+                <h3 className="text-xs font-bold text-white tracking-tight">Piano Keyboard Visualization</h3>
+                <span className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-tighter">
+                  Showing scale notes for {rootNote} {selectedScale}
+                </span>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* Octave toggle */}
-              <div className="flex p-0.5 bg-white/[0.03] rounded-lg border border-white/5">
-                {([2, 3, "full"] as const).map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setPianoOctaves(n)}
-                    className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest transition-all ${
-                      pianoOctaves === n
-                        ? "bg-white/10 text-white border border-white/10"
-                        : "text-muted-foreground hover:text-white"
-                    }`}
-                  >
-                    {n === "full" ? "Full" : `${n} Oct`}
-                  </button>
-                ))}
-              </div>
-              {/* Show/Hide toggle */}
-              <button
-                onClick={() => setShowPiano((v) => !v)}
-                className="px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border border-white/5 text-muted-foreground hover:text-white hover:border-white/10 transition-all"
-              >
-                {showPiano ? "Hide" : "Show"}
-              </button>
             </div>
           </div>
 
-          <AnimatePresence>
-            {showPiano && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="overflow-hidden"
-              >
-                <div className="p-4 md:p-6 flex justify-center">
-                  <PianoKeyboard
-                    scaleNotes={getScaleNotes}
-                    rootNote={rootNote}
-                    intervals={(currentScales[selectedScale] as { intervals: number[] }).intervals}
-                    startOctave={3}
-                    numOctaves={typeof pianoOctaves === "number" ? pianoOctaves : 2}
-                    fullRange={pianoOctaves === "full"}
-                    showLabels={true}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="p-4 md:p-6 flex justify-center">
+            <PianoKeyboard
+              scaleNotes={getScaleNotes}
+              rootNote={rootNote}
+              intervals={(currentScales[selectedScale] as { intervals: number[] }).intervals}
+              startOctave={3}
+              numOctaves={2}
+              fullRange={false}
+              showLabels={true}
+            />
+          </div>
         </div>
       </div>
     </div>

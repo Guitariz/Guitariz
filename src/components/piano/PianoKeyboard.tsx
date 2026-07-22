@@ -94,23 +94,23 @@ const WHITE_KEY_ROLE_STYLES: Record<IntervalRole, string> = {
   root:  "bg-gradient-to-b from-amber-100 to-amber-200 border-amber-400 shadow-amber-400/40 shadow-lg",
   third: "bg-gradient-to-b from-violet-200 to-violet-300 border-violet-500 shadow-violet-400/40 shadow-lg",
   fifth: "bg-gradient-to-b from-cyan-100 to-cyan-200 border-cyan-400 shadow-cyan-400/40 shadow-lg",
-  scale: "bg-gradient-to-b from-white/90 to-white/70 border-white/60 shadow-white/20 shadow-md",
-  none:  "bg-gradient-to-b from-[#e8e8e8] to-[#d0d0d0] border-white/10",
+  scale: "bg-gradient-to-b from-emerald-100 to-emerald-250 border-emerald-400 shadow-emerald-400/30 shadow-lg text-emerald-950",
+  none:  "bg-[#121214] border-white/5 opacity-20 shadow-none hover:opacity-40",
 };
 
 const BLACK_KEY_ROLE_STYLES: Record<IntervalRole, string> = {
   root:  "bg-gradient-to-b from-amber-500 to-amber-700 border-amber-400/60 shadow-amber-500/50 shadow-lg",
   third: "bg-gradient-to-b from-violet-500 to-violet-800 border-violet-400/60 shadow-violet-500/50 shadow-lg",
   fifth: "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400/60 shadow-cyan-500/50 shadow-lg",
-  scale: "bg-gradient-to-b from-neutral-400 to-neutral-600 border-white/30 shadow-white/10 shadow-md",
-  none:  "bg-gradient-to-b from-[#1a1a1a] to-[#0a0a0a] border-white/5",
+  scale: "bg-gradient-to-b from-emerald-500 to-emerald-750 border-emerald-400/60 shadow-emerald-500/40 shadow-lg text-white",
+  none:  "bg-[#08080a] border-transparent opacity-15 shadow-none hover:opacity-30",
 };
 
 const DOT_COLOR: Record<IntervalRole, string> = {
   root:  "bg-amber-500",
   third: "bg-violet-500",
   fifth: "bg-cyan-400",
-  scale: "bg-white/80",
+  scale: "bg-emerald-400",
   none:  "",
 };
 
@@ -119,7 +119,7 @@ const LABEL_COLOR: Record<IntervalRole, string> = {
   third: "text-violet-900 font-bold",
   fifth: "text-cyan-900 font-bold",
   scale: "text-neutral-600 font-semibold",
-  none:  "text-neutral-500",
+  none:  "hidden",
 };
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ const WhiteKey = ({
           "relative border border-b-2 rounded-b-xl transition-all duration-100 cursor-pointer origin-top",
           "hover:brightness-105",
           WHITE_KEY_ROLE_STYLES[role],
-          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-20" : "z-10"
+          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-20 opacity-100" : "z-10"
         )}
         style={{ width, height, zIndex: 1 }}
         aria-label={`Piano key ${label}`}
@@ -183,7 +183,7 @@ const WhiteKey = ({
           )}
         </AnimatePresence>
 
-        {showLabels && (
+        {showLabels && role !== "none" && (
           <span
             className={cn(
               "absolute bottom-2 left-1/2 -translate-x-1/2 leading-none",
