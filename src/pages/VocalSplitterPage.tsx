@@ -18,7 +18,7 @@ const VocalSplitterPage = () => {
   const currentUrl = `https://guitariz.studio${location.pathname}`;
 
   usePageMetadata({
-    title: "Free AI Vocal Remover & Acapella Extractor | Guitariz Studio",
+    title: "Free AI Vocal Remover & Stem Splitter | Guitariz",
     description: "Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.",
     keywords: "vocal remover, free online vocal remover, isolate vocals online, acapella maker free, vocal splitter, stem splitter ai, karaoke creator, remove vocals from mp3",
     canonicalUrl: currentUrl,

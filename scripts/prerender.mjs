@@ -106,7 +106,7 @@ const routes = [
   },
   {
     url: '/vocal-splitter',
-    title: 'AI Vocal Splitter & Stem Splitter AI - Free Vocal Remover | Guitariz',
+    title: 'Free AI Vocal Remover & Stem Splitter | Guitariz',
     description: 'Separate vocals and instrumentals from any song using Stem Splitter AI. High-quality vocal remover and stem extraction for karaoke and practice.',
     canonical: 'https://guitariz.studio/vocal-splitter',
     jsonLd: JSON.stringify({
