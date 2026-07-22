@@ -19,32 +19,32 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://guitariz.studio/stem-separator</loc>
-    <lastmod>2026-07-22</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://guitariz.studio/bpm-detector</loc>
-    <lastmod>2026-07-22</lastmod>
+    <lastmod>2026-07-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://guitariz.studio/key-detector</loc>
-    <lastmod>2026-07-22</lastmod>
+    <lastmod>2026-07-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://guitariz.studio/vocal-remover</loc>
-    <lastmod>2026-07-22</lastmod>
+    <lastmod>2026-07-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://guitariz.studio/chord-progression-generator</loc>
-    <lastmod>2026-07-22</lastmod>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://guitariz.studio/stem-separator</loc>
+    <lastmod>2026-07-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -115,6 +115,24 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://guitariz.studio/blog/chordify-free-alternatives-2026</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://guitariz.studio/blog/how-to-export-chords-to-midi-ableton-fl-studio</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://guitariz.studio/blog/moises-vs-guitariz-stem-separation</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://guitariz.studio/blog/best-free-chord-ai-alternatives</loc>
     <lastmod>2026-07-15</lastmod>
     <changefreq>monthly</changefreq>
@@ -135,24 +153,6 @@
   <url>
     <loc>https://guitariz.studio/blog/how-to-identify-chords-by-ear</loc>
     <lastmod>2026-07-15</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://guitariz.studio/blog/chordify-free-alternatives-2026</loc>
-    <lastmod>2026-07-22</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://guitariz.studio/blog/moises-vs-guitariz-stem-separation</loc>
-    <lastmod>2026-07-22</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://guitariz.studio/blog/how-to-export-chords-to-midi-ableton-fl-studio</loc>
-    <lastmod>2026-07-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -673,15 +673,72 @@ if (!fs.existsSync(srcIndexPath)) {
 
 const baseHtml = fs.readFileSync(srcIndexPath, 'utf8');
 
+function buildRouteBodyHtml(r) {
+  if (r.htmlContent) {
+    return `<article class="static-blog-content" style="display:none;">${r.htmlContent}</article>`;
+  }
+
+  let stepsHtml = '';
+  let faqHtml = '';
+
+  if (r.jsonLd) {
+    try {
+      const parsed = JSON.parse(r.jsonLd);
+      const graph = parsed['@graph'] || [parsed];
+      for (const item of graph) {
+        if (item['@type'] === 'HowTo' && item.step && Array.isArray(item.step)) {
+          const steps = item.step.map((s) => `<li style="margin-bottom: 8px;">${s.text || s.name || ''}</li>`).join('');
+          stepsHtml += `
+            <section style="margin-top: 24px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+              <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; color: #fff;">${item.name || 'How to Use This Tool'}</h2>
+              <ol style="padding-left: 20px; color: #a1a1aa; line-height: 1.6;">${steps}</ol>
+            </section>
+          `;
+        }
+        if (item['@type'] === 'FAQPage' && item.mainEntity && Array.isArray(item.mainEntity)) {
+          const faqs = item.mainEntity.map((q) => `
+            <div style="margin-bottom: 16px;">
+              <h3 style="font-size: 1rem; font-weight: 600; color: #f4f4f5; margin-bottom: 4px;">${q.name}</h3>
+              <p style="color: #a1a1aa; font-size: 0.9rem; line-height: 1.5;">${q.acceptedAnswer?.text || ''}</p>
+            </div>
+          `).join('');
+          faqHtml += `
+            <section style="margin-top: 24px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
+              <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; color: #fff;">Frequently Asked Questions</h2>
+              ${faqs}
+            </section>
+          `;
+        }
+      }
+    } catch (err) {
+      // Ignore JSON parse errors
+    }
+  }
+
+  return `
+    <div class="prerendered-static-content" style="padding: 32px 16px; max-width: 960px; margin: 0 auto; color: #e4e4e7; font-family: system-ui, -apple-system, sans-serif;">
+      <header style="margin-bottom: 24px;">
+        <h1 style="font-size: 2.25rem; font-weight: 700; tracking: -0.025em; color: #ffffff; margin-bottom: 12px;">${r.title}</h1>
+        <p style="font-size: 1.125rem; color: #a1a1aa; line-height: 1.6; max-width: 720px;">${r.description}</p>
+      </header>
+      ${stepsHtml}
+      ${faqHtml}
+      <footer style="margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.875rem; color: #71717a;">
+        <p>Guitariz Studio is an open-source, AI-powered music learning platform developed by Abhinav Vaidya. Includes Chord AI recognition, stem separation, scale tools, and ear training with no subscription fees.</p>
+        <p style="margin-top: 8px;"><a href="https://guitariz.studio/" style="color: #3b82f6; text-decoration: underline;">Visit Guitariz Studio Homepage</a> | <a href="https://github.com/Guitariz/Guitariz" style="color: #3b82f6; text-decoration: underline;">GitHub Repository</a></p>
+      </footer>
+    </div>
+  `;
+}
+
 for (const r of routes) {
   const outDir = path.join(distDir, r.url.replace(/^\//, ''));
   const outIndex = r.url === '/' ? path.join(distDir, 'index.html') : path.join(outDir, 'index.html');
 
   let html = baseHtml;
   
-  if (r.htmlContent) {
-    html = html.replace('<div id="root"></div>', `<div id="root"><article class="hidden" style="display:none;">${r.htmlContent}</article></div>`);
-  }
+  const bodyContent = buildRouteBodyHtml(r);
+  html = html.replace('<div id="root"></div>', `<div id="root">${bodyContent}</div>`);
 
   // Replace title
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${r.title}</title>`);
