@@ -63,7 +63,7 @@ const Footer = () => {
                             <a href="https://x.com/GuitarizStudio" target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-white transition-colors" title="X (formerly Twitter)">
                                 <Twitter className="w-5 h-5" />
                             </a>
-                            <a href="mailto:guitariz.studio@gmail.com" className="text-muted-foreground hover:text-white transition-colors" title="Email">
+                            <a href="mailto:support@guitariz.studio" className="text-muted-foreground hover:text-white transition-colors" title="Email">
                                 <Mail className="w-5 h-5" />
                             </a>
                         </div>

@@ -338,7 +338,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
   <a href="https://guitariz.studio">Website</a> · 
   <a href="https://github.com/Guitariz/Guitariz">GitHub</a> · 
   <a href="https://x.com/GuitarizStudio">Twitter</a> · 
-  <a href="mailto:guitariz.studio@gmail.com">Contact</a>
+  <a href="mailto:support@guitariz.studio">Contact</a>
 
   <br />
   <br />

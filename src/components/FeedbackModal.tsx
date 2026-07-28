@@ -246,7 +246,7 @@ export const FeedbackModal = () => {
                         {errorMessage || "We couldn't deliver your feedback due to a connection issue."}
                       </p>
                       <p className="text-xs text-zinc-500 max-w-xs">
-                        Please try again or email us directly at <span className="text-white">guitariz.studio@gmail.com</span>.
+                        Please try again or email us directly at <span className="text-white">support@guitariz.studio</span>.
                       </p>
                     </div>
                     <button

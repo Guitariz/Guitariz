@@ -94,7 +94,7 @@ const TermsOfServicePage = () => {
             <p>
               For legal inquiries or questions regarding these terms, please reach out to us at: 
               <br />
-              <span className="text-white font-medium">guitariz.studio@gmail.com</span>
+              <span className="text-white font-medium">support@guitariz.studio</span>
             </p>
           </section>
         </div>

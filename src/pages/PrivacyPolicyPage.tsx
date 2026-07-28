@@ -104,7 +104,7 @@ const PrivacyPolicyPage = () => {
             <p>
               If you have any questions about this Privacy Policy, please contact us at: 
               <br />
-              <span className="text-white font-medium">guitariz.studio@gmail.com</span>
+              <span className="text-white font-medium">support@guitariz.studio</span>
             </p>
           </section>
         </div>
