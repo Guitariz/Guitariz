@@ -76,10 +76,13 @@ const HorizontalChordTape = ({ segments, currentTime, onSeek }: HorizontalChordT
                   )}
                 </div>
                 
-                <span className={cn(
-                  "text-5xl md:text-6xl font-sans tracking-tight tabular-nums transition-all duration-300",
-                  isActive ? "text-white" : "text-muted-foreground"
-                )}>
+                <span 
+                  translate="no"
+                  className={cn(
+                    "text-5xl md:text-6xl font-sans tracking-tight tabular-nums transition-all duration-300 notranslate",
+                    isActive ? "text-white" : "text-muted-foreground"
+                  )}
+                >
                   {seg.chord}
                 </span>
 

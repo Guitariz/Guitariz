@@ -1009,7 +1009,7 @@ const ChordAIPage = () => {
                   <div className="space-y-4">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
                     <div className="flex items-end justify-between gap-4">
-                      <div className="text-7xl font-light tracking-tighter text-foreground tabular-nums min-h-[1.2rem] transition-all duration-300">
+                      <div className="text-7xl font-light tracking-tighter text-foreground tabular-nums min-h-[1.2rem] transition-all duration-300 notranslate" translate="no">
                         {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
                       </div>
                       {currentChord && (

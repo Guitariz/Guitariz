@@ -80,7 +80,7 @@ export const LiveChordIndicator = ({
                                 transition={{ duration: 0.15 }}
                                 className="flex items-center gap-2"
                             >
-                                <span className="text-xl font-bold text-white">{chord}</span>
+                                <span className="text-xl font-bold text-white notranslate" translate="no">{chord}</span>
                                 <span className={cn(
                                     "text-[10px] uppercase font-medium px-1.5 py-0.5 rounded",
                                     confidence >= 0.6 ? "bg-emerald-500/20 text-emerald-400" : "bg-yellow-500/20 text-yellow-400"

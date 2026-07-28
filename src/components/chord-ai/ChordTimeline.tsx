@@ -116,7 +116,7 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col min-w-0">
-                  <span className={`text-lg sm:text-2xl font-light tracking-tight truncate ${isActive ? "text-white" : "text-muted-foreground"}`}>
+                  <span className={`text-lg sm:text-2xl font-light tracking-tight truncate notranslate ${isActive ? "text-white" : "text-muted-foreground"}`} translate="no">
                     {seg.chord}
                   </span>
                   <div className="flex items-center gap-2 mt-1.5">
