@@ -113,6 +113,31 @@ const ChordAIPage = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { showSimple, setShowSimple, separateVocals, setSeparateVocals, useMadmom, setUseMadmom, liveChordEnabled, setLiveChordEnabled } = useChordAIStore();
   const [dragActive, setDragActive] = useState(false);
+  const validateAudioFile = (file: File): boolean => {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".mid") || name.endsWith(".midi") || name.endsWith(".kar")) {
+      toast({
+        title: "Invalid File Format",
+        description: "MIDI files (.mid, .midi) do not contain actual audio recordings. Please export your MIDI file to a .wav or .mp3 audio file from your DAW before uploading.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    const allowedExtensions = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".mp4", ".mov", ".wma", ".webm"];
+    const hasAllowedExt = allowedExtensions.some(ext => name.endsWith(ext));
+    
+    if (!file.type.startsWith("audio/") && !file.type.startsWith("video/") && !hasAllowedExt) {
+      toast({
+        title: "Unsupported File Format",
+        description: "Please upload a valid audio or video file (e.g., .mp3, .wav, .m4a, .flac).",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
   const [loadedInstrumentalUrl, setLoadedInstrumentalUrl] = useState<string | null>(null);
   const [isInstrumentalLoaded, setIsInstrumentalLoaded] = useState(false);
   const [isLoadingInstrumental, setIsLoadingInstrumental] = useState(false);
@@ -484,15 +509,12 @@ const ChordAIPage = () => {
                       <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Fast Model</Label>
                       <Switch 
                         id="engine-switch" 
-                        checked={useMadmom} 
-                        onCheckedChange={(c) => {
-                          setUseMadmom(c);
-                          if (c) {
-                            toast({
-                              title: "Fast Chord Engine Enabled",
-                              description: "Using the custom fast neural network model for quick chord recognition (~5-10s).",
-                            });
-                          }
+                        checked={false} 
+                        onCheckedChange={() => {
+                          toast({
+                            title: "Fast Model in Development",
+                            description: "The custom fast neural network engine is currently in development. Falling back to the high-accuracy Librosa engine.",
+                          });
                         }} 
                         disabled={analysisLoading} 
                       />
@@ -530,6 +552,10 @@ const ChordAIPage = () => {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      if (!validateAudioFile(file)) {
+                        e.target.value = '';
+                        return;
+                      }
                       const isRestoring = !!result && !audioBuffer;
                       const fileId = `${file.name}-${file.size}-${file.lastModified}`;
 
@@ -589,6 +615,7 @@ const ChordAIPage = () => {
                           const files = e.dataTransfer.files;
                           if (files?.[0]) {
                             const file = files[0];
+                            if (!validateAudioFile(file)) return;
                             const fileId = `${file.name}-${file.size}-${file.lastModified}`;
                             setSelectedFile(file);
                             setOriginalFile(file);
