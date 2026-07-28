@@ -205,9 +205,9 @@ const ChordAIPage = () => {
         });
       } else {
         toast({
-          title: useMadmom ? "Detailed Analysis (Fallback)" : "Detailed Analysis",
+          title: useMadmom ? "Fast Neural Analysis" : "Detailed Analysis",
           description: useMadmom
-            ? "Fast chord engine is under development. Falling back to detailed engine (~1 min)."
+            ? "Using custom ONNX model for rapid harmonic transcription (~5-10s)."
             : "Using Librosa engine for focused mapping (~1 min).",
         });
       }
@@ -481,16 +481,16 @@ const ChordAIPage = () => {
                       <Switch id="vocal-switch" checked={separateVocals} onCheckedChange={setSeparateVocals} disabled={analysisLoading} />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Accurate</Label>
+                      <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Fast Model</Label>
                       <Switch 
                         id="engine-switch" 
-                        checked={!useMadmom} 
+                        checked={useMadmom} 
                         onCheckedChange={(c) => {
-                          setUseMadmom(!c);
-                          if (!c) {
+                          setUseMadmom(c);
+                          if (c) {
                             toast({
-                              title: "Fast Chord Engine (WIP)",
-                              description: "The custom fast neural engine is currently under active development. Running analysis will fallback to the high-accuracy engine (~1 min).",
+                              title: "Fast Chord Engine Enabled",
+                              description: "Using the custom fast neural network model for quick chord recognition (~5-10s).",
                             });
                           }
                         }} 
@@ -1007,7 +1007,7 @@ const ChordAIPage = () => {
                   )}
                 </div>
 
-                {currentChords.length > 0 && (
+                {currentChords.length > 0 && !useMadmom && (
                   <div className="pt-6 border-t border-border space-y-4">
                     <ConfidenceSummary
                       segments={currentChords}

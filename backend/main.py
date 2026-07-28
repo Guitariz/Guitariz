@@ -1,7 +1,7 @@
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 import tempfile
 import shutil
 import uuid
@@ -24,13 +24,13 @@ from youtube import extract_audio, get_video_info, check_rate_limit, get_remaini
 try:
     from chord_fast import analyze_file_fast, FAST_ENGINE_AVAILABLE, FAST_ENGINE_ERROR
     if FAST_ENGINE_AVAILABLE:
-        print("[Startup] ✓ Custom ONNX fast engine available - fast analysis enabled (~5-10s)")
+        print("[Startup] ✓ Custom ONNX fast engine available - fast analysis enabled (~5-10s)", flush=True)
     else:
-        print("[Startup] ℹ Custom ONNX fast engine not installed - using legacy librosa engine (~1-3min)")
-except ImportError:
+        print(f"[Startup] ℹ Custom ONNX fast engine not installed - using legacy librosa engine (~1-3min) | Error: {FAST_ENGINE_ERROR}", flush=True)
+except Exception as e:
     FAST_ENGINE_AVAILABLE = False
-    FAST_ENGINE_ERROR = "Failed to import chord_fast module completely"
-    print("[Startup] ℹ Custom ONNX fast engine module not found - using legacy librosa engine only")
+    FAST_ENGINE_ERROR = f"Failed to import chord_fast module: {e}"
+    print(f"[Startup] ℹ Custom ONNX fast engine module not found - using legacy librosa engine only | Error: {e}", flush=True)
 
 class QuietScanFilter(logging.Filter):
     """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
@@ -252,6 +252,132 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
             except Exception: 
                 print("[API] Analysis failed")
                 raise HTTPException(status_code=500, detail="Analysis failed")
+        finally:
+            try:
+                if 'tmp_path' in locals():
+                    tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
+
+@app.post("/api/analyze-stream")
+def analyze_stream(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
+    """Analyze audio file and stream pre-computed chords back in NDJSON chunks."""
+    import math
+    import json
+    print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, use_fast_engine={use_madmom})")
+    
+    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
+    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    
+    # Acquire semaphore
+    with active_semaphore:
+        try:
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="File required")
+
+            suffix = Path(file.filename).suffix or ".tmp"
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                tmp_path = Path(tmp.name)
+        
+            try:
+                # 1. Run full contiguous audio inference
+                if not use_madmom:
+                    print(f"[API Stream] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
+                    result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+                elif separate_vocals:
+                    print("[API Stream] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST")
+                    result = analyze_file(tmp_path, separate_vocals=True)
+                elif FAST_ENGINE_AVAILABLE:
+                    print("[API Stream] Engine: CUSTOM ONNX (Fast) | Vocal Filter: OFF")
+                    result = analyze_file_fast(tmp_path)
+                else:
+                    print("[API Stream] Engine: LIBROSA (Fallback) | Custom ONNX not found")
+                    result = analyze_file(tmp_path, separate_vocals=False)
+                
+                # 2. Extract instrumental info if needed
+                instrumental_url = None
+                if "instrumentalPath" in result:
+                    file_id = str(uuid.uuid4())
+                    path = result["instrumentalPath"]
+                    separated_files[file_id] = {
+                        "paths": [path],
+                        "timestamp": time.time(),
+                        "type": "analysis"
+                    }
+                    instrumental_url = f"/api/analyze/download/{file_id}/instrumental.wav"
+                    print(f"Stored instrumental file with ID: {file_id}, URL: {instrumental_url}")
+                
+                # 3. Stream the pre-computed chords back in chunks
+                def ndjson_generator():
+                    try:
+                        # Extract basic metadata
+                        metadata = {
+                            "tempo": result.get("tempo", 120),
+                            "meter": result.get("meter", 4),
+                            "key": result.get("key", "C"),
+                            "scale": result.get("scale", "major"),
+                        }
+                        if instrumental_url:
+                            metadata["instrumentalUrl"] = instrumental_url
+                        
+                        # Yield initial metadata chunk
+                        yield json.dumps({"type": "metadata", **metadata}) + "\n"
+                        
+                        chords = result.get("chords", [])
+                        simple_chords = result.get("simpleChords", chords)
+                        
+                        # Chunk the chords list into 30-second intervals to yield progressively
+                        chunk_size_sec = 30.0
+                        duration = 0.0
+                        if chords:
+                            duration = max(c["end"] for c in chords)
+                        
+                        # If duration is 0, just yield everything in one chunk
+                        if duration <= 0:
+                            yield json.dumps({
+                                "type": "chords",
+                                "start": 0,
+                                "end": 0,
+                                "chords": chords,
+                                "simpleChords": simple_chords
+                            }) + "\n"
+                            return
+ 
+                        num_chunks = int(math.ceil(duration / chunk_size_sec))
+                        for i in range(num_chunks):
+                            c_start = i * chunk_size_sec
+                            c_end = (i + 1) * chunk_size_sec
+                            
+                            # Filter chords within this 30s window
+                            chunk_chords = [c for c in chords if c["end"] > c_start and c["start"] < c_end]
+                            chunk_simple_chords = [c for c in simple_chords if c["end"] > c_start and c["start"] < c_end]
+                            
+                            yield json.dumps({
+                                "type": "chords",
+                                "start": c_start,
+                                "end": min(duration, c_end),
+                                "chords": chunk_chords,
+                                "simpleChords": chunk_simple_chords
+                            }) + "\n"
+                    except Exception as gen_err:
+                        print(f"[API Stream] Generator error: {gen_err}")
+                        yield json.dumps({"type": "error", "detail": str(gen_err)}) + "\n"
+                
+                # Set X-Accel-Buffering: no header to prevent Nginx buffering
+                headers = {
+                    "X-Accel-Buffering": "no",
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive"
+                }
+                return StreamingResponse(ndjson_generator(), media_type="application/x-ndjson", headers=headers)
+                
+            except Exception as analysis_err: 
+                print(f"[API Stream] Analysis failed: {analysis_err}")
+                raise HTTPException(status_code=500, detail=f"Analysis failed: {analysis_err}")
         finally:
             try:
                 if 'tmp_path' in locals():

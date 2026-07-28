@@ -160,23 +160,14 @@ for root in range(12):
         "maj": [0, 4, 7],
         "min": [0, 3, 7],
         "7": [0, 4, 7, 10],
-        "maj7": [0, 4, 7, 11],
-        "min7": [0, 3, 7, 10],
-        "dim": [0, 3, 6],
-        "aug": [0, 4, 8],
-        "sus2": [0, 2, 7],
         "sus4": [0, 5, 7],
-        "6": [0, 4, 7, 9],
-        "m6": [0, 3, 7, 9],
+        "dim": [0, 3, 6],
     }.items():
         v = np.zeros(12)
         for iv in intervals:
             v[(root + iv) % 12] = 1.0
-            # Add harmonic overtones (octave and fifth)
-            v[(root + iv + 12) % 12] += 0.1
-            v[(root + iv + 7) % 12] += 0.05
-        # Add slight weight to root
-        v[root] += 0.2
+        # Slight root emphasis for disambiguation
+        v[root] += 0.3
         norm = np.linalg.norm(v)
         chord_name = f"{PITCH_CLASS_NAMES[root]}"
         if name != "maj":
@@ -279,16 +270,59 @@ def _estimate_key(chroma: np.ndarray) -> Tuple[str, str]:
     return best
 
 
+# Map quality names to their offset in the CHORD_TEMPLATES list (5 per root)
+_QUALITY_OFFSET = {"maj": 0, "min": 1, "7": 2, "sus4": 3, "dim": 4}
+
+# Diatonic chord degrees: (semitone interval from tonic, quality)
+_MAJOR_DIATONIC = [
+    (0, "maj"),   # I
+    (2, "min"),   # ii
+    (4, "min"),   # iii
+    (5, "maj"),   # IV
+    (7, "maj"),   # V
+    (7, "7"),     # V7
+    (9, "min"),   # vi
+    (11, "dim"),  # vii°
+]
+_MINOR_DIATONIC = [
+    (0, "min"),   # i
+    (2, "dim"),   # ii°
+    (3, "maj"),   # III
+    (5, "min"),   # iv
+    (7, "min"),   # v (natural)
+    (7, "maj"),   # V (harmonic minor)
+    (7, "7"),     # V7 (harmonic minor)
+    (8, "maj"),   # VI
+    (10, "maj"),  # VII
+]
+
+
+def _get_diatonic_indices(key: str, scale: str) -> List[int]:
+    """Return CHORD_TEMPLATES indices for diatonic chords of the given key."""
+    key_idx = PITCH_CLASS_NAMES.index(key) if key in PITCH_CLASS_NAMES else 0
+    degrees = _MINOR_DIATONIC if scale == "minor" else _MAJOR_DIATONIC
+    
+    n_qualities = len(_QUALITY_OFFSET)
+    indices = []
+    for interval, quality in degrees:
+        root = (key_idx + interval) % 12
+        if quality in _QUALITY_OFFSET:
+            idx = root * n_qualities + _QUALITY_OFFSET[quality]
+            if idx < len(CHORD_TEMPLATES):
+                indices.append(idx)
+    return indices
+
+
 def _segment_chords(
     chroma: np.ndarray,
     sr: int,
     beats: np.ndarray,
     hop_length: int,
-    beats_per_bar: int = 4,
+    key: str = "C",
+    scale: str = "major",
 ) -> List[dict]:
-    # Apply gentle median smoothing (don't over-process)
-    from scipy.ndimage import median_filter
-    chroma = median_filter(chroma, size=(1, 3))  # Reduced from 7 to 3
+    # Get diatonic chord indices for key-aware bias
+    diatonic_indices = _get_diatonic_indices(key, scale)
 
     # If we lack reliable beats, fall back to ~0.5s windows
     if beats is None or len(beats) < 2:
@@ -305,7 +339,8 @@ def _segment_chords(
             continue
 
         cseg = chroma[:, s_frame:e_frame]
-        vec = cseg.mean(axis=1)
+        # Median aggregation: robust to transient spikes (drum hits, vocal onsets)
+        vec = np.median(cseg, axis=1)
         norm = np.linalg.norm(vec)
         
         if norm < 0.05: # Threshold for silence/noise
@@ -316,12 +351,16 @@ def _segment_chords(
             vec = vec / (norm + 1e-9)
             scores = [float(np.dot(vec, tpl[1])) for tpl in CHORD_TEMPLATES]
             
-            # Apply persistence bias: if previous chord is still decent, keep it
+            # Diatonic bias: boost chords that belong to the detected key
+            for d_idx in diatonic_indices:
+                scores[d_idx] *= 1.15  # 15% boost for in-key chords
+            
+            # Persistence bias: if previous chord is still decent, keep it
             if prev_chord_idx != -1:
-                scores[prev_chord_idx] *= 1.2 # 20% bias to stay
+                scores[prev_chord_idx] *= 1.15  # 15% bias to stay
                 
             best_idx = int(np.argmax(scores))
-            chord, conf = CHORD_TEMPLATES[best_idx]
+            chord, _ = CHORD_TEMPLATES[best_idx]
             # Get actual dot product for confidence
             conf = float(np.dot(vec, CHORD_TEMPLATES[best_idx][1]))
 
@@ -534,13 +573,14 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     
     # Separate harmonic for better chord detection
     y_harmonic = librosa.effects.hpss(y)[0]
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length)
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length, tightness=200)
     
-    # Use Chroma CQT (works better than STFT for chords)
-    chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length)
-    
-    # Light normalization only - don't over-process
-    chroma = librosa.util.normalize(chroma, axis=0)
+    # Use CENS chroma (energy-normalized, quantized, Gaussian-smoothed)
+    # Far more robust than raw chroma_cqt for template matching:
+    # - L1 normalization removes loudness dependency
+    # - Quantization suppresses weak harmonics (vocal bleed, drum transients)
+    # - Gaussian smoothing provides temporal stability
+    chroma = librosa.feature.chroma_cens(y=y_harmonic, sr=sr, hop_length=hop_length)
     
     key, scale = _estimate_key(chroma)
     meter = _estimate_meter(y, sr, tempo)
@@ -549,8 +589,8 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     if beat_frames is None or len(beat_frames) < 2:
         beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
 
-    # Precise chords
-    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, beats_per_bar=2)
+    # Precise chords (with key-aware diatonic bias)
+    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, key=key, scale=scale)
     
     # Simple chords (larger windows or smoothed)
     simple_chords = []
@@ -561,8 +601,8 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
         })
     
     # Merge consecutive identical chords and smooth
-    merged_precise = _smooth_chords(chords, min_duration=0.2)
-    merged_simple = _smooth_chords(simple_chords, min_duration=0.8)
+    merged_precise = _smooth_chords(chords, min_duration=0.3)
+    merged_simple = _smooth_chords(simple_chords, min_duration=0.5)
 
     result = {
         "tempo": float(round(float(tempo), 2)),

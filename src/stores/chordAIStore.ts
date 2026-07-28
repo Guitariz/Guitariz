@@ -13,7 +13,7 @@ interface ChordAIState {
 }
 
 export const useChordAIStore = create<ChordAIState>((set) => ({
-    showSimple: false,
+    showSimple: true,
     separateVocals: false,
     useMadmom: false,
     liveChordEnabled: false,

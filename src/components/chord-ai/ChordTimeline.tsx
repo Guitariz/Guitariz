@@ -64,20 +64,28 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
       const container = containerRef.current;
       const activeElement = activeRef.current;
       
-      const relativeTop = activeElement.offsetTop;
-      const containerScrollTop = container.scrollTop;
-      const containerHeight = container.offsetHeight;
+      const elementTop = activeElement.offsetTop;
+      const elementHeight = activeElement.offsetHeight;
+      const containerHeight = container.clientHeight;
 
-      if (relativeTop < containerScrollTop || relativeTop > containerScrollTop + containerHeight - 100) {
-        container.scrollTo({ top: relativeTop - 100, behavior: "smooth" });
-      }
+      container.scrollTo({
+        top: elementTop - (containerHeight / 2) + (elementHeight / 2),
+        behavior: "smooth"
+      });
     }
   }, [activeIndex]);
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop += e.deltaY;
+    }
+  };
 
   return (
     <div 
       ref={containerRef}
-      className="h-[320px] md:h-[432px] overflow-y-auto pr-3 sm:pr-4 custom-scrollbar scroll-smooth"
+      onWheel={handleWheel}
+      className="h-[320px] md:h-[432px] overflow-y-auto px-3 sm:px-4 custom-scrollbar scroll-smooth relative"
     >
       <div className="space-y-3 py-2">
         {segments.map((seg, idx) => {
@@ -101,7 +109,7 @@ const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) =>
               {/* Progress Line */}
               {isActive && (
                 <div 
-                  className={`absolute bottom-0 left-0 h-0.5 ${confLevel.color.replace('text-', 'bg-')} transition-all duration-100 ease-linear`}
+                  className={`absolute bottom-0 left-0 h-0.5 ${confLevel.color.replace('text-', 'bg-')} transition-none`}
                   style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                 />
               )}
