@@ -3,6 +3,7 @@ export type ChordSegment = {
   end: number;
   chord: string;
   confidence: number; // 0-1 confidence estimate
+  isFallback?: boolean;
 };
 
 export type AnalysisResult = {

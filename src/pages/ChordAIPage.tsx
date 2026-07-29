@@ -123,10 +123,10 @@ const ChordAIPage = () => {
       });
       return false;
     }
-    
+
     const allowedExtensions = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac", ".mp4", ".mov", ".wma", ".webm"];
     const hasAllowedExt = allowedExtensions.some(ext => name.endsWith(ext));
-    
+
     if (!file.type.startsWith("audio/") && !file.type.startsWith("video/") && !hasAllowedExt) {
       toast({
         title: "Unsupported File Format",
@@ -135,7 +135,7 @@ const ChordAIPage = () => {
       });
       return false;
     }
-    
+
     return true;
   };
   const [loadedInstrumentalUrl, setLoadedInstrumentalUrl] = useState<string | null>(null);
@@ -402,27 +402,58 @@ const ChordAIPage = () => {
     const base = showSimple && result.simpleChords ? result.simpleChords : result.chords;
     if (!base) return [];
 
-    if (transpose === 0) return base;
-
-    return base.map(seg => ({
-      ...seg,
-      chord: transposeChord(seg.chord, transpose)
-    }));
+    return base.map(seg => {
+      // Map N.C. to -
+      let chordName = seg.chord === "N.C." ? "-" : seg.chord;
+      
+      // Transpose if needed
+      if (transpose !== 0 && chordName !== "-") {
+        chordName = transposeChord(chordName, transpose);
+      }
+      
+      return {
+        ...seg,
+        chord: chordName
+      };
+    });
   }, [result, showSimple, transpose]);
 
-  const { currentChord } = useMemo(() => {
-    if (!currentChords.length) return { currentChord: undefined };
+  const highConfidenceChords = useMemo(() => {
+    if (!currentChords.length) return [];
+    
+    const temp = currentChords.map(seg => {
+      if (seg.chord !== "-" && seg.confidence < 0.72) {
+        return { ...seg, chord: "-" };
+      }
+      return seg;
+    });
+    
+    const merged: typeof currentChords = [];
+    temp.forEach(seg => {
+      const last = merged[merged.length - 1];
+      if (last && last.chord === seg.chord) {
+        last.end = seg.end;
+        last.confidence = Math.max(last.confidence, seg.confidence);
+      } else {
+        merged.push({ ...seg });
+      }
+    });
+    return merged;
+  }, [currentChords]);
 
-    const activeIndex = currentChords.findIndex((seg) => currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1));
+  const { currentChord } = useMemo(() => {
+    if (!highConfidenceChords.length) return { currentChord: undefined };
+
+    const activeIndex = highConfidenceChords.findIndex((seg) => currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1));
 
     if (activeIndex === -1) {
       return { currentChord: undefined };
     }
 
     return {
-      currentChord: currentChords[activeIndex]
+      currentChord: highConfidenceChords[activeIndex]
     };
-  }, [currentTime, currentChords]);
+  }, [currentTime, highConfidenceChords]);
 
   const activeChordVoicing = useMemo(() => {
     if (!currentChord) return null;
@@ -507,16 +538,23 @@ const ChordAIPage = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Fast Model</Label>
-                      <Switch 
-                        id="engine-switch" 
-                        checked={false} 
-                        onCheckedChange={() => {
-                          toast({
-                            title: "Fast Model in Development",
-                            description: "The custom fast neural network engine is currently in development. Falling back to the high-accuracy Librosa engine.",
-                          });
-                        }} 
-                        disabled={analysisLoading} 
+                      <Switch
+                        id="engine-switch"
+                        checked={useMadmom}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            toast({
+                              title: "Fast Model in Progress",
+                              description: "The custom neural network engine is in development. Falling back to the high-accuracy Librosa DSP engine.",
+                            });
+                            setTimeout(() => {
+                              setUseMadmom(false);
+                            }, 300);
+                          } else {
+                            setUseMadmom(checked);
+                          }
+                        }}
+                        disabled={analysisLoading}
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -942,7 +980,7 @@ const ChordAIPage = () => {
                             peaks={peaks || []}
                             duration={effectiveDuration}
                             currentTime={currentTime}
-                            chordSegments={currentChords}
+                            chordSegments={highConfidenceChords}
                             onSeek={seek}
                           />
                         </div>
@@ -964,7 +1002,7 @@ const ChordAIPage = () => {
                             </div>
                             <div className="bg-card/20 rounded-[2rem] border border-border overflow-hidden py-4">
                               <HorizontalChordTape
-                                segments={currentChords}
+                                segments={highConfidenceChords}
                                 currentTime={currentTime}
                                 onSeek={seek}
                               />
@@ -1182,10 +1220,10 @@ const ChordAIPage = () => {
 
                                 <DialogClose asChild>
                                   <Button
-                                      variant="destructive"
-                                      onClick={() => removeFromHistory(entry.id)}
-                                    >
-                                      Delete
+                                    variant="destructive"
+                                    onClick={() => removeFromHistory(entry.id)}
+                                  >
+                                    Delete
                                   </Button>
                                 </DialogClose>
                               </DialogFooter>
@@ -1226,10 +1264,10 @@ const ChordAIPage = () => {
                   <span>Ear Training Tips</span>
                 </h4>
                 <p className="text-xs text-muted-foreground leading-relaxed font-light">
-                  Struggling to translate what you hear onto the fretboard? 
+                  Struggling to translate what you hear onto the fretboard?
                 </p>
-                <Link 
-                  to="/blog/how-to-identify-chords-by-ear" 
+                <Link
+                  to="/blog/how-to-identify-chords-by-ear"
                   className="inline-flex items-center gap-1.5 text-xs text-white hover:text-rose-400 transition-colors font-medium pt-1"
                 >
                   Read our Ear Training Guide <ArrowRight className="w-3 h-3" />

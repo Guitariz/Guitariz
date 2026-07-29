@@ -190,15 +190,26 @@ app.add_middleware(
 
 
 @app.post("/api/analyze")
-def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
+def analyze(
+    file: UploadFile = File(...),
+    separate_vocals: bool = Form(False),
+    use_madmom: bool = Form(True),
+    mode: str = Form("fast")
+):
     """Analyze audio file for chords.
     
     Args:
         file: Audio file to analyze
         separate_vocals: If True, separate vocals before analysis for better accuracy (slower)
         use_madmom: If True, use fast engine. If False, use legacy detailed engine (slower)
+        mode: Engine mode ("fast" | "accurate")
     """
-    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, use_fast_engine={use_madmom})")
+    # Resolve mode based on parameter or legacy fallback
+    resolved_mode = mode
+    if not use_madmom and mode == "fast":
+        resolved_mode = "accurate"
+
+    print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
     
     # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
     active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
@@ -216,23 +227,28 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
                 tmp_path = Path(tmp.name)
         
             try:
-                # The 'use_madmom' flag is the primary engine selector (Fast vs Detailed)
-                if not use_madmom:
-                    # User wants MORE ACCURATE -> Force Librosa
-                    print(f"[API] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
+                if resolved_mode == "accurate":
+                    print(f"[API] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                     result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                elif separate_vocals:
-                    # Vocal Filter requested -> Currently handled by our high-precision Librosa pipeline
-                    print("[API] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST (Requested)")
-                    result = analyze_file(tmp_path, separate_vocals=True)
-                elif FAST_ENGINE_AVAILABLE:
-                    # FAST -> Custom ONNX
-                    print("[API] Engine: CUSTOM ONNX (Fast) | Vocal Filter: OFF")
-                    result = analyze_file_fast(tmp_path)
                 else:
-                    # Fallback to librosa if fast engine is not available
-                    print("[API] Engine: LIBROSA (Fallback) | Custom ONNX not found")
-                    result = analyze_file(tmp_path, separate_vocals=False)
+                    # Fast mode (Custom ONNX)
+                    if FAST_ENGINE_AVAILABLE:
+                        if separate_vocals:
+                            print(f"[API] Running FAST mode with vocal separation...")
+                            separated = separate_audio_full(tmp_path)
+                            if separated and separated.get("instrumental"):
+                                instr_path = separated["instrumental"]
+                                result = analyze_file_fast(instr_path, mode="fast")
+                                result["instrumentalPath"] = instr_path
+                            else:
+                                print("[API] Vocal separation failed, using original audio")
+                                result = analyze_file_fast(tmp_path, mode="fast")
+                        else:
+                            print(f"[API] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                            result = analyze_file_fast(tmp_path, mode="fast")
+                    else:
+                        print("[API] Fast engine not available, falling back to ACCURATE mode")
+                        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
                 
                 # If vocal separation was used, store the instrumental file and return its URL
                 if "instrumentalPath" in result:
@@ -262,11 +278,21 @@ def analyze(file: UploadFile = File(...), separate_vocals: bool = Form(False), u
 
 
 @app.post("/api/analyze-stream")
-def analyze_stream(file: UploadFile = File(...), separate_vocals: bool = Form(False), use_madmom: bool = Form(True)):
+def analyze_stream(
+    file: UploadFile = File(...),
+    separate_vocals: bool = Form(False),
+    use_madmom: bool = Form(True),
+    mode: str = Form("fast")
+):
     """Analyze audio file and stream pre-computed chords back in NDJSON chunks."""
     import math
     import json
-    print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, use_fast_engine={use_madmom})")
+    # Resolve mode based on parameter or legacy fallback
+    resolved_mode = mode
+    if not use_madmom and mode == "fast":
+        resolved_mode = "accurate"
+
+    print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
     
     # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
     active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
@@ -285,18 +311,28 @@ def analyze_stream(file: UploadFile = File(...), separate_vocals: bool = Form(Fa
         
             try:
                 # 1. Run full contiguous audio inference
-                if not use_madmom:
-                    print(f"[API Stream] Engine: LIBROSA (More Accurate) | Vocal Filter: {separate_vocals}")
+                if resolved_mode == "accurate":
+                    print(f"[API Stream] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                     result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                elif separate_vocals:
-                    print("[API Stream] Engine: LIBROSA (Vocal Filter enabled) | Choice: FAST")
-                    result = analyze_file(tmp_path, separate_vocals=True)
-                elif FAST_ENGINE_AVAILABLE:
-                    print("[API Stream] Engine: CUSTOM ONNX (Fast) | Vocal Filter: OFF")
-                    result = analyze_file_fast(tmp_path)
                 else:
-                    print("[API Stream] Engine: LIBROSA (Fallback) | Custom ONNX not found")
-                    result = analyze_file(tmp_path, separate_vocals=False)
+                    # Fast mode (Custom ONNX)
+                    if FAST_ENGINE_AVAILABLE:
+                        if separate_vocals:
+                            print(f"[API Stream] Running FAST mode with vocal separation...")
+                            separated = separate_audio_full(tmp_path)
+                            if separated and separated.get("instrumental"):
+                                instr_path = separated["instrumental"]
+                                result = analyze_file_fast(instr_path, mode="fast")
+                                result["instrumentalPath"] = instr_path
+                            else:
+                                print("[API Stream] Vocal separation failed, using original audio")
+                                result = analyze_file_fast(tmp_path, mode="fast")
+                        else:
+                            print(f"[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                            result = analyze_file_fast(tmp_path, mode="fast")
+                    else:
+                        print("[API Stream] Fast engine not available, falling back to ACCURATE mode")
+                        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
                 
                 # 2. Extract instrumental info if needed
                 instrumental_url = None
@@ -392,6 +428,7 @@ def analyze_youtube(
     separate_vocals: bool = Form(False),
     use_madmom: bool = Form(True),
     client_ip: str = Form("unknown"),
+    mode: str = Form("fast")
 ):
     """Analyze YouTube video for chords.
     
@@ -400,11 +437,17 @@ def analyze_youtube(
         separate_vocals: If True, separate vocals before analysis (slower, more accurate)
         use_madmom: If True, use fast engine. If False, use legacy detailed engine.
         client_ip: Client IP for rate limiting
+        mode: Engine mode ("fast" | "accurate")
     
     Returns:
         Video metadata + chord analysis result
     """
-    print(f"[YouTube] Received request for URL: {url}")
+    # Resolve mode based on parameter or legacy fallback
+    resolved_mode = mode
+    if not use_madmom and mode == "fast":
+        resolved_mode = "accurate"
+
+    print(f"[YouTube] Received request for URL: {url} | Mode: {resolved_mode}")
     
     # Rate limiting check
     if not check_rate_limit(client_ip):
@@ -436,15 +479,29 @@ def analyze_youtube(
             print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
             
             # Analyze the audio
-            print(f"[YouTube] Starting analysis (use_fast_engine={use_madmom}, vocals={separate_vocals})")
-            if not use_madmom:
+            print(f"[YouTube] Starting analysis (mode={resolved_mode}, vocals={separate_vocals})")
+            if resolved_mode == "accurate":
+                print(f"[YouTube] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                 result = analyze_file(audio_path, separate_vocals=separate_vocals)
-            elif separate_vocals:
-                result = analyze_file(audio_path, separate_vocals=True)
-            elif FAST_ENGINE_AVAILABLE:
-                result = analyze_file_fast(audio_path)
             else:
-                result = analyze_file(audio_path, separate_vocals=False)
+                # Fast mode (Custom ONNX)
+                if FAST_ENGINE_AVAILABLE:
+                    if separate_vocals:
+                        print(f"[YouTube] Running FAST mode with vocal separation...")
+                        separated = separate_audio_full(audio_path)
+                        if separated and separated.get("instrumental"):
+                            instr_path = separated["instrumental"]
+                            result = analyze_file_fast(instr_path, mode="fast")
+                            result["instrumentalPath"] = instr_path
+                        else:
+                            print("[YouTube] Vocal separation failed, using original audio")
+                            result = analyze_file_fast(audio_path, mode="fast")
+                    else:
+                        print(f"[YouTube] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                        result = analyze_file_fast(audio_path, mode="fast")
+                else:
+                    print("[YouTube] Fast engine not available, falling back to ACCURATE mode")
+                    result = analyze_file(audio_path, separate_vocals=separate_vocals)
             
             # Handle instrumental file if vocal separation was used
             if "instrumentalPath" in result:
