@@ -1297,7 +1297,7 @@ const ChordAIPage = () => {
           faqs={[
             {
               question: "What is Chord AI and how does it work?",
-              answer: "Chord AI is a neural network-powered tool that analyzes audio files to automatically detect chords, tempo, and key signatures. It uses advanced machine learning models (Madmom and Librosa) to transcribe harmonic progressions from any song, making it perfect for musicians learning songs, creating covers, or analyzing music theory.",
+              answer: "Chord AI is an advanced analysis tool that processes audio files to automatically detect chords, tempo, and key signatures. It uses digital signal processing (DSP) built on Librosa and chroma template matching to transcribe harmonic progressions from any song, making it perfect for musicians learning songs, creating covers, or analyzing music theory.",
             },
             {
               question: "Is Guitariz Chord AI really free?",
@@ -1313,11 +1313,11 @@ const ChordAIPage = () => {
             },
             {
               question: "How accurate is the chord detection?",
-              answer: "Chord detection accuracy varies based on audio quality and complexity. Simple acoustic songs typically achieve 85-95% accuracy, while complex multi-instrument arrangements may be 70-85% accurate. Enabling the Vocal Filter and using the more accurate engine (Librosa) improves results significantly.",
+              answer: "Chord detection accuracy varies based on audio quality and complexity. Simple acoustic songs typically achieve 85-95% accuracy, while complex multi-instrument arrangements may be 70-85% accurate. Enabling the Vocal Filter and using the Detailed analysis engine improves results significantly.",
             },
             {
-              question: "What's the difference between Fast and Accurate mode?",
-              answer: "Fast mode (Madmom) provides results in 30-60 seconds and works well for most songs. Accurate mode (Librosa) takes about 20-30 seconds and offers more detailed harmonic analysis, better handling complex chord voicings and jazz harmonies. Try Fast mode first, then switch to Accurate if needed.",
+              question: "What's the difference between Fast and Detailed mode?",
+              answer: "Fast mode provides quick results in 30-60 seconds and works well for most contemporary songs. Detailed mode takes slightly longer and offers more detailed harmonic analysis, better handling complex chord voicings and jazz harmonies. Try Fast mode first, then switch to Detailed if needed.",
             },
             {
               question: "Can I transpose the detected chords?",
@@ -1325,7 +1325,7 @@ const ChordAIPage = () => {
             },
             {
               question: "How long does chord analysis take?",
-              answer: "Fast mode (Madmom): 30-60 seconds. Accurate mode (Librosa): 20-30 seconds. Vocal Filter mode: 1-2 minutes (includes stem separation). Processing time depends on song length and server load. All analyses run on our servers, so no local GPU is needed.",
+              answer: "Fast mode: 30-60 seconds. Detailed mode: 20-30 seconds. Vocal Filter mode: 1-2 minutes (includes stem separation). Processing time depends on song length and server load. All analyses run on our servers, so no local GPU is needed.",
             },
             {
               question: "Can I download the chord progressions?",

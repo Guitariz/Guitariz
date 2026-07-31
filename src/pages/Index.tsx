@@ -38,7 +38,7 @@ const homeFaqs = [
   },
   {
     question: "How accurate is the Chord AI free tool?",
-    answer: "Our free Chord AI engine uses deep learning models built on Librosa and Madmom neural networks to isolate harmonically rich instrumental parts. Modern acoustic tracks typically achieve 85% to 95% chord recognition accuracy. You can upload local MP3, WAV, FLAC, or M4A files to analyze them instantly."
+    answer: "Our free Chord AI engine uses custom digital signal processing algorithms built on Librosa to isolate harmonically rich instrumental parts. Modern acoustic tracks typically achieve 85% to 95% chord recognition accuracy. You can upload local MP3, WAV, FLAC, or M4A files to analyze them instantly."
   },
   {
     question: "How do I extract vocals or split audio stems on Guitariz?",
