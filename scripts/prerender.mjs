@@ -5,12 +5,18 @@ import { marked } from 'marked';
 
 const TODAY = '2026-07-15';
 
+// Load static content JSON
+const staticContent = JSON.parse(
+  fs.readFileSync(path.resolve(process.cwd(), 'src/data/staticContent.json'), 'utf8')
+);
+
 const routes = [
   {
     url: '/',
-    title: 'Free AI Chord Recognition, Stem Splitter & Guitar Scales - Guitariz',
-    description: 'The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.',
+    title: staticContent.home.title,
+    description: staticContent.home.description,
     canonical: 'https://guitariz.studio/',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.home.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -68,9 +74,10 @@ const routes = [
   },
   {
     url: '/chord-ai',
-    title: 'Chord AI Free - Audio to Chord Recognition AI | Guitariz',
-    description: 'Extract chords, tempo, and scales from any song for free with Chord AI. Advanced AI chord recognition and harmonic transcription with no subscription.',
+    title: staticContent.chordAi.title,
+    description: staticContent.chordAi.description,
     canonical: 'https://guitariz.studio/chord-ai',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chordAi.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -309,9 +316,10 @@ const routes = [
   },
   {
     url: '/stem-separator',
-    title: 'Stem Splitter AI - Free 6-Stem Audio Extractor | Guitariz',
-    description: 'Separate any song into 6 stems with Stem Splitter AI: vocals, drums, bass, guitar, piano, and other. High-quality AI stem extraction for music production.',
+    title: staticContent.stemSeparator.title,
+    description: staticContent.stemSeparator.description,
     canonical: 'https://guitariz.studio/stem-separator',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.stemSeparator.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -424,9 +432,10 @@ const routes = [
   },
   {
     url: '/scales',
-    title: 'Guitar Scale Explorer - Scale Patterns & Modes | Guitariz',
-    description: 'Explore guitar scales and modes visually. Interactive patterns for major, minor, pentatonic, and exotic scales.',
+    title: staticContent.scales.title,
+    description: staticContent.scales.description,
     canonical: 'https://guitariz.studio/scales',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.scales.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -610,6 +619,99 @@ const routes = [
       'name': 'Recommended Gear for Musicians',
       'description': 'Curated list of essential gear and accessories for musicians and producers.'
     })
+  },
+  {
+    url: '/privacy',
+    title: 'Privacy Policy | Guitariz Studio',
+    description: 'Read the Privacy Policy for Guitariz Studio. Learn how we handle your audio uploads, cookies, and data security.',
+    canonical: 'https://guitariz.studio/privacy',
+    customHtml: `
+      <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+        <h2>Privacy Policy</h2>
+        <p>We respect your privacy and protect your data. Audio uploads for Chord AI and Stem Separation are processed in memory and deleted immediately. We disclose the use of Google AdSense advertising cookies and Amazon Associates affiliate links. We do not sell or store personal identity data.</p>
+        <p>For more details, visit our website or contact support at support@guitariz.studio.</p>
+      </section>
+    `,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      'name': 'Privacy Policy'
+    })
+  },
+  {
+    url: '/terms',
+    title: 'Terms of Service | Guitariz Studio',
+    description: 'Read the Terms of Service for Guitariz Studio. Understand our usage rules, copyright guidelines, and liability provisions.',
+    canonical: 'https://guitariz.studio/terms',
+    customHtml: `
+      <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+        <h2>Terms of Service</h2>
+        <p>By using Guitariz Studio, you agree to our terms. Our tools are free to use. You are responsible for ensuring you have rights to process any audio you upload. We provide the service as-is and exclude liabilities.</p>
+        <p>For legal inquiries, contact support@guitariz.studio.</p>
+      </section>
+    `,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      'name': 'Terms of Service'
+    })
+  },
+  {
+    url: '/about',
+    title: 'About Us | Guitariz Studio',
+    description: 'Learn more about Guitariz Studio, our mission to build free open-source music tools, and the advanced DSP & AI technology behind them.',
+    canonical: 'https://guitariz.studio/about',
+    customHtml: `
+      <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+        <h2>Our Mission</h2>
+        <p>Guitariz Studio was created to democratize high-performance audio analysis and music theory learning. We believe that tools for transcribing chords, isolating vocals, and exploring scale relationships should not be locked behind expensive subscriptions or restricted by monthly usage caps.</p>
+        <h2>The Technology</h2>
+        <p>We use a custom Librosa-based digital signal processing pipeline for chord recognition (Harmonic-Percussive Source Separation, chroma feature extraction, and Viterbi HMM smoothing) and Meta's Demucs AI models for 6-stem separation. An advanced CRNN model is currently in development.</p>
+        <h2>The Founder</h2>
+        <p>Founded by Abhinav Vaidya as an open-source project to make music tools freely accessible to everyone.</p>
+      </section>
+    `,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      'name': 'About Us',
+      'description': 'Learn about the mission, tech stack, and founder of Guitariz Studio.'
+    })
+  },
+  {
+    url: '/contact',
+    title: 'Contact Us | Guitariz Studio',
+    description: 'Get in touch with the team at Guitariz Studio. Submit bug reports, feature requests, or business inquiries.',
+    canonical: 'https://guitariz.studio/contact',
+    customHtml: `
+      <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+        <p>If you have any questions, feedback, or support inquiries, please contact us at <strong>support@guitariz.studio</strong>.</p>
+        <p>Our code is open-source and hosted on GitHub at <a href="https://github.com/Guitariz/Guitariz" style="color: #3b82f6;">Guitariz Repository</a>.</p>
+      </section>
+    `,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'ContactPage',
+      'name': 'Contact Us',
+      'description': 'Contact Guitariz Studio support.'
+    })
+  },
+  {
+    url: '/cookie-policy',
+    title: 'Cookie Policy | Guitariz Studio',
+    description: 'Read the Cookie Policy for Guitariz Studio. Understand how we use cookies, third-party services, and tracking techniques to enhance your musical learning.',
+    canonical: 'https://guitariz.studio/cookie-policy',
+    customHtml: `
+      <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+        <h2>Cookie Policy</h2>
+        <p>We use cookies to store user preferences (like theme settings), track anonymous site usage (via Google Analytics and PostHog), and serve advertisements (via Google AdSense) or track affiliate links (via Amazon Associates). You can opt out of personalized ads at Google's Ad Settings.</p>
+      </section>
+    `,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      'name': 'Cookie Policy'
+    })
   }
 ];
 
@@ -781,6 +883,7 @@ function buildRouteBodyHtml(r) {
         <h1 style="font-size: 2.25rem; font-weight: 700; tracking: -0.025em; color: #ffffff; margin-bottom: 12px;">${r.title}</h1>
         <p style="font-size: 1.125rem; color: #a1a1aa; line-height: 1.6; max-width: 720px;">${r.description}</p>
       </header>
+      ${r.customHtml || ''}
       ${stepsHtml}
       ${faqHtml}
       <footer style="margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.875rem; color: #71717a;">

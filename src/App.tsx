@@ -32,6 +32,9 @@ const BlogPostPage = lazy(() => import("./pages/BlogPostPage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const GearPage = lazy(() => import("./pages/GearPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
 const BpmDetectorPage = lazy(() => import("./pages/BpmDetectorPage"));
 const KeyDetectorPage = lazy(() => import("./pages/KeyDetectorPage"));
 const ChordGeneratorPage = lazy(() => import("./pages/ChordGeneratorPage"));
@@ -451,6 +454,42 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <TermsOfServicePage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <AboutPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <ContactPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/cookie-policy"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <CookiePolicyPage />
                       </main>
                     </PageWrapper>
                   </Suspense>

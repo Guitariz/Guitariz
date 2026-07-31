@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent } from "@/components/SEOContent";
+import staticContent from "@/data/staticContent.json";
 
 // Featured AI tools (first row: 3 cards side by side)
 const featuredTools = [
@@ -61,8 +62,8 @@ const Index = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   usePageMetadata({
-    title: "Free AI Chord Recognition, Stem Splitter & Guitar Scales | Guitariz",
-    description: "The best free browser-based music studio. Detect chords from MP3 & audio files with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas.",
+    title: staticContent.home.title,
+    description: staticContent.home.description,
     keywords: "chord ai, chord ai free, free chord ai alternative, detect chords from mp3, ai guitar chord detector, stem splitter ai, vocal splitter, vocal remover, guitar scales, indian ragas guitar, music theory, free music tools",
     canonicalUrl: "https://guitariz.studio",
     ogUrl: "https://guitariz.studio",
@@ -74,7 +75,7 @@ const Index = () => {
         {
           "@type": "WebApplication",
           "name": "Guitariz Studio",
-          "description": "Professional music theory and AI analysis tools for musicians.",
+          "description": staticContent.home.description,
           "applicationCategory": "MusicApplication",
           "operatingSystem": "Any",
           "url": "https://guitariz.studio",
@@ -354,6 +355,20 @@ const Index = () => {
                 ))}
               </div>
             </motion.div>
+
+            {/* Unique prose copy for SEO and AdSense */}
+            <div className="mt-24 max-w-4xl mx-auto space-y-12">
+              <div className="space-y-4">
+                <h2 className="text-3xl md:text-5xl font-light tracking-tighter text-white font-display">
+                  About <span className="text-muted-foreground font-thin italic">Guitariz Studio</span>
+                </h2>
+                <div className="h-[1px] w-full bg-gradient-to-r from-emerald-500/20 via-border to-transparent" />
+              </div>
+              <div 
+                className="prose prose-invert max-w-none text-sm md:text-base text-zinc-300 leading-relaxed space-y-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ul]:text-zinc-400 [&>p]:leading-relaxed [&_a]:text-emerald-400 [&_a]:hover:underline"
+                dangerouslySetInnerHTML={{ __html: staticContent.home.html }}
+              />
+            </div>
 
             <SEOContent faqs={homeFaqs} pageName="home" />
           </div>

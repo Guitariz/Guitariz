@@ -31,6 +31,7 @@ import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
 import { exportChordsToMidi } from "@/lib/midiExport";
+import staticContent from "@/data/staticContent.json";
 import {
   Dialog,
   DialogTrigger,
@@ -57,8 +58,8 @@ const ChordAIPage = () => {
   const { history, saveToHistory, clearHistory, removeFromHistory } = useAnalysisHistory();
 
   usePageMetadata({
-    title: "Chord AI Free - Audio to Chord Recognition AI | Guitariz",
-    description: "Extract chords, tempo, and scales from any song for free with Chord AI. Advanced AI chord recognition and harmonic transcription with no subscription.",
+    title: staticContent.chordAi.title,
+    description: staticContent.chordAi.description,
     keywords: "chord ai, chord ai free, audio to chords, chord recognition, chord identifier, extract chords from audio, music ai, guitar chords, audio analysis",
     canonicalUrl: "https://guitariz.studio/chord-ai",
     ogImage: "https://guitariz.studio/logo2.png",
@@ -1275,6 +1276,20 @@ const ChordAIPage = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Unique prose copy for SEO and AdSense */}
+        <div className="mt-24 max-w-4xl mx-auto space-y-12">
+          <div className="space-y-4">
+            <h2 className="text-3xl md:text-5xl font-light tracking-tighter text-white font-display">
+              Technical Details & <span className="text-muted-foreground font-thin italic">Operation</span>
+            </h2>
+            <div className="h-[1px] w-full bg-gradient-to-r from-emerald-500/20 via-border to-transparent" />
+          </div>
+          <div 
+            className="prose prose-invert max-w-none text-sm md:text-base text-zinc-300 leading-relaxed space-y-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ul]:text-zinc-400 [&>p]:leading-relaxed [&_a]:text-emerald-400 [&_a]:hover:underline"
+            dangerouslySetInnerHTML={{ __html: staticContent.chordAi.html }}
+          />
         </div>
 
         <SEOContent

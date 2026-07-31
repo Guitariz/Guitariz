@@ -9,7 +9,7 @@ const Footer = () => {
     return (
         <footer className="relative z-10 border-t border-white/5 bg-[#0a0a0a]/90 pt-16 pb-8">
             <div className="container mx-auto max-w-5xl px-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-16">
                     {/* Brand Column */}
                     <div className="space-y-4 md:col-span-1">
                         <Link to="/" className="flex items-center gap-3">
@@ -37,23 +37,33 @@ const Footer = () => {
                         <h4 className="font-semibold text-white mb-4">Resources</h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li><Link to="/theory" className="hover:text-white transition-colors">Music Theory</Link></li>
+                            <li><Link to="/blog" className="hover:text-white transition-colors">Blog & Guides</Link></li>
+                            <li><Link to="/gear" className="hover:text-white transition-colors">Recommended Gear</Link></li>
                             <li>
                                 <button 
                                     onClick={() => openFeedbackModal("idea")} 
                                     className="hover:text-emerald-400 transition-colors text-left font-medium"
                                 >
-                                    Send Feedback & Ideas
+                                    Send Feedback
                                 </button>
                             </li>
                             <li><a href="https://github.com/Guitariz/Guitariz" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Source Code</a></li>
-                            <li><a href="https://github.com/Guitariz/Guitariz/issues" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Report Issue</a></li>
-                            <li><Link to="/gear" className="hover:text-white transition-colors">Recommended Gear</Link></li>
-                            <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                            <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                         </ul>
                     </div>
 
-                    {/* Social / Legal */}
+                    {/* Company & Legal */}
+                    <div>
+                        <h4 className="font-semibold text-white mb-4">Company</h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
+                            <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                            <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                            <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                            <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+                        </ul>
+                    </div>
+
+                    {/* Social / Connect */}
                     <div>
                         <h4 className="font-semibold text-white mb-4">Connect</h4>
                         <div className="flex gap-4 mb-4">
@@ -67,7 +77,7 @@ const Footer = () => {
                                 <Mail className="w-5 h-5" />
                             </a>
                         </div>
-                        <p className="text-[10px] text-zinc-500 leading-normal">
+                        <p className="text-[10px] text-zinc-550 leading-normal">
                             Note: We do not have any official Instagram page. Any Instagram account using the name "Guitariz" is completely unaffiliated.
                         </p>
                     </div>

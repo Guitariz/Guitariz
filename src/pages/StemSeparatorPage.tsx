@@ -11,6 +11,7 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import GearTip from "@/components/GearTip";
+import staticContent from "@/data/staticContent.json";
 
 // Stem configuration with icons and colors
 const STEM_CONFIG = {
@@ -41,8 +42,8 @@ interface AudioNodes {
 
 const StemSeparatorPage = () => {
     usePageMetadata({
-        title: "Stem Splitter AI - Free 6-Stem Audio Extractor | Guitariz",
-        description: "Separate any song into 6 stems with Stem Splitter AI: vocals, drums, bass, guitar, piano, and other. High-quality AI stem extraction for music production.",
+        title: staticContent.stemSeparator.title,
+        description: staticContent.stemSeparator.description,
         keywords: "stem splitter ai, stem separator, music splitter, extract drums, extract bass, extract guitar, extract piano, vocal remover, music ai, audio splitter",
         canonicalUrl: "https://guitariz.studio/stem-separator",
         ogImage: "https://guitariz.studio/logo2.png",
@@ -749,6 +750,20 @@ const StemSeparatorPage = () => {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Unique prose copy for SEO and AdSense */}
+                <div className="mt-24 max-w-4xl mx-auto space-y-12">
+                    <div className="space-y-4">
+                        <h2 className="text-3xl md:text-5xl font-light tracking-tighter text-white font-display">
+                            How Stem <span className="text-muted-foreground font-thin italic">Separation Works</span>
+                        </h2>
+                        <div className="h-[1px] w-full bg-gradient-to-r from-pink-500/20 via-border to-transparent" />
+                    </div>
+                    <div 
+                        className="prose prose-invert max-w-none text-sm md:text-base text-zinc-300 leading-relaxed space-y-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ul]:text-zinc-400 [&>p]:leading-relaxed [&_a]:text-emerald-400 [&_a]:hover:underline"
+                        dangerouslySetInnerHTML={{ __html: staticContent.stemSeparator.html }}
+                    />
                 </div>
 
                 {/* SEO FAQ */}

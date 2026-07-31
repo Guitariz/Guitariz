@@ -3,11 +3,12 @@ import { Disc, Music, Bot, Layers } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
+import staticContent from "@/data/staticContent.json";
 
 const ScalesPage = () => {
   usePageMetadata({
-    title: "Guitar Scale Explorer - Scale Patterns & Modes | Guitariz",
-    description: "Explore guitar scales and modes visually. Map Western modes and Indian Classical music Ragas (Bhairav, Yaman, Bilawal) onto an interactive guitar neck.",
+    title: staticContent.scales.title,
+    description: staticContent.scales.description,
     keywords: "guitar scales, music modes, scale explorer, pentatonic scale, blues scale, indian classical ragas guitar, bhairav raga guitar, hindustani music guitar, carnatic scales, raga scale patterns, indian scale on guitar",
     canonicalUrl: "https://guitariz.studio/scales",
     ogImage: "https://guitariz.studio/logo2.png",
@@ -85,6 +86,20 @@ const ScalesPage = () => {
             <h3 className="text-foreground font-medium mb-1">Fretboard Sync</h3>
             <p className="text-xs text-muted-foreground">Map any selected scale directly to the guitar neck.</p>
           </div>
+        </div>
+
+        {/* Unique prose copy for SEO and AdSense */}
+        <div className="mt-24 max-w-4xl mx-auto space-y-12">
+          <div className="space-y-4">
+            <h2 className="text-3xl md:text-5xl font-light tracking-tighter text-white font-display">
+              Scales, Modes, & <span className="text-muted-foreground font-thin italic">Improvisation</span>
+            </h2>
+            <div className="h-[1px] w-full bg-gradient-to-r from-purple-500/20 via-border to-transparent" />
+          </div>
+          <div 
+            className="prose prose-invert max-w-none text-sm md:text-base text-zinc-300 leading-relaxed space-y-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ul]:text-zinc-400 [&>p]:leading-relaxed [&_a]:text-emerald-400 [&_a]:hover:underline"
+            dangerouslySetInnerHTML={{ __html: staticContent.scales.html }}
+          />
         </div>
 
         <SEOContent

@@ -1,6 +1,7 @@
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Breadcrumb } from "@/components/SEOContent";
 
 const PrivacyPolicyPage = () => {
   usePageMetadata({
@@ -14,8 +15,13 @@ const PrivacyPolicyPage = () => {
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       <main className="container mx-auto px-4 md:px-6 pt-24 pb-16 relative z-10 max-w-4xl">
         
+        <Breadcrumb items={[
+          { name: "Home", url: "https://guitariz.studio/" },
+          { name: "Privacy Policy", url: "https://guitariz.studio/privacy" }
+        ]} />
+
         {/* Header Section */}
-        <div className="space-y-4 mb-10">
+        <div className="space-y-4 mb-10 mt-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-xs font-medium tracking-wider uppercase">
             <ShieldCheck className="w-4 h-4" />
             <span>Data Protection</span>
@@ -58,7 +64,7 @@ const PrivacyPolicyPage = () => {
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
               <li>Google, as a third-party vendor, uses cookies to serve ads on our site.</li>
               <li>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and other sites on the internet.</li>
-              <li>Users may opt-out of personalized advertising by visiting Google's Ad Settings, or by using the consent dialog interface presented upon entering our site.</li>
+              <li>Users may opt-out of personalized advertising by visiting Google's Ad Settings, or by using the consent dialog interface presented upon entering our site. For detailed information on our cookie usage, please read our dedicated <Link to="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link>.</li>
             </ul>
           </section>
 

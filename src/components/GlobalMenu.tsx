@@ -20,6 +20,9 @@ import {
     Github,
     Coffee,
     MessageSquarePlus,
+    Info,
+    Mail,
+    ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
@@ -71,6 +74,14 @@ const menuCategories: MenuCategory[] = [
             { label: "Ear Training", icon: Trophy, href: "/ear-training", description: "Interval recognition drills" },
             { label: "Blog", icon: BookOpen, href: "/blog", description: "Music theory & AI guides" },
             { label: "Recommended Gear", icon: Guitar, href: "/gear", description: "Curated tools & accessories" },
+        ],
+    },
+    {
+        title: "About & Legal",
+        items: [
+            { label: "About Us", icon: Info, href: "/about", description: "Our mission, technology, and story" },
+            { label: "Contact Us", icon: Mail, href: "/contact", description: "Get in touch with support" },
+            { label: "Privacy Policy", icon: ShieldCheck, href: "/privacy", description: "Data protection guidelines" },
         ],
     },
 ];
