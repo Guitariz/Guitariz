@@ -32,6 +32,18 @@ except Exception as e:
     FAST_ENGINE_ERROR = f"Failed to import chord_fast module: {e}"
     print(f"[Startup] ℹ Custom ONNX fast engine module not found - using legacy librosa engine only | Error: {e}", flush=True)
 
+# Try to import precise analysis module
+try:
+    from chord_precise import analyze_file_precise
+    print("[Startup] ✓ Precise chord analysis engine available", flush=True)
+except Exception as e:
+    try:
+        from backend.chord_precise import analyze_file_precise
+        print("[Startup] ✓ Precise chord analysis engine available (via package)", flush=True)
+    except Exception as e2:
+        analyze_file_precise = None
+        print(f"[Startup] ℹ Precise chord analysis engine not available | Error: {e} | {e2}", flush=True)
+
 class QuietScanFilter(logging.Filter):
     """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
     def filter(self, record: logging.LogRecord) -> bool:
@@ -207,12 +219,15 @@ def analyze(
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
     if not use_madmom and mode == "fast":
-        resolved_mode = "accurate"
+        resolved_mode = "balanced"
+    elif mode == "accurate":
+        resolved_mode = "balanced"
 
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
     
     # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
-    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    is_heavy = separate_vocals or resolved_mode == "precise"
+    active_semaphore = separation_semaphore if is_heavy else chord_semaphore
     
     # Acquire semaphore (queueing if busy)
     with active_semaphore:
@@ -227,8 +242,15 @@ def analyze(
                 tmp_path = Path(tmp.name)
         
             try:
-                if resolved_mode == "accurate":
-                    print(f"[API] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
+                if resolved_mode == "precise":
+                    if analyze_file_precise is not None:
+                        print(f"[API] Running PRECISE mode (Deep 5-stage pipeline)")
+                        result = analyze_file_precise(tmp_path, separate_vocals=separate_vocals)
+                    else:
+                        print("[API] Precise engine not available, falling back to BALANCED mode")
+                        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+                elif resolved_mode == "balanced":
+                    print(f"[API] Running BALANCED mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                     result = analyze_file(tmp_path, separate_vocals=separate_vocals)
                 else:
                     # Fast mode (Custom ONNX)
@@ -247,7 +269,7 @@ def analyze(
                             print(f"[API] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                             result = analyze_file_fast(tmp_path, mode="fast")
                     else:
-                        print("[API] Fast engine not available, falling back to ACCURATE mode")
+                        print("[API] Fast engine not available, falling back to BALANCED mode")
                         result = analyze_file(tmp_path, separate_vocals=separate_vocals)
                 
                 # If vocal separation was used, store the instrumental file and return its URL
@@ -265,9 +287,11 @@ def analyze(
                 
                 print(f"Returning result with keys: {result.keys()}")
                 return JSONResponse(result)
-            except Exception: 
-                print("[API] Analysis failed")
-                raise HTTPException(status_code=500, detail="Analysis failed")
+            except Exception as e: 
+                print(f"[API] Analysis failed: {e}")
+                import traceback
+                traceback.print_exc()
+                raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
         finally:
             try:
                 if 'tmp_path' in locals():
@@ -290,136 +314,172 @@ def analyze_stream(
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
     if not use_madmom and mode == "fast":
-        resolved_mode = "accurate"
+        resolved_mode = "balanced"
+    elif mode == "accurate":
+        resolved_mode = "balanced"
 
     print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
     
-    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
-    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    is_heavy = separate_vocals or resolved_mode == "precise"
+    active_semaphore = separation_semaphore if is_heavy else chord_semaphore
     
-    # Acquire semaphore
-    with active_semaphore:
-        try:
-            if not file.filename:
-                raise HTTPException(status_code=400, detail="File required")
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File required")
 
-            suffix = Path(file.filename).suffix or ".tmp"
+        suffix = Path(file.filename).suffix or ".tmp"
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                shutil.copyfileobj(file.file, tmp)
-                tmp_path = Path(tmp.name)
-        
-            try:
-                # 1. Run full contiguous audio inference
-                if resolved_mode == "accurate":
-                    print(f"[API Stream] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
-                    result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                else:
-                    # Fast mode (Custom ONNX)
-                    if FAST_ENGINE_AVAILABLE:
-                        if separate_vocals:
-                            print(f"[API Stream] Running FAST mode with vocal separation...")
-                            separated = separate_audio_full(tmp_path)
-                            if separated and separated.get("instrumental"):
-                                instr_path = separated["instrumental"]
-                                result = analyze_file_fast(instr_path, mode="fast")
-                                result["instrumentalPath"] = instr_path
-                            else:
-                                print("[API Stream] Vocal separation failed, using original audio")
-                                result = analyze_file_fast(tmp_path, mode="fast")
-                        else:
-                            print(f"[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
-                            result = analyze_file_fast(tmp_path, mode="fast")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = Path(tmp.name)
+    
+        # Define the generator that will be executed by StreamingResponse
+        def ndjson_generator():
+            import queue
+            import threading
+            
+            # Acquire semaphore inside the generator context to prevent concurrent CPU exhaustion
+            with active_semaphore:
+                try:
+                    if resolved_mode == "precise":
+                        q = queue.Queue()
+                        def run_precise():
+                            try:
+                                res = analyze_file_precise(
+                                    tmp_path,
+                                    separate_vocals=separate_vocals,
+                                    progress_cb=lambda stage, msg, pct: q.put({
+                                        "type": "progress",
+                                        "stage": stage,
+                                        "message": msg,
+                                        "percent": pct
+                                    })
+                                )
+                                q.put({"type": "result", "result": res})
+                            except Exception as inner_err:
+                                q.put({"type": "error", "detail": str(inner_err)})
+                        
+                        t_thread = threading.Thread(target=run_precise)
+                        t_thread.start()
+                        
+                        result = None
+                        while True:
+                            item = q.get()
+                            if item["type"] == "progress":
+                                yield json.dumps(item) + "\n"
+                            elif item["type"] == "result":
+                                result = item["result"]
+                                break
+                            elif item["type"] == "error":
+                                raise Exception(item["detail"])
                     else:
-                        print("[API Stream] Fast engine not available, falling back to ACCURATE mode")
-                        result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                
-                # 2. Extract instrumental info if needed
-                instrumental_url = None
-                if "instrumentalPath" in result:
-                    file_id = str(uuid.uuid4())
-                    path = result["instrumentalPath"]
-                    separated_files[file_id] = {
-                        "paths": [path],
-                        "timestamp": time.time(),
-                        "type": "analysis"
-                    }
-                    instrumental_url = f"/api/analyze/download/{file_id}/instrumental.wav"
-                    print(f"Stored instrumental file with ID: {file_id}, URL: {instrumental_url}")
-                
-                # 3. Stream the pre-computed chords back in chunks
-                def ndjson_generator():
-                    try:
-                        # Extract basic metadata
-                        metadata = {
-                            "tempo": result.get("tempo", 120),
-                            "meter": result.get("meter", 4),
-                            "key": result.get("key", "C"),
-                            "scale": result.get("scale", "major"),
+                        # Balanced or Fast mode
+                        if resolved_mode == "balanced":
+                            print(f"[API Stream] Running BALANCED mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
+                            result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+                        else:
+                            # Fast mode (Custom ONNX)
+                            if FAST_ENGINE_AVAILABLE:
+                                if separate_vocals:
+                                    print(f"[API Stream] Running FAST mode with vocal separation...")
+                                    separated = separate_audio_full(tmp_path)
+                                    if separated and separated.get("instrumental"):
+                                        instr_path = separated["instrumental"]
+                                        result = analyze_file_fast(instr_path, mode="fast")
+                                        result["instrumentalPath"] = instr_path
+                                    else:
+                                        print("[API Stream] Vocal separation failed, using original audio")
+                                        result = analyze_file_fast(tmp_path, mode="fast")
+                                else:
+                                    print(f"[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                                    result = analyze_file_fast(tmp_path, mode="fast")
+                            else:
+                                print("[API Stream] Fast engine not available, falling back to BALANCED mode")
+                                result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+                    
+                    # Extract instrumental info if needed
+                    instrumental_url = None
+                    if "instrumentalPath" in result:
+                        file_id = str(uuid.uuid4())
+                        path = result["instrumentalPath"]
+                        separated_files[file_id] = {
+                            "paths": [path],
+                            "timestamp": time.time(),
+                            "type": "analysis"
                         }
-                        if instrumental_url:
-                            metadata["instrumentalUrl"] = instrumental_url
+                        instrumental_url = f"/api/analyze/download/{file_id}/instrumental.wav"
+                        print(f"Stored instrumental file with ID: {file_id}, URL: {instrumental_url}")
+                    
+                    # Extract basic metadata
+                    metadata = {
+                        "tempo": result.get("tempo", 120),
+                        "meter": result.get("meter", 4),
+                        "key": result.get("key", "C"),
+                        "scale": result.get("scale", "major"),
+                    }
+                    if instrumental_url:
+                        metadata["instrumentalUrl"] = instrumental_url
+                    
+                    # Yield initial metadata chunk
+                    yield json.dumps({"type": "metadata", **metadata}) + "\n"
+                    
+                    chords = result.get("chords", [])
+                    simple_chords = result.get("simpleChords", chords)
+                    
+                    # Chunk the chords list into 30-second intervals to yield progressively
+                    chunk_size_sec = 30.0
+                    duration = 0.0
+                    if chords:
+                        duration = max(c["end"] for c in chords)
+                    
+                    if duration <= 0:
+                        yield json.dumps({
+                            "type": "chords",
+                            "start": 0,
+                            "end": 0,
+                            "chords": chords,
+                            "simpleChords": simple_chords
+                        }) + "\n"
+                        return
+
+                    num_chunks = int(math.ceil(duration / chunk_size_sec))
+                    for i in range(num_chunks):
+                        c_start = i * chunk_size_sec
+                        c_end = (i + 1) * chunk_size_sec
                         
-                        # Yield initial metadata chunk
-                        yield json.dumps({"type": "metadata", **metadata}) + "\n"
+                        chunk_chords = [c for c in chords if c["end"] > c_start and c["start"] < c_end]
+                        chunk_simple_chords = [c for c in simple_chords if c["end"] > c_start and c["start"] < c_end]
                         
-                        chords = result.get("chords", [])
-                        simple_chords = result.get("simpleChords", chords)
-                        
-                        # Chunk the chords list into 30-second intervals to yield progressively
-                        chunk_size_sec = 30.0
-                        duration = 0.0
-                        if chords:
-                            duration = max(c["end"] for c in chords)
-                        
-                        # If duration is 0, just yield everything in one chunk
-                        if duration <= 0:
-                            yield json.dumps({
-                                "type": "chords",
-                                "start": 0,
-                                "end": 0,
-                                "chords": chords,
-                                "simpleChords": simple_chords
-                            }) + "\n"
-                            return
- 
-                        num_chunks = int(math.ceil(duration / chunk_size_sec))
-                        for i in range(num_chunks):
-                            c_start = i * chunk_size_sec
-                            c_end = (i + 1) * chunk_size_sec
-                            
-                            # Filter chords within this 30s window
-                            chunk_chords = [c for c in chords if c["end"] > c_start and c["start"] < c_end]
-                            chunk_simple_chords = [c for c in simple_chords if c["end"] > c_start and c["start"] < c_end]
-                            
-                            yield json.dumps({
-                                "type": "chords",
-                                "start": c_start,
-                                "end": min(duration, c_end),
-                                "chords": chunk_chords,
-                                "simpleChords": chunk_simple_chords
-                            }) + "\n"
-                    except Exception as gen_err:
-                        print(f"[API Stream] Generator error: {gen_err}")
-                        yield json.dumps({"type": "error", "detail": str(gen_err)}) + "\n"
-                
-                # Set X-Accel-Buffering: no header to prevent Nginx buffering
-                headers = {
-                    "X-Accel-Buffering": "no",
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive"
-                }
-                return StreamingResponse(ndjson_generator(), media_type="application/x-ndjson", headers=headers)
-                
-            except Exception as analysis_err: 
-                print(f"[API Stream] Analysis failed: {analysis_err}")
-                raise HTTPException(status_code=500, detail=f"Analysis failed: {analysis_err}")
-        finally:
-            try:
-                if 'tmp_path' in locals():
-                    tmp_path.unlink(missing_ok=True)
-            except Exception:
-                pass
+                        yield json.dumps({
+                            "type": "chords",
+                            "start": c_start,
+                            "end": min(duration, c_end),
+                            "chords": chunk_chords,
+                            "simpleChords": chunk_simple_chords
+                        }) + "\n"
+                except Exception as gen_err:
+                    print(f"[API Stream] Generator error: {gen_err}")
+                    yield json.dumps({"type": "error", "detail": str(gen_err)}) + "\n"
+                finally:
+                    # Clean up temporary uploaded file once generation finishes
+                    try:
+                        tmp_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+        
+        # Set X-Accel-Buffering: no header to prevent Nginx buffering
+        headers = {
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        }
+        return StreamingResponse(ndjson_generator(), media_type="application/x-ndjson", headers=headers)
+        
+    except Exception as e:
+        print(f"[API Stream] Request initial setup failed: {e}")
+        if 'tmp_path' in locals() and tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/analyze-youtube")
@@ -445,7 +505,9 @@ def analyze_youtube(
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
     if not use_madmom and mode == "fast":
-        resolved_mode = "accurate"
+        resolved_mode = "balanced"
+    elif mode == "accurate":
+        resolved_mode = "balanced"
 
     print(f"[YouTube] Received request for URL: {url} | Mode: {resolved_mode}")
     
@@ -463,7 +525,8 @@ def analyze_youtube(
         raise HTTPException(status_code=400, detail="Invalid YouTube URL")
     
     # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
-    active_semaphore = separation_semaphore if separate_vocals else chord_semaphore
+    is_heavy = separate_vocals or resolved_mode == "precise"
+    active_semaphore = separation_semaphore if is_heavy else chord_semaphore
     
     # Acquire semaphore (queueing if busy)
     with active_semaphore:
@@ -480,8 +543,15 @@ def analyze_youtube(
             
             # Analyze the audio
             print(f"[YouTube] Starting analysis (mode={resolved_mode}, vocals={separate_vocals})")
-            if resolved_mode == "accurate":
-                print(f"[YouTube] Running ACCURATE mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
+            if resolved_mode == "precise":
+                if analyze_file_precise is not None:
+                    print(f"[YouTube] Running PRECISE mode (Deep 5-stage pipeline)")
+                    result = analyze_file_precise(audio_path, separate_vocals=separate_vocals)
+                else:
+                    print("[YouTube] Precise engine not available, falling back to BALANCED mode")
+                    result = analyze_file(audio_path, separate_vocals=separate_vocals)
+            elif resolved_mode == "balanced":
+                print(f"[YouTube] Running BALANCED mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                 result = analyze_file(audio_path, separate_vocals=separate_vocals)
             else:
                 # Fast mode (Custom ONNX)
@@ -500,7 +570,7 @@ def analyze_youtube(
                         print(f"[YouTube] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                         result = analyze_file_fast(audio_path, mode="fast")
                 else:
-                    print("[YouTube] Fast engine not available, falling back to ACCURATE mode")
+                    print("[YouTube] Fast engine not available, falling back to BALANCED mode")
                     result = analyze_file(audio_path, separate_vocals=separate_vocals)
             
             # Handle instrumental file if vocal separation was used

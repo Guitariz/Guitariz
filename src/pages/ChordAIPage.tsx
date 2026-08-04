@@ -112,7 +112,7 @@ const ChordAIPage = () => {
   const { loadFile, play, pause, seek, audioBuffer, peaks, duration, currentTime, isPlaying, fileInfo, transpose, setTranspose, tempo, setTempo, getAudioChunk } =
     useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const { showSimple, setShowSimple, separateVocals, setSeparateVocals, useMadmom, setUseMadmom, liveChordEnabled, setLiveChordEnabled } = useChordAIStore();
+  const { showSimple, setShowSimple, separateVocals, setSeparateVocals, analysisMode, setAnalysisMode, liveChordEnabled, setLiveChordEnabled } = useChordAIStore();
   const [dragActive, setDragActive] = useState(false);
   const validateAudioFile = (file: File): boolean => {
     const name = file.name.toLowerCase();
@@ -165,7 +165,7 @@ const ChordAIPage = () => {
   const { isConnected, currentChord: liveChord, connect, disconnect, sendAudioChunk } = useChordWebSocket();
   const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${useMadmom}` : undefined;
+  const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${analysisMode}` : undefined;
   const cachedResult = cacheKey ? cachedResults[cacheKey] : undefined;
 
   useEffect(() => {
@@ -201,14 +201,14 @@ const ChordAIPage = () => {
     };
   }, [disconnect]);
 
-  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress } = useChordAnalysis(
+  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress, progressMessage } = useChordAnalysis(
     audioBuffer,
     selectedFile,
     true,
     separateVocals,
     cacheKey,
     cachedResult,
-    useMadmom
+    analysisMode
   );
 
   const effectiveDuration = useMemo(() => {
@@ -224,21 +224,26 @@ const ChordAIPage = () => {
   const hasCachedResult = !!cachedResult;
   useEffect(() => {
     if (analysisLoading && !hasCachedResult && currentFileId) {
-      if (separateVocals) {
+      if (analysisMode === "precise") {
+        toast({
+          title: "Precise Engine Active",
+          description: "Running deep 5-stage isolation and transcription (~1-2 mins).",
+        });
+      } else if (separateVocals) {
         toast({
           title: "Premium Analysis Engine",
           description: "Vocal filtering enabled. This uses the high-precision pipeline (~2-3 mins).",
         });
       } else {
         toast({
-          title: useMadmom ? "Fast Neural Analysis" : "Detailed Analysis",
-          description: useMadmom
+          title: analysisMode === "fast" ? "Fast Neural Analysis" : "Balanced DSP Analysis",
+          description: analysisMode === "fast"
             ? "Using custom ONNX model for rapid harmonic transcription (~5-10s)."
             : "Using Librosa engine for focused mapping (~1 min).",
         });
       }
     }
-  }, [analysisLoading, hasCachedResult, separateVocals, currentFileId, useMadmom, toast, cachedResult]);
+  }, [analysisLoading, hasCachedResult, separateVocals, currentFileId, analysisMode, toast, cachedResult]);
 
   const lastNotifiedResultRef = useRef<string | null>(null);
   useEffect(() => {
@@ -254,7 +259,7 @@ const ChordAIPage = () => {
             fileName: fileInfo.name,
             result,
             instrumentalUrl,
-            useMadmom,
+            analysisMode,
             separateVocals
           });
         }
@@ -262,18 +267,23 @@ const ChordAIPage = () => {
 
       if (separateVocals && !instrumentalUrl) return;
 
-      const resKey = `${currentFileId}-${separateVocals}-${useMadmom}`;
+      const resKey = `${currentFileId}-${separateVocals}-${analysisMode}`;
       if (lastNotifiedResultRef.current === resKey) return;
       lastNotifiedResultRef.current = resKey;
 
-      if (separateVocals) {
+      if (analysisMode === "precise") {
+        toast({
+          title: "Precise map ready! :))",
+          description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
+        });
+      } else if (separateVocals) {
         toast({
           title: "High-precision map ready! :))",
           description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
         });
       } else {
         toast({
-          title: useMadmom ? "Fast map ready :))" : "Detailed map ready :))",
+          title: analysisMode === "fast" ? "Fast map ready :))" : "Balanced map ready :))",
           description: `Detected ${result.key} ${result.scale || ""} at ${Math.round(result.tempo || 0)} BPM`
         });
       }
@@ -302,7 +312,7 @@ const ChordAIPage = () => {
         console.warn("sessionStorage unavailable", err);
       }
     }
-  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, useMadmom, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory]);
+  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, analysisMode, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory]);
 
   useEffect(() => {
     if (analysisError) {
@@ -534,29 +544,50 @@ const ChordAIPage = () => {
 
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="vocal-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Vocal Filter</Label>
-                      <Switch id="vocal-switch" checked={separateVocals} onCheckedChange={setSeparateVocals} disabled={analysisLoading} />
+                      <Label htmlFor="vocal-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">
+                        {analysisMode === "precise" ? "Vocal Filter (Auto-Isolating)" : "Vocal Filter"}
+                      </Label>
+                      <Switch 
+                        id="vocal-switch" 
+                        checked={analysisMode === "precise" ? true : separateVocals} 
+                        onCheckedChange={setSeparateVocals} 
+                        disabled={analysisLoading || analysisMode === "precise"} 
+                      />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="engine-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Fast Model</Label>
-                      <Switch
-                        id="engine-switch"
-                        checked={useMadmom}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            toast({
-                              title: "Fast Model in Progress",
-                              description: "The custom neural network engine is in development. Falling back to the high-accuracy Librosa DSP engine.",
-                            });
-                            setTimeout(() => {
-                              setUseMadmom(false);
-                            }, 300);
-                          } else {
-                            setUseMadmom(checked);
-                          }
-                        }}
-                        disabled={analysisLoading}
-                      />
+                      <Label className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Engine</Label>
+                      <div className="flex items-center bg-muted/65 p-0.5 rounded-lg border border-border/40">
+                        {(["fast", "balanced", "precise"] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            disabled={analysisLoading}
+                            onClick={() => {
+                              if (mode === "fast") {
+                                toast({
+                                  title: "Fast Engine (In Development)",
+                                  description: "The custom ONNX Fast Engine is currently under active development and will be here soon! Reverting to Balanced Mode.",
+                                });
+                                setAnalysisMode("balanced");
+                                return;
+                              } else if (mode === "precise") {
+                                toast({
+                                  title: "Precise Engine Selected",
+                                  description: "Warning: High memory Demucs stem isolation and multi-chroma templates will run (~1-2 mins).",
+                                });
+                              }
+                              setAnalysisMode(mode);
+                            }}
+                            className={cn(
+                              "px-2.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tight transition-all duration-200",
+                              analysisMode === mode
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {mode}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="mode-switch" className="text-[9px] text-muted-foreground uppercase font-bold tracking-tighter">Complex</Label>
@@ -570,10 +601,10 @@ const ChordAIPage = () => {
                     <div className="flex items-center gap-2">
                       <Activity className="w-3 h-3 text-blue-400 animate-pulse" />
                       <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-                        {uploadProgress !== undefined && uploadProgress < 100 ? "Uploading" : "Analyzing"} Engine State...
+                        {progressMessage ? progressMessage : (uploadProgress !== undefined && uploadProgress < 100 ? "Uploading Audio" : "Analyzing Engine State...")}
                       </span>
                     </div>
-                    {uploadProgress !== undefined && uploadProgress < 100 && (
+                    {uploadProgress !== undefined && uploadProgress > 0 && (
                       <div className="flex items-center gap-3 w-32">
                         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                           <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
@@ -1073,7 +1104,7 @@ const ChordAIPage = () => {
                   )}
                 </div>
 
-                {currentChords.length > 0 && !useMadmom && (
+                {currentChords.length > 0 && analysisMode !== "fast" && (
                   <div className="pt-6 border-t border-border space-y-4">
                     <ConfidenceSummary
                       segments={currentChords}
@@ -1168,7 +1199,7 @@ const ChordAIPage = () => {
                         onClick={() => {
                           setCachedResults(prev => ({
                             ...prev,
-                            [`${entry.fileName}-${entry.separateVocals}-${entry.useMadmom}`]: {
+                            [`${entry.fileName}-${entry.separateVocals}-${entry.analysisMode}`]: {
                               result: entry.result,
                               instrumentalUrl: entry.instrumentalUrl
                             }
@@ -1176,7 +1207,7 @@ const ChordAIPage = () => {
                           setCurrentFileId(entry.fileName);
                           setHistoryFileName(entry.fileName);
                           setSeparateVocals(entry.separateVocals);
-                          setUseMadmom(entry.useMadmom);
+                          setAnalysisMode(entry.analysisMode);
 
                           toast({
                             title: "History item loaded",

@@ -22,7 +22,7 @@ export async function analyzeRemote(
   file: File, 
   endpoint: string = defaultEndpoint, 
   separateVocals: boolean = false, 
-  useMadmom: boolean = true,
+  analysisMode: 'fast' | 'balanced' | 'precise' = 'balanced',
   onUploadProgress?: (percent: number) => void,
   onXhrCreated?: (xhr: XMLHttpRequest) => void
 ): Promise<AnalysisResult> {
@@ -40,7 +40,8 @@ export async function analyzeRemote(
   const form = new FormData();
   form.append("file", file);
   form.append("separate_vocals", separateVocals.toString());
-  form.append("use_madmom", useMadmom.toString());
+  form.append("use_madmom", (analysisMode === "fast").toString());
+  form.append("mode", analysisMode);
 
   // Use XMLHttpRequest to track upload progress
   if (onUploadProgress) {

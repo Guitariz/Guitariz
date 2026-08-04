@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnalysisResult } from "@/types/chordAI";
+import { AnalysisMode } from "@/stores/chordAIStore";
 
 export interface HistoryEntry {
     id: string;
@@ -7,7 +8,7 @@ export interface HistoryEntry {
     fileName: string;
     result: AnalysisResult;
     instrumentalUrl?: string;
-    useMadmom: boolean;
+    analysisMode: AnalysisMode;
     separateVocals: boolean;
 }
 
@@ -22,7 +23,18 @@ export const useAnalysisHistory = () => {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             try {
-                setHistory(JSON.parse(saved));
+                const parsed = JSON.parse(saved);
+                // Backwards compatibility migration
+                const migrated = parsed.map((item: any) => {
+                    if (item.analysisMode === undefined) {
+                        return {
+                            ...item,
+                            analysisMode: item.useMadmom ? 'fast' : 'balanced'
+                        };
+                    }
+                    return item;
+                });
+                setHistory(migrated);
             } catch (e) {
                 console.error("Failed to parse history", e);
             }

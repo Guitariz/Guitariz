@@ -17,7 +17,7 @@
   <br />
 
   <p>
-    <img src="https://img.shields.io/badge/Release-v1.7.0-4A90E2?style=for-the-badge&logo=github" alt="Release" />
+    <img src="https://img.shields.io/badge/Release-v2.1.0-4A90E2?style=for-the-badge&logo=github" alt="Release" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-45B8D1?style=for-the-badge" alt="License" /></a>
     <img src="https://img.shields.io/badge/CI-passing-00C853?style=for-the-badge&logo=github-actions&logoColor=white" alt="CI" />
     <a href="https://guitariz.studio"><img src="https://img.shields.io/badge/Live-guitariz.studio-00C853?style=for-the-badge&logo=vercel&logoColor=white" alt="Live" /></a>

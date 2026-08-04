@@ -1,12 +1,12 @@
 import subprocess
 import tempfile
+import hashlib
 from pathlib import Path
 from typing import List, Tuple, Optional
 
 import librosa
 import numpy as np
 import soundfile as sf
-import scipy.ndimage
 import torch
 import gc
 
@@ -55,8 +55,8 @@ class DemucsSeparator:
         
         print(f"[Demucs] Running inference on {wav.shape[1]/sr:.1f}s of audio (CPU)...")
         with torch.no_grad():
-            # Use overlap=0.0 and shifts=0 for maximum speed on CPU
-            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.0, progress=True)[0]
+            # Use overlap=0.1 and shifts=0 for maximum speed on CPU
+            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
         
         sources = sources * ref.std() + ref.mean()
         return sr, dict(zip(self.model.sources, sources))
@@ -104,8 +104,8 @@ class DemucsSeparator6Stem:
         
         print(f"[Demucs 6-Stem] Running inference on {wav.shape[1]/sr:.1f}s of audio (CPU)... This may take 5-10 minutes.")
         with torch.no_grad():
-            # Use overlap=0.0 and shifts=0 for maximum speed on CPU
-            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.0, progress=True)[0]
+            # Use overlap=0.1 and shifts=0 for maximum speed on CPU
+            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
         
         sources = sources * ref.std() + ref.mean()
         return sr, dict(zip(self.model.sources, sources))
@@ -118,8 +118,6 @@ def _get_separator_6stem():
         _DEMUCS_6STEM_WRAPPER = DemucsSeparator6Stem()
     return _DEMUCS_6STEM_WRAPPER
 
-
-STEM_TYPES = ["vocals", "drums", "bass", "guitar", "piano", "other"]
 
 def separate_audio_stems(audio_path: Path) -> Optional[dict]:
     """Separate audio into 6 stems: vocals, drums, bass, guitar, piano, other.
@@ -149,13 +147,13 @@ def separate_audio_stems(audio_path: Path) -> Optional[dict]:
         print(f"6-stem audio separation failed: {e}")
         import traceback
         traceback.print_exc()
-        raise e
+        raise
 
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
 MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
 
-CHORD_TEMPLATES: List[Tuple[str, int, np.ndarray]] = []
+CHORD_TEMPLATES: List[Tuple[str, np.ndarray]] = []
 for root in range(12):
     for name, intervals in {
         "maj": [0, 4, 7],
@@ -163,21 +161,52 @@ for root in range(12):
         "7": [0, 4, 7, 10],
         "maj7": [0, 4, 7, 11],
         "min7": [0, 3, 7, 10],
-        "sus2": [0, 2, 7],
-        "sus4": [0, 5, 7],
         "dim": [0, 3, 6],
         "aug": [0, 4, 8],
+        "sus2": [0, 2, 7],
+        "sus4": [0, 5, 7],
+        "6": [0, 4, 7, 9],
+        "m6": [0, 3, 7, 9],
     }.items():
         v = np.zeros(12)
         for iv in intervals:
             v[(root + iv) % 12] = 1.0
-        # Slight root emphasis for disambiguation
-        v[root] += 0.3
+            v[(root + iv + 7) % 12] += 0.05
+        v[root] += 0.2
+
+        # Compensate for the natural harmonic-series bias toward major:
+        # real instruments produce faint major-3rd overtones even when
+        # playing a minor chord (harmonics 4:5:6 form a major triad),
+        # so minor-quality templates get a small explicit boost on the
+        # minor 3rd degree to offset that inherent physical skew.
+        if "min" in name or name == "dim" or name == "m6":
+            minor_third_pc = (root + 3) % 12
+            v[minor_third_pc] += 0.10
+
         norm = np.linalg.norm(v)
         chord_name = f"{PITCH_CLASS_NAMES[root]}"
         if name != "maj":
             chord_name += f"{name}"
-        CHORD_TEMPLATES.append((chord_name, root, v / (norm + 1e-9)))
+        CHORD_TEMPLATES.append((chord_name, v / (norm + 1e-9)))
+
+
+def get_file_hash(file_path: Path) -> str:
+    """Generate MD5 hash based on file content and size for robust caching."""
+    hasher = hashlib.md5()
+    try:
+        stats = file_path.stat()
+        hasher.update(str(stats.st_size).encode())
+        with open(file_path, 'rb') as f:
+            chunk = f.read(1024 * 1024)
+            hasher.update(chunk)
+            if stats.st_size > 2 * 1024 * 1024:
+                f.seek(-1024 * 1024, 2)
+                chunk = f.read(1024 * 1024)
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception as e:
+        print(f"[Analysis] Hashing failed: {e}")
+        return hashlib.md5(str(file_path.name).encode()).hexdigest()
 
 
 def _ffmpeg_to_wav(src: Path, dst: Path):
@@ -275,61 +304,76 @@ def _estimate_key(chroma: np.ndarray) -> Tuple[str, str]:
     return best
 
 
-# Map quality names to their offset in the CHORD_TEMPLATES list (9 per root)
-_QUALITY_OFFSET = {"maj": 0, "min": 1, "7": 2, "maj7": 3, "min7": 4, "sus2": 5, "sus4": 6, "dim": 7, "aug": 8}
+# Scale degree (semitones above tonic) -> expected chord quality, for major keys
+MAJOR_KEY_DIATONIC_QUALITY = {
+    0: "maj",   # I
+    2: "min",   # ii
+    4: "min",   # iii
+    5: "maj",   # IV
+    7: "maj",   # V
+    9: "min",   # vi
+    11: "dim",  # vii°
+}
 
-# Diatonic chord degrees: (semitone interval from tonic, quality)
-_MAJOR_DIATONIC = [
-    (0, "maj"),   # I
-    (2, "min"),   # ii
-    (4, "min"),   # iii
-    (5, "maj"),   # IV
-    (7, "maj"),   # V
-    (7, "7"),     # V7
-    (9, "min"),   # vi
-    (11, "dim"),  # vii°
-]
-_MINOR_DIATONIC = [
-    (0, "min"),   # i
-    (2, "dim"),   # ii°
-    (3, "maj"),   # III
-    (3, "aug"),   # III+ (augmented III, common in minor)
-    (5, "min"),   # iv
-    (7, "min"),   # v (natural)
-    (7, "maj"),   # V (harmonic minor)
-    (7, "7"),     # V7 (harmonic minor)
-    (8, "maj"),   # VI
-    (10, "maj"),  # VII
-]
+# For minor keys (natural minor as the base assumption)
+MINOR_KEY_DIATONIC_QUALITY = {
+    0: "min",   # i
+    2: "dim",   # ii°
+    3: "maj",   # III
+    5: "min",   # iv
+    7: "min",   # v (often maj in harmonic minor — treated as soft bias, not hard rule)
+    8: "maj",   # VI
+    10: "maj",  # VII
+}
 
+def _diatonic_bias_multiplier(chord_name: str, key_root: str, scale: str) -> float:
+    """Boost chord templates that match the expected quality for their
+    scale degree in the song's detected key. This directly targets the
+    common ii/vi-misdetected-as-major failure mode."""
+    if chord_name == "N.C.":
+        return 1.0
 
-def _get_diatonic_indices(key: str, scale: str) -> List[int]:
-    """Return CHORD_TEMPLATES indices for diatonic chords of the given key."""
-    key_idx = PITCH_CLASS_NAMES.index(key) if key in PITCH_CLASS_NAMES else 0
-    degrees = _MINOR_DIATONIC if scale == "minor" else _MAJOR_DIATONIC
-    
-    n_qualities = len(_QUALITY_OFFSET)
-    indices = []
-    for interval, quality in degrees:
-        root = (key_idx + interval) % 12
-        if quality in _QUALITY_OFFSET:
-            idx = root * n_qualities + _QUALITY_OFFSET[quality]
-            if idx < len(CHORD_TEMPLATES):
-                indices.append(idx)
-    return indices
+    if len(chord_name) > 1 and chord_name[1] == "#":
+        root, suffix = chord_name[:2], chord_name[2:]
+    else:
+        root, suffix = chord_name[0], chord_name[1:]
+
+    root_idx = PITCH_CLASS_NAMES.index(root)
+    key_idx = PITCH_CLASS_NAMES.index(key_root)
+    degree = (root_idx - key_idx) % 12
+
+    table = MAJOR_KEY_DIATONIC_QUALITY if scale == "major" else MINOR_KEY_DIATONIC_QUALITY
+    expected = table.get(degree)
+    if expected is None:
+        return 1.0  # non-diatonic degree, no opinion
+
+    # Determine this template's actual quality bucket
+    if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
+        actual = "min"
+    elif suffix.startswith("dim"):
+        actual = "dim"
+    elif suffix.startswith("aug"):
+        actual = "aug"
+    else:
+        actual = "maj"  # covers maj, 7, maj7, 6, sus2, sus4 — all "major-family" for this purpose
+
+    if actual == expected:
+        return 1.12  # modest boost — nudge, don't override real evidence
+    return 1.0
 
 
 def _segment_chords(
     chroma: np.ndarray,
-    chroma_bass: np.ndarray,
     sr: int,
     beats: np.ndarray,
     hop_length: int,
     key: str = "C",
     scale: str = "major",
+    beats_per_bar: int = 4,
 ) -> List[dict]:
-    # Get diatonic chord indices for key-aware bias
-    diatonic_indices = _get_diatonic_indices(key, scale)
+    # Apply gentle median smoothing (don't over-process)
+    from scipy.ndimage import median_filter
+    chroma = median_filter(chroma, size=(1, 3))  # Reduced from 7 to 3
 
     # If we lack reliable beats, fall back to ~0.5s windows
     if beats is None or len(beats) < 2:
@@ -337,165 +381,98 @@ def _segment_chords(
         beats = np.arange(0, chroma.shape[1], step)
 
     segments: List[dict] = []
+    prev_chord_idx = -1
     
-    def _detect_chord_in_range(s_frame: int, e_frame: int) -> dict:
-        """Detect the best matching chord for a chroma segment."""
-        cseg = chroma[:, s_frame:e_frame]
-        # Median aggregation: robust to transient spikes (drum hits, vocal onsets)
-        vec = np.median(cseg, axis=1)
-        norm = np.linalg.norm(vec)
-        
-        # Higher threshold filters out percussive-only sections (drums, clicks)
-        # where chroma picks up weak harmonic content from cymbals/snare resonance
-        if norm < 0.15:
-            return {
-                "start": float(librosa.frames_to_time(s_frame, sr=sr, hop_length=hop_length)),
-                "end": float(librosa.frames_to_time(e_frame, sr=sr, hop_length=hop_length)),
-                "chord": "N.C.",
-                "confidence": 0.0,
-            }
-        
-        vec = vec / (norm + 1e-9)
-        
-        # Segment-specific bass vector
-        cseg_bass = chroma_bass[:, s_frame:e_frame]
-        bass_vec = np.median(cseg_bass, axis=1)
-        bass_norm = np.linalg.norm(bass_vec)
-        if bass_norm > 1e-9:
-            bass_vec = bass_vec / bass_norm
-        else:
-            bass_vec = np.zeros(12)
-        
-        # Match against templates with bass root bias
-        scores = []
-        for name, root, tpl_vec in CHORD_TEMPLATES:
-            # Base dot product score
-            score = float(np.dot(vec, tpl_vec))
-            
-            # Bass bias: if the bass chroma shows energy at the root of this chord,
-            # boost the score! Give up to 35% boost for matching the bass root.
-            bass_boost = 1.0 + 0.35 * float(bass_vec[root])
-            score *= bass_boost
-            
-            scores.append(score)
-        
-        # Diatonic bias: boost chords that belong to the detected key
-        for d_idx in diatonic_indices:
-            scores[d_idx] *= 1.35  # 35% boost for in-key chords
-        
-        best_idx = int(np.argmax(scores))
-        chord = CHORD_TEMPLATES[best_idx][0]
-        # Calculate confidence using the base template (without artificial boosts)
-        conf = float(np.dot(vec, CHORD_TEMPLATES[best_idx][2]))
-        
-        # If the best template match is still weak, this segment has no clear chord
-        # (e.g. drums-only, noise, vocal melisma). Mark as N.C.
-        if conf < 0.35:
-            return {
-                "start": float(librosa.frames_to_time(s_frame, sr=sr, hop_length=hop_length)),
-                "end": float(librosa.frames_to_time(e_frame, sr=sr, hop_length=hop_length)),
-                "chord": "N.C.",
-                "confidence": float(min(1.0, conf)),
-            }
-        
-        return {
-            "start": float(librosa.frames_to_time(s_frame, sr=sr, hop_length=hop_length)),
-            "end": float(librosa.frames_to_time(e_frame, sr=sr, hop_length=hop_length)),
-            "chord": chord,
-            "confidence": float(min(1.0, conf)),
-        }
-    
-    # Main segmentation loop
     for i in range(0, len(beats) - 1):
         s_frame = int(beats[i])
         e_frame = int(beats[i+1])
         if e_frame <= s_frame:
             continue
-        segments.append(_detect_chord_in_range(s_frame, e_frame))
-    
-    # Trailing segment: capture audio after the last boundary
-    if len(beats) > 0:
-        last_frame = int(beats[-1])
-        total_frames = chroma.shape[1]
-        min_gap = max(2, int(0.05 * sr / hop_length))
-        if last_frame < total_frames - min_gap:
-            segments.append(_detect_chord_in_range(last_frame, total_frames))
+
+        cseg = chroma[:, s_frame:e_frame]
+        vec = cseg.mean(axis=1)
+        norm = np.linalg.norm(vec)
+        
+        if norm < 0.05: # Threshold for silence/noise
+            chord = "N.C."
+            conf = 0.0
+            best_idx = -1
+        else:
+            vec = vec / (norm + 1e-9)
+            scores = [float(np.dot(vec, tpl[1])) for tpl in CHORD_TEMPLATES]
+            
+            # Apply persistence bias: if previous chord is still decent, keep it
+            if prev_chord_idx != -1:
+                scores[prev_chord_idx] *= 1.2 # 20% bias to stay
+                
+            # Apply diatonic key bias using the already-computed song key
+            for idx, (name, _) in enumerate(CHORD_TEMPLATES):
+                scores[idx] *= _diatonic_bias_multiplier(name, key, scale)
+
+            scores_arr = np.array(scores)
+            best_idx = int(np.argmax(scores_arr))
+
+            # Explicit near-tie resolution: if the top two candidates are within
+            # 2% of each other, don't silently default to whichever template
+            # happens to be earlier in the list — compare actual measured energy
+            # at the major vs minor 3rd degree directly and let that decide.
+            top2 = np.argsort(scores_arr)[-2:]
+            if abs(scores_arr[top2[0]] - scores_arr[top2[1]]) < 0.02 * scores_arr[top2[1]]:
+                name_a, name_b = CHORD_TEMPLATES[top2[0]][0], CHORD_TEMPLATES[top2[1]][0]
+                root_a = name_a[0] + ("#" if len(name_a) > 1 and name_a[1] == "#" else "")
+                # only intervene if it's genuinely a maj/min pair on the same root
+                if name_b.startswith(root_a) and (
+                    (name_a == root_a and "min" in name_b) or
+                    (name_b == root_a and "min" in name_a)
+                ):
+                    root_idx = PITCH_CLASS_NAMES.index(root_a)
+                    maj_third_energy = vec[(root_idx + 4) % 12]
+                    min_third_energy = vec[(root_idx + 3) % 12]
+                    best_idx = top2[1] if min_third_energy >= maj_third_energy else top2[0]
+
+            chord, conf = CHORD_TEMPLATES[best_idx]
+            # Get actual dot product for confidence
+            conf = float(np.dot(vec, CHORD_TEMPLATES[best_idx][1]))
+
+        segments.append(
+            {
+                "start": float(librosa.frames_to_time(s_frame, sr=sr, hop_length=hop_length)),
+                "end": float(librosa.frames_to_time(e_frame, sr=sr, hop_length=hop_length)),
+                "chord": chord,
+                "confidence": float(min(1.0, conf)),
+            }
+        )
+        prev_chord_idx = best_idx
 
     return segments
 
 
-PITCH_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-def _get_diatonic_quality(root_name: str, key: str, scale: str) -> str:
-    """Returns 'maj', 'min', or 'dim' based on the root's diatonic role in the key."""
-    try:
-        map_flats = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#"}
-        root_std = map_flats.get(root_name, root_name)
-        key_std = map_flats.get(key, key)
-        
-        if root_std not in PITCH_NAMES or key_std not in PITCH_NAMES:
-            return "maj"
-            
-        root_pc = PITCH_NAMES.index(root_std)
-        key_pc = PITCH_NAMES.index(key_std)
-        
-        interval = (root_pc - key_pc) % 12
-        
-        if scale == "minor":
-            if interval == 0: return "min"
-            elif interval == 2: return "dim"
-            elif interval == 3: return "maj"
-            elif interval == 5: return "min"
-            elif interval == 7: return "min"
-            elif interval == 8: return "maj"
-            elif interval == 10: return "maj"
-        else: # major
-            if interval == 0: return "maj"
-            elif interval == 2: return "min"
-            elif interval == 4: return "min"
-            elif interval == 5: return "maj"
-            elif interval == 7: return "maj"
-            elif interval == 9: return "min"
-            elif interval == 11: return "dim"
-            
-        return "maj"
-    except Exception:
-        return "maj"
-
-
-def _simplify_chord(chord_name: str, key: str = "C", scale: str = "major") -> str:
+def _simplify_chord(chord_name: str) -> str:
     """
-    Simplifies complex chords (like 7ths, extensions) to basic triads (Major, Minor, Dim, Aug),
-    resolving ambiguous/neutral qualities (like sus2/sus4) diatonically.
+    Simplifies complex chords to their basic triad form for the
+    simpleChords view. Only maj / min / dim / aug survive — all
+    7th/6th extensions and sus2/sus4 collapse to their nearest
+    plain triad.
     """
-    if chord_name == "N.C." or not chord_name:
+    if chord_name == "N.C.":
         return "N.C."
-    
-    # Extract root (handle #)
+
     if len(chord_name) > 1 and chord_name[1] == "#":
         root = chord_name[:2]
         suffix = chord_name[2:]
     else:
         root = chord_name[0]
         suffix = chord_name[1:]
-        
-    if "dim" in suffix:
-        return f"{root}dim"
-    elif "aug" in suffix:
-        return f"{root}aug"
-    elif "min" in suffix or (suffix.startswith("m") and not suffix.startswith("maj")):
+
+    if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
         return f"{root}min"
-    elif "sus" in suffix or suffix == "" or suffix.isdigit():
-        # Ambiguous chord or plain root - check diatonic quality of root in this key!
-        quality = _get_diatonic_quality(root, key, scale)
-        if quality == "min":
-            return f"{root}min"
-        elif quality == "dim":
-            return f"{root}dim"
-        else:
-            return root
-    else:
-        return root
+    if suffix.startswith("dim"):
+        return f"{root}dim"
+    if suffix.startswith("aug"):
+        return f"{root}aug"
+
+    # Everything else — 7, maj7, 6, sus2, sus4, or bare major — collapses to plain major
+    return root
 
 
 def _smooth_chords(chords: List[dict], min_duration: float = 0.5) -> List[dict]:
@@ -529,18 +506,14 @@ def _smooth_chords(chords: List[dict], min_duration: float = 0.5) -> List[dict]:
             if i > 0 and i < len(merged) - 1:
                 # Merge with the one that has higher confidence or is longer?
                 # For simplicity, merge with previous if it exists
-                if final:
-                    final[-1]["end"] = curr["end"]
-                else:
-                    merged[i+1]["start"] = curr["start"]
+                final[-1]["end"] = curr["end"]
                 # Skip this one
             elif i == 0:
                 # Merge into next
                 merged[i+1]["start"] = curr["start"]
             elif i == len(merged) - 1:
                 # Merge into previous
-                if final:
-                    final[-1]["end"] = curr["end"]
+                final[-1]["end"] = curr["end"]
         else:
             final.append(curr)
         i += 1
@@ -615,6 +588,15 @@ def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, bea
 
     return merged
 
+def _apply_chroma_noise_floor(chroma: np.ndarray, floor_ratio: float = 0.15) -> np.ndarray:
+    """Zero out chroma bins below floor_ratio of that frame's peak energy.
+    Suppresses low-level bleed/leakage (e.g. a slightly-detuned root
+    smearing into the adjacent major-7 bin) without touching real chord tones,
+    which are always near-peak energy in a clean chroma frame."""
+    peak = chroma.max(axis=0, keepdims=True)
+    mask = chroma >= (floor_ratio * peak)
+    return chroma * mask
+
 
 def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     """Analyze audio file for chords, tempo, and key.
@@ -661,116 +643,36 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
     
     # Separate harmonic for better chord detection
     y_harmonic = librosa.effects.hpss(y)[0]
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length, tightness=200)
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length)
     
-    # Use chroma_cqt for sharp harmonic resolution (better than chroma_cens for
-    # chord recognition — CENS over-smooths and blurs chord change boundaries).
-    # Apply a small median filter along the time axis to suppress transient noise
-    # spikes (drum hits, vocal consonants) without blurring chord transitions.
-    chroma_raw = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length)
-    chroma = scipy.ndimage.median_filter(chroma_raw, size=(1, 5))
+    # Use Chroma CQT (works better than STFT for chords) with high bins_per_octave resolution (36)
+    chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length, bins_per_octave=36)
     
-    # Extract bass CQT (C1 to B3, ~32.70 Hz to ~246.94 Hz)
-    # We use fmin=32.70 (C1) and 36 bins (3 octaves) to isolate the bass line.
-    try:
-        cqt_bass = np.abs(librosa.cqt(
-            y=y_harmonic,
-            sr=sr,
-            hop_length=hop_length,
-            fmin=32.70,
-            n_bins=36,
-            bins_per_octave=12
-        ))
-        # Wrap the 36 bins into 12 chroma bins (summing across octaves)
-        chroma_bass_raw = np.zeros((12, cqt_bass.shape[1]))
-        for i in range(3):
-            chroma_bass_raw += cqt_bass[i*12:(i+1)*12, :]
-        norms_bass = np.linalg.norm(chroma_bass_raw, axis=0, keepdims=True)
-        chroma_bass = chroma_bass_raw / (norms_bass + 1e-9)
-        chroma_bass = scipy.ndimage.median_filter(chroma_bass, size=(1, 5))
-    except Exception as e:
-        print(f"[Analysis] Bass CQT extraction failed, using standard chroma fallback: {e}")
-        chroma_bass = chroma
-
+    # Light normalization
+    chroma = librosa.util.normalize(chroma, axis=0)
+    chroma = _apply_chroma_noise_floor(chroma, floor_ratio=0.15)
+    
     key, scale = _estimate_key(chroma)
     meter = _estimate_meter(y, sr, tempo)
-    
-    # Detect onsets (spectral flux peaks = potential harmonic change points)
-    # backtrack=True rolls each onset back to the nearest energy minimum,
-    # aligning boundaries more precisely with the actual chord start.
-    onset_frames = librosa.onset.onset_detect(
-        y=y, sr=sr, hop_length=hop_length,
-        backtrack=True,
-        units='frames'
-    )
     
     # If beat tracking returned nothing, create artificial beats
     if beat_frames is None or len(beat_frames) < 2:
         beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
-    
-    # Filter onsets: only keep those where the chroma actually changes.
-    # This prevents drum hits, vocal slides, and percussive transients
-    # from creating false chord boundaries.
-    harmonic_onsets = []
-    for onset_f in onset_frames:
-        onset_f = int(onset_f)
-        # Compare chroma on either side of this onset (±3 frames ≈ ±70ms)
-        look = 3
-        left_start = max(0, onset_f - look)
-        right_end = min(chroma.shape[1], onset_f + look)
-        if left_start >= onset_f or onset_f >= right_end:
-            continue
-        
-        left_vec = np.mean(chroma[:, left_start:onset_f], axis=1)
-        right_vec = np.mean(chroma[:, onset_f:right_end], axis=1)
-        
-        left_norm = np.linalg.norm(left_vec)
-        right_norm = np.linalg.norm(right_vec)
-        if left_norm < 1e-9 or right_norm < 1e-9:
-            harmonic_onsets.append(onset_f)  # Silence→sound transition = real change
-            continue
-        
-        # Cosine distance: 0 = identical, 1 = completely different
-        cosine_sim = np.dot(left_vec, right_vec) / (left_norm * right_norm)
-        cosine_dist = 1.0 - cosine_sim
-        
-        # Only keep this onset if the harmonic content genuinely changed
-        if cosine_dist > 0.25:
-            harmonic_onsets.append(onset_f)
-    
-    # Hybrid segmentation: merge beat boundaries with FILTERED onset boundaries.
-    # Beats provide rhythmic structure; filtered onsets catch sub-beat chord changes.
-    all_boundaries = np.unique(np.concatenate([beat_frames, np.array(harmonic_onsets, dtype=int)]))
-    all_boundaries.sort()
-    
-    # Remove boundaries that are too close together (< ~100ms)
-    # to prevent micro-segments from transient noise
-    min_gap = max(2, int(0.10 * sr / hop_length))
-    filtered = [all_boundaries[0]]
-    for b in all_boundaries[1:]:
-        if b - filtered[-1] >= min_gap:
-            filtered.append(b)
-    all_boundaries = np.array(filtered)
 
-    # Precise chords (with key-aware diatonic bias)
-    chords = _segment_chords(chroma, chroma_bass, sr, all_boundaries, hop_length=hop_length, key=key, scale=scale)
+    # Precise chords (passing key and scale for diatonic bias)
+    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, key=key, scale=scale, beats_per_bar=2)
     
     # Simple chords (larger windows or smoothed)
     simple_chords = []
     for c in chords:
         simple_chords.append({
             **c,
-            "chord": _simplify_chord(c["chord"], key=key, scale=scale)
+            "chord": _simplify_chord(c["chord"])
         })
     
-    # Dynamically scale smoothing threshold based on tempo to prevent eating fast chords
-    beat_dur = 60.0 / tempo if tempo > 0 else 0.5
-    precise_min = float(np.clip(0.3 * beat_dur, 0.1, 0.25))
-    simple_min = float(np.clip(0.4 * beat_dur, 0.15, 0.35))
-
     # Merge consecutive identical chords and smooth
-    merged_precise = _smooth_chords(chords, min_duration=precise_min)
-    merged_simple = _smooth_chords(simple_chords, min_duration=simple_min)
+    merged_precise = _smooth_chords(chords, min_duration=0.2)
+    merged_simple = _smooth_chords(simple_chords, min_duration=0.8)
 
     result = {
         "tempo": float(round(float(tempo), 2)),
@@ -786,3 +688,42 @@ def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
         result["instrumentalPath"] = str(separated_path)
     
     return result
+
+
+def _get_diatonic_quality(root_name: str, key: str, scale: str) -> str:
+    """Returns 'maj', 'min', or 'dim' based on the root's diatonic role in the key.
+    Added for backwards compatibility with chord_fast.py.
+    """
+    try:
+        map_flats = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#"}
+        root_std = map_flats.get(root_name, root_name)
+        key_std = map_flats.get(key, key)
+        
+        if root_std not in PITCH_CLASS_NAMES or key_std not in PITCH_CLASS_NAMES:
+            return "maj"
+            
+        root_pc = PITCH_CLASS_NAMES.index(root_std)
+        key_pc = PITCH_CLASS_NAMES.index(key_std)
+        
+        interval = (root_pc - key_pc) % 12
+        
+        if scale == "minor":
+            if interval == 0: return "min"
+            elif interval == 2: return "dim"
+            elif interval == 3: return "maj"
+            elif interval == 5: return "min"
+            elif interval == 7: return "min"
+            elif interval == 8: return "maj"
+            elif interval == 10: return "maj"
+        else: # major
+            if interval == 0: return "maj"
+            elif interval == 2: return "min"
+            elif interval == 4: return "min"
+            elif interval == 5: return "maj"
+            elif interval == 7: return "maj"
+            elif interval == 9: return "min"
+            elif interval == 11: return "dim"
+            
+        return "maj"
+    except Exception:
+        return "maj"

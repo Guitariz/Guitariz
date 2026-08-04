@@ -380,7 +380,7 @@ export const GlobalMenu = () => {
                                     </a>
                                     <span className="flex items-center gap-1.5 font-semibold">
                                         <Sparkles className="w-3 h-3 text-zinc-700 animate-pulse" />
-                                        v1.7.0
+                                        v2.1.0
                                     </span>
                                 </div>
                             </div>
