@@ -336,7 +336,7 @@ export const GlobalMenu = () => {
 
                                  {/* Support / Buy Me a Coffee */}
                                  <a
-                                     href="https://github.com/sponsors/Guitariz"
+                                     href="https://ko-fi.com/abhi9vaidya"
                                      target="_blank"
                                      rel="noopener noreferrer"
                                      className="flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05] hover:border-white/20 text-zinc-300 text-xs font-semibold transition-all"
