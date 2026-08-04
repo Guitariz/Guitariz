@@ -25,7 +25,7 @@ export const useAnalysisHistory = () => {
             try {
                 const parsed = JSON.parse(saved);
                 // Backwards compatibility migration
-                const migrated = parsed.map((item: any) => {
+                const migrated = parsed.map((item: Omit<HistoryEntry, "analysisMode"> & { analysisMode?: AnalysisMode; useMadmom?: boolean }) => {
                     if (item.analysisMode === undefined) {
                         return {
                             ...item,

@@ -81,9 +81,11 @@ export function filterAndAdjustChords(
  * Parses newline-delimited JSON (NDJSON) string lines from a buffer.
  * Returns parsed items and the remaining incomplete line buffer.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseNdjsonLines(buffer: string): { items: any[]; remaining: string } {
   const lines = buffer.split("\n");
   const remaining = lines.pop() || "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const items: any[] = [];
   for (const line of lines) {
     if (line.trim()) {
