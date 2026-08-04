@@ -19,14 +19,13 @@ from __future__ import annotations
 
 import gc
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
 
 import librosa
 import numpy as np
 import scipy.ndimage
 import scipy.stats
-import soundfile as sf
 import torch
 
 # ---------------------------------------------------------------------------
@@ -36,7 +35,7 @@ import torch
 PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
 # Quality → semitone intervals from root
-_QUALITY_INTERVALS: Dict[str, List[int]] = {
+_QUALITY_INTERVALS: dict[str, list[int]] = {
     # Core triads
     "maj":   [0, 4, 7],
     "min":   [0, 3, 7],
@@ -62,10 +61,10 @@ _QUALITY_INTERVALS: Dict[str, List[int]] = {
 }
 
 # Build template matrix (n_chords × 12)  — collapses octave-extended intervals mod 12
-def _build_precise_templates() -> Tuple[List[str], np.ndarray]:
+def _build_precise_templates() -> tuple[list[str], np.ndarray]:
     """Returns (chord_names, template_matrix) where template_matrix shape is (N, 12)."""
-    names: List[str] = ["N.C."]
-    rows: List[np.ndarray] = [np.zeros(12, dtype=np.float32)]
+    names: list[str] = ["N.C."]
+    rows: list[np.ndarray] = [np.zeros(12, dtype=np.float32)]
 
     for root_idx, root in enumerate(PITCH_CLASS_NAMES):
         for quality, intervals in _QUALITY_INTERVALS.items():
@@ -111,12 +110,12 @@ _MINOR_DEGREES = [
 _SECONDARY_DOMINANT_INTERVALS = [2, 4, 5, 7, 9]  # roots that commonly have a V7 tonicising them
 
 
-def _get_bias_indices(key: str, scale: str) -> Dict[str, List[int]]:
+def _get_bias_indices(key: str, scale: str) -> dict[str, list[int]]:
     """Return three sets of chord indices: diatonic, secondary-dominant, borrowed."""
     key_idx = PITCH_CLASS_NAMES.index(key) if key in PITCH_CLASS_NAMES else 0
     degrees = _MINOR_DEGREES if scale == "minor" else _MAJOR_DEGREES
 
-    def _idx(root_pc: int, quality: str) -> Optional[int]:
+    def _idx(root_pc: int, quality: str) -> int | None:
         name = f"{PITCH_CLASS_NAMES[root_pc % 12]}:{quality}"
         try:
             return CHORD_NAMES.index(name)
@@ -155,7 +154,7 @@ def _get_bias_indices(key: str, scale: str) -> Dict[str, List[int]]:
 # Stage 1 — Deep Stem Separation
 # ---------------------------------------------------------------------------
 
-def _precise_separate_stems(audio_path: Path, progress_cb: Optional[Callable] = None) -> np.ndarray:
+def _precise_separate_stems(audio_path: Path, progress_cb: Callable | None = None) -> np.ndarray:
     """
     Use Demucs htdemucs_6s to separate guitar, piano, and other stems,
     then sum them into a single clean harmonic signal (drums, bass, vocals removed).
@@ -167,8 +166,8 @@ def _precise_separate_stems(audio_path: Path, progress_cb: Optional[Callable] = 
         progress_cb(1, "Separating guitar & piano stems via Demucs...", 10)
 
     try:
-        from demucs.pretrained import get_model
         from demucs.apply import apply_model
+        from demucs.pretrained import get_model
 
         model = get_model("htdemucs_6s")
         model.cpu()
@@ -246,7 +245,7 @@ def _apply_chroma_noise_floor(chroma: np.ndarray, floor_ratio: float = 0.15) -> 
     return chroma * mask
 
 
-def _extract_triple_chroma(y: np.ndarray, sr: int, hop_length: int, progress_cb: Optional[Callable] = None) -> Tuple[np.ndarray, np.ndarray]:
+def _extract_triple_chroma(y: np.ndarray, sr: int, hop_length: int, progress_cb: Callable | None = None) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute a weighted ensemble of three chroma representations:
       - CQT chroma at 36 bins/octave (sub-semitone resolution)
@@ -335,7 +334,7 @@ def _extract_triple_chroma(y: np.ndarray, sr: int, hop_length: int, progress_cb:
 # Stage 3 — Beat-Synced + Structure-Aware Segmentation
 # ---------------------------------------------------------------------------
 
-def _compute_boundaries(y: np.ndarray, sr: int, hop_length: int, progress_cb: Optional[Callable] = None) -> np.ndarray:
+def _compute_boundaries(y: np.ndarray, sr: int, hop_length: int, progress_cb: Callable | None = None) -> np.ndarray:
     """
     Compute a merged set of boundary frames from:
       1. Beat tracking (two estimators — beat_track + PLP)
@@ -373,7 +372,6 @@ def _compute_boundaries(y: np.ndarray, sr: int, hop_length: int, progress_cb: Op
 
     # --- Harmonic onset detection (only keep onsets where chroma genuinely changes)
     onset_frames = librosa.onset.onset_detect(y=y, sr=sr, hop_length=hop_length, backtrack=True, units="frames")
-    n_frames = librosa.samples_to_frames(len(y), hop_length=hop_length)
     chroma_quick = librosa.feature.chroma_cqt(y=y, sr=sr, hop_length=hop_length)
     harmonic_onsets = []
     look = 4
@@ -458,7 +456,7 @@ def _detect_segment_chord(
     e_frame: int,
     sr: int,
     hop_length: int,
-    bias_indices: Dict[str, List[int]],
+    bias_indices: dict[str, list[int]],
 ) -> dict:
     """Detect the best chord for one segment using ensemble scoring + key-aware bias."""
 
@@ -594,7 +592,7 @@ def _simplify_chord_precise(chord: str, key: str, scale: str) -> str:
 # Stage 5 — Viterbi-like post-processing + merge
 # ---------------------------------------------------------------------------
 
-def _smooth_precise(segments: List[dict], min_dur: float = 0.5) -> List[dict]:
+def _smooth_precise(segments: list[dict], min_dur: float = 0.5) -> list[dict]:
     """
     Merge consecutive identical chords, then eliminate segments shorter than
     min_dur by absorbing them into neighbours.
@@ -602,7 +600,7 @@ def _smooth_precise(segments: List[dict], min_dur: float = 0.5) -> List[dict]:
     if not segments:
         return []
 
-    merged: List[dict] = []
+    merged: list[dict] = []
     cur = segments[0].copy()
     for seg in segments[1:]:
         if seg["chord"] == cur["chord"]:
@@ -614,7 +612,7 @@ def _smooth_precise(segments: List[dict], min_dur: float = 0.5) -> List[dict]:
     merged.append(cur)
 
     # Absorb short segments
-    final: List[dict] = []
+    final: list[dict] = []
     for i, seg in enumerate(merged):
         if seg["end"] - seg["start"] < min_dur:
             if final:
@@ -636,8 +634,8 @@ def _smooth_precise(segments: List[dict], min_dur: float = 0.5) -> List[dict]:
 def analyze_file_precise(
     file_path: Path,
     separate_vocals: bool = False,
-    progress_cb: Optional[Callable[[int, str, int], None]] = None,
-) -> Dict:
+    progress_cb: Callable[[int, str, int], None] | None = None,
+) -> dict:
     """
     Maximum-accuracy chord analysis.
 
@@ -706,7 +704,7 @@ def analyze_file_precise(
         progress_cb(4, "Running ensemble chord matching (170-chord vocabulary)...", 70)
 
     bias_indices = _get_bias_indices(key, scale)
-    segments: List[dict] = []
+    segments: list[dict] = []
 
     for i in range(len(boundaries) - 1):
         s_f = int(boundaries[i])
@@ -742,7 +740,7 @@ def analyze_file_precise(
     simple_smoothed = _smooth_precise(simple_chords, min_dur=simple_min)
 
     # Strip internal 'bass' key (frontend doesn't use it directly)
-    def _strip_bass(segs: List[dict]) -> List[dict]:
+    def _strip_bass(segs: list[dict]) -> list[dict]:
         return [{k: v for k, v in s.items() if k != "bass"} for s in segs]
 
     elapsed = time.time() - t0

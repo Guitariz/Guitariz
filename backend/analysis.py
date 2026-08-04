@@ -1,17 +1,17 @@
+import gc
+import hashlib
+
+# Configure torch for CPU efficiency
+import multiprocessing
 import subprocess
 import tempfile
-import hashlib
 from pathlib import Path
-from typing import List, Tuple, Optional
 
 import librosa
 import numpy as np
 import soundfile as sf
 import torch
-import gc
 
-# Configure torch for CPU efficiency
-import multiprocessing
 num_cores = min(multiprocessing.cpu_count(), 4)
 torch.set_num_threads(num_cores)
 
@@ -119,7 +119,7 @@ def _get_separator_6stem():
     return _DEMUCS_6STEM_WRAPPER
 
 
-def separate_audio_stems(audio_path: Path) -> Optional[dict]:
+def separate_audio_stems(audio_path: Path) -> dict | None:
     """Separate audio into 6 stems: vocals, drums, bass, guitar, piano, other.
     
     Returns dict with stem names as keys and file paths as values.
@@ -153,7 +153,7 @@ PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#",
 MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
 MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
 
-CHORD_TEMPLATES: List[Tuple[str, np.ndarray]] = []
+CHORD_TEMPLATES: list[tuple[str, np.ndarray]] = []
 for root in range(12):
     for name, intervals in {
         "maj": [0, 4, 7],
@@ -218,7 +218,7 @@ def _ffmpeg_to_wav(src: Path, dst: Path):
     )
 
 
-def _separate_vocals(audio_path: Path) -> Optional[Path]:
+def _separate_vocals(audio_path: Path) -> Path | None:
     """Separate vocals from music using Demucs. Returns path to instrumental track."""
     try:
         wrapper = _get_separator()
@@ -244,7 +244,7 @@ def _separate_vocals(audio_path: Path) -> Optional[Path]:
         return None
 
 
-def separate_audio_full(audio_path: Path) -> Optional[dict]:
+def separate_audio_full(audio_path: Path) -> dict | None:
     """Separate audio into vocals and instrumental tracks. Returns paths to both."""
     try:
         wrapper = _get_separator()
@@ -274,7 +274,7 @@ def separate_audio_full(audio_path: Path) -> Optional[dict]:
         return None
 
 
-def _estimate_key(chroma: np.ndarray) -> Tuple[str, str]:
+def _estimate_key(chroma: np.ndarray) -> tuple[str, str]:
     # Compute mean chroma across time
     chroma_mean = chroma.mean(axis=1)
     if chroma_mean.sum() == 0:
@@ -370,7 +370,7 @@ def _segment_chords(
     key: str = "C",
     scale: str = "major",
     beats_per_bar: int = 4,
-) -> List[dict]:
+) -> list[dict]:
     # Apply gentle median smoothing (don't over-process)
     from scipy.ndimage import median_filter
     chroma = median_filter(chroma, size=(1, 3))  # Reduced from 7 to 3
@@ -380,10 +380,10 @@ def _segment_chords(
         step = max(1, librosa.time_to_frames(0.5, sr=sr, hop_length=hop_length))
         beats = np.arange(0, chroma.shape[1], step)
 
-    segments: List[dict] = []
+    segments: list[dict] = []
     prev_chord_idx = -1
     
-    for i in range(0, len(beats) - 1):
+    for i in range(len(beats) - 1):
         s_frame = int(beats[i])
         e_frame = int(beats[i+1])
         if e_frame <= s_frame:
@@ -475,7 +475,7 @@ def _simplify_chord(chord_name: str) -> str:
     return root
 
 
-def _smooth_chords(chords: List[dict], min_duration: float = 0.5) -> List[dict]:
+def _smooth_chords(chords: list[dict], min_duration: float = 0.5) -> list[dict]:
     if not chords:
         return []
     
@@ -548,7 +548,7 @@ def _estimate_meter(y: np.ndarray, sr: int, tempo: float) -> int:
         return 4
 
 
-def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, beats_per_bar: int = 4) -> List[dict]:
+def _merge_chords_to_bars(chords: list[dict], tempo: float, duration: float, beats_per_bar: int = 4) -> list[dict]:
     # Quantize chords so each bar has one representative chord, picked by overlap.
     if duration <= 0:
         return chords
@@ -556,7 +556,7 @@ def _merge_chords_to_bars(chords: List[dict], tempo: float, duration: float, bea
     bar_len = (beats_per_bar * 60.0 / tempo) if tempo and tempo > 0 else 2.0
     bar_len = float(np.clip(bar_len, 0.5, 12.0))
 
-    merged: List[dict] = []
+    merged: list[dict] = []
     t = 0.0
     chords_sorted = sorted(chords, key=lambda c: c.get("start", 0.0))
 
@@ -708,21 +708,27 @@ def _get_diatonic_quality(root_name: str, key: str, scale: str) -> str:
         interval = (root_pc - key_pc) % 12
         
         if scale == "minor":
-            if interval == 0: return "min"
-            elif interval == 2: return "dim"
-            elif interval == 3: return "maj"
-            elif interval == 5: return "min"
-            elif interval == 7: return "min"
-            elif interval == 8: return "maj"
-            elif interval == 10: return "maj"
+            if interval == 0:
+                return "min"
+            elif interval == 2:
+                return "dim"
+            elif interval == 3:
+                return "maj"
+            elif interval == 5 or interval == 7:
+                return "min"
+            elif interval == 8 or interval == 10:
+                return "maj"
         else: # major
-            if interval == 0: return "maj"
-            elif interval == 2: return "min"
-            elif interval == 4: return "min"
-            elif interval == 5: return "maj"
-            elif interval == 7: return "maj"
-            elif interval == 9: return "min"
-            elif interval == 11: return "dim"
+            if interval == 0:
+                return "maj"
+            elif interval == 2 or interval == 4:
+                return "min"
+            elif interval == 5 or interval == 7:
+                return "maj"
+            elif interval == 9:
+                return "min"
+            elif interval == 11:
+                return "dim"
             
         return "maj"
     except Exception:

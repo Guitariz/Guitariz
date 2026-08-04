@@ -1,28 +1,34 @@
-from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, WebSocket
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
-import tempfile
-import shutil
-import uuid
-import subprocess
-import time
-import os
-import threading
-import socket
-import httpx
-import dns.resolver
-from contextlib import asynccontextmanager
-import uvicorn
 import logging
+import os
+import shutil
+import socket
+import subprocess
+import tempfile
+import threading
+import time
+import uuid
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from analysis import analyze_file, separate_audio_full, separate_audio_stems, STEM_TYPES
+import dns.resolver
+import httpx
+import uvicorn
+from analysis import STEM_TYPES, analyze_file, separate_audio_full, separate_audio_stems
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from websocket_chords import websocket_chord_endpoint
-from youtube import extract_audio, get_video_info, check_rate_limit, get_remaining_requests, extract_video_id
+from youtube import (
+    check_rate_limit,
+    extract_audio,
+    extract_video_id,
+    get_remaining_requests,
+    get_video_info,
+)
 
 # Try to import custom fast ONNX engine, but don't fail if it's not available
 try:
-    from chord_fast import analyze_file_fast, FAST_ENGINE_AVAILABLE, FAST_ENGINE_ERROR
+    from chord_fast import FAST_ENGINE_AVAILABLE, FAST_ENGINE_ERROR, analyze_file_fast
     if FAST_ENGINE_AVAILABLE:
         print("[Startup] ✓ Custom ONNX fast engine available - fast analysis enabled (~5-10s)", flush=True)
     else:
@@ -218,9 +224,7 @@ def analyze(
     """
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
-    if not use_madmom and mode == "fast":
-        resolved_mode = "balanced"
-    elif mode == "accurate":
+    if not use_madmom and mode == "fast" or mode == "accurate":
         resolved_mode = "balanced"
 
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
@@ -244,7 +248,7 @@ def analyze(
             try:
                 if resolved_mode == "precise":
                     if analyze_file_precise is not None:
-                        print(f"[API] Running PRECISE mode (Deep 5-stage pipeline)")
+                        print("[API] Running PRECISE mode (Deep 5-stage pipeline)")
                         result = analyze_file_precise(tmp_path, separate_vocals=separate_vocals)
                     else:
                         print("[API] Precise engine not available, falling back to BALANCED mode")
@@ -256,7 +260,7 @@ def analyze(
                     # Fast mode (Custom ONNX)
                     if FAST_ENGINE_AVAILABLE:
                         if separate_vocals:
-                            print(f"[API] Running FAST mode with vocal separation...")
+                            print("[API] Running FAST mode with vocal separation...")
                             separated = separate_audio_full(tmp_path)
                             if separated and separated.get("instrumental"):
                                 instr_path = separated["instrumental"]
@@ -266,7 +270,7 @@ def analyze(
                                 print("[API] Vocal separation failed, using original audio")
                                 result = analyze_file_fast(tmp_path, mode="fast")
                         else:
-                            print(f"[API] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                            print("[API] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                             result = analyze_file_fast(tmp_path, mode="fast")
                     else:
                         print("[API] Fast engine not available, falling back to BALANCED mode")
@@ -309,13 +313,11 @@ def analyze_stream(
     mode: str = Form("fast")
 ):
     """Analyze audio file and stream pre-computed chords back in NDJSON chunks."""
-    import math
     import json
+    import math
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
-    if not use_madmom and mode == "fast":
-        resolved_mode = "balanced"
-    elif mode == "accurate":
+    if not use_madmom and mode == "fast" or mode == "accurate":
         resolved_mode = "balanced"
 
     print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
@@ -381,7 +383,7 @@ def analyze_stream(
                             # Fast mode (Custom ONNX)
                             if FAST_ENGINE_AVAILABLE:
                                 if separate_vocals:
-                                    print(f"[API Stream] Running FAST mode with vocal separation...")
+                                    print("[API Stream] Running FAST mode with vocal separation...")
                                     separated = separate_audio_full(tmp_path)
                                     if separated and separated.get("instrumental"):
                                         instr_path = separated["instrumental"]
@@ -391,7 +393,7 @@ def analyze_stream(
                                         print("[API Stream] Vocal separation failed, using original audio")
                                         result = analyze_file_fast(tmp_path, mode="fast")
                                 else:
-                                    print(f"[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                                    print("[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                                     result = analyze_file_fast(tmp_path, mode="fast")
                             else:
                                 print("[API Stream] Fast engine not available, falling back to BALANCED mode")
@@ -504,9 +506,7 @@ def analyze_youtube(
     """
     # Resolve mode based on parameter or legacy fallback
     resolved_mode = mode
-    if not use_madmom and mode == "fast":
-        resolved_mode = "balanced"
-    elif mode == "accurate":
+    if not use_madmom and mode == "fast" or mode == "accurate":
         resolved_mode = "balanced"
 
     print(f"[YouTube] Received request for URL: {url} | Mode: {resolved_mode}")
@@ -545,7 +545,7 @@ def analyze_youtube(
             print(f"[YouTube] Starting analysis (mode={resolved_mode}, vocals={separate_vocals})")
             if resolved_mode == "precise":
                 if analyze_file_precise is not None:
-                    print(f"[YouTube] Running PRECISE mode (Deep 5-stage pipeline)")
+                    print("[YouTube] Running PRECISE mode (Deep 5-stage pipeline)")
                     result = analyze_file_precise(audio_path, separate_vocals=separate_vocals)
                 else:
                     print("[YouTube] Precise engine not available, falling back to BALANCED mode")
@@ -557,7 +557,7 @@ def analyze_youtube(
                 # Fast mode (Custom ONNX)
                 if FAST_ENGINE_AVAILABLE:
                     if separate_vocals:
-                        print(f"[YouTube] Running FAST mode with vocal separation...")
+                        print("[YouTube] Running FAST mode with vocal separation...")
                         separated = separate_audio_full(audio_path)
                         if separated and separated.get("instrumental"):
                             instr_path = separated["instrumental"]
@@ -567,7 +567,7 @@ def analyze_youtube(
                             print("[YouTube] Vocal separation failed, using original audio")
                             result = analyze_file_fast(audio_path, mode="fast")
                     else:
-                        print(f"[YouTube] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
+                        print("[YouTube] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                         result = analyze_file_fast(audio_path, mode="fast")
                 else:
                     print("[YouTube] Fast engine not available, falling back to BALANCED mode")
@@ -736,7 +736,7 @@ def separate_audio(
             print(f"Separation error: {exc}")
             import traceback
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Separation failed: {str(exc)}")
+            raise HTTPException(status_code=500, detail=f"Separation failed: {exc!s}")
         finally:
             # Clean up original upload
             try:
@@ -853,7 +853,7 @@ def separate_audio_6stems(
             print(f"6-stem separation error: {exc}")
             import traceback
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"6-stem separation failed: {str(exc)}")
+            raise HTTPException(status_code=500, detail=f"6-stem separation failed: {exc!s}")
         finally:
             # Clean up original upload
             try:

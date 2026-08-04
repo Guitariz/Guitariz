@@ -6,13 +6,12 @@ and formats expected by the React frontend.
 
 import os
 from pathlib import Path
-from typing import Dict
 
 # Standard drop-in variables for main.py
 CHORD_MODEL_PATH = Path(os.environ.get("CHORD_MODEL_PATH", Path(__file__).parent / "chord_model.onnx"))
 
 try:
-    import onnxruntime as ort
+    import onnxruntime as ort  # noqa: F401
     FAST_ENGINE_AVAILABLE = CHORD_MODEL_PATH.exists()
     FAST_ENGINE_ERROR = None if FAST_ENGINE_AVAILABLE else f"chord_model.onnx not found at resolved path: {CHORD_MODEL_PATH.absolute()}"
 except Exception as e:
@@ -20,9 +19,17 @@ except Exception as e:
     FAST_ENGINE_ERROR = f"onnxruntime import failed: {e}"
 
 try:
-    from backend.chord_custom import detect_chords_custom, detect_key_custom, detect_tempo_custom
+    from backend.chord_custom import (
+        detect_chords_custom,
+        detect_key_custom,
+        detect_tempo_custom,
+    )
 except (ImportError, ModuleNotFoundError):
-    from chord_custom import detect_chords_custom, detect_key_custom, detect_tempo_custom
+    from chord_custom import (
+        detect_chords_custom,
+        detect_key_custom,
+        detect_tempo_custom,
+    )
 
 try:
     from backend.analysis import _get_diatonic_quality
@@ -87,7 +94,7 @@ def _simplify_label(label: str, key: str = "C", scale: str = "major") -> str:
     else:
         return root
 
-def analyze_file_fast(file_path: Path, mode: str = "fast") -> Dict:
+def analyze_file_fast(file_path: Path, mode: str = "fast") -> dict:
     """
     Production-ready replacement for Chord AI analysis endpoint.
     Exposes the identical interface that backend/main.py expects.
