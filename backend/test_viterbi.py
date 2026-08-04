@@ -8,8 +8,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from ml.viterbi import smooth_chord_sequence, ChordSegment
-from ml.chord_vocab import LABELS, LABEL_TO_IDX
+from ml.chord_vocab import LABEL_TO_IDX, LABELS
+from ml.viterbi import smooth_chord_sequence
 
 
 def test_viterbi_simple_progression():

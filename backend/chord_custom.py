@@ -13,15 +13,20 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Tuple
 
 import numpy as np
 
+from ml.chord_vocab import LABEL_TO_IDX, NUM_CLASSES, build_templates
+from ml.dsp_tempo_key import detect_key_dsp, detect_tempo_dsp
+
 # Feature extraction, vocabulary, and post-processing dependencies
-from ml.features import extract_cnn_input, extract_cqt_chroma, frame_times, load_audio, HOP_LENGTH
-from ml.chord_vocab import LABELS, LABEL_TO_IDX, IDX_TO_LABEL, NUM_CLASSES, build_templates
+from ml.features import (
+    HOP_LENGTH,
+    extract_cnn_input,
+    extract_cqt_chroma,
+    load_audio,
+)
 from ml.viterbi import smooth_chord_sequence
-from ml.dsp_tempo_key import detect_tempo_dsp, detect_key_dsp
 
 CHORD_MODEL_PATH = Path(os.environ.get("CHORD_MODEL_PATH", Path(__file__).parent / "chord_model.onnx"))
 QUANT_MODEL_PATH = Path(os.environ.get("QUANT_MODEL_PATH", Path(__file__).parent / "chord_model.quant.onnx"))
@@ -34,9 +39,9 @@ _onnx_load_attempted = False
 
 
 def _filter_low_confidence_segments(
-    res_segments: List[Tuple[float, float, str, float]],
+    res_segments: list[tuple[float, float, str, float]],
     threshold: float = 0.65
-) -> List[Tuple[float, float, str, float]]:
+) -> list[tuple[float, float, str, float]]:
     """Maps low-confidence chord segments to 'N.C.' and merges consecutive duplicates."""
     cleaned = []
     for start, end, chord, conf in res_segments:
@@ -48,7 +53,7 @@ def _filter_low_confidence_segments(
     merged = []
     for start, end, chord, conf in cleaned:
         if merged and merged[-1][2] == chord:
-            prev_start, prev_end, prev_chord, prev_conf = merged[-1]
+            prev_start, prev_end, _, prev_conf = merged[-1]
             prev_dur = prev_end - prev_start
             curr_dur = end - start
             new_conf = (prev_conf * prev_dur + conf * curr_dur) / (prev_dur + curr_dur)
@@ -87,13 +92,11 @@ def _get_onnx_session():
     return _onnx_session
 
 
-def _detect_chords_onnx(file_path: Path) -> List[Tuple[float, float, str, float]]:
-    import librosa
+def _detect_chords_onnx(file_path: Path) -> list[tuple[float, float, str, float]]:
     sess = _get_onnx_session()
     y, sr = load_audio(str(file_path))
     log_cqt = extract_cnn_input(y, sr)
-    n_bins, n_frames = log_cqt.shape
-    times = frame_times(n_frames, sr=sr, hop_length=HOP_LENGTH)
+    _, n_frames = log_cqt.shape
     frame_rate = sr / HOP_LENGTH
 
     # Batched full-track ONNX inference (no more chunk loop!)
@@ -136,7 +139,7 @@ def _detect_chords_onnx(file_path: Path) -> List[Tuple[float, float, str, float]
     return _filter_low_confidence_segments(res_segments, threshold=0.35)
 
 
-def detect_chords_custom(file_path: Path, mode: str = "fast") -> List[Tuple[float, float, str, float]]:
+def detect_chords_custom(file_path: Path, mode: str = "fast") -> list[tuple[float, float, str, float]]:
     """
     Time-aligned chord segments: (start_sec, end_sec, chord_label, confidence).
     
@@ -163,7 +166,6 @@ def detect_chords_custom(file_path: Path, mode: str = "fast") -> List[Tuple[floa
     y_harmonic = librosa.effects.harmonic(y)
     chroma = extract_cqt_chroma(y_harmonic, sr)  # shape: (n_frames, 12)
     n_frames = len(chroma)
-    times = frame_times(n_frames, sr=sr, hop_length=HOP_LENGTH)
     frame_rate = sr / HOP_LENGTH
     
     templates = build_templates()  # shape: (109, 12)
