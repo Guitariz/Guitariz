@@ -62,4 +62,4 @@ jobs:
         run: |
           cd backend
           pip install pytest httpx fastapi
-          pytest
+          PYTHONPATH=.. pytest
