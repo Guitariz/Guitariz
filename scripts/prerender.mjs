@@ -966,7 +966,7 @@ console.log(`\nPrerender completed for ${routes.length} routes: ${routes.map(r =
 console.log(`lastmod date used: ${TODAY}`);
 
 // Submit URLs to IndexNow (Bing, Yandex, Seznam, Naver)
-const INDEXNOW_KEY = 'e9e48652da224d499e392612ac350cd2';
+const INDEXNOW_KEY = '39e5f5fc917949c09dd74fcc2584d752';
 const indexNowPayload = {
   host: 'guitariz.studio',
   key: INDEXNOW_KEY,
