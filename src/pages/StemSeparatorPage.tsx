@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
-import { Wand2, Upload, Mic, Music2, Download, Loader2, Drum, Guitar, Piano, Volume2, VolumeX } from "lucide-react";
+import { Wand2, Upload, Mic, Music2, Download, Loader2, Drum, Guitar, Piano, Volume2, VolumeX, Sliders, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
@@ -26,6 +26,24 @@ const STEM_CONFIG = {
 type StemType = keyof typeof STEM_CONFIG;
 const STEM_TYPES: StemType[] = ["vocals", "drums", "bass", "guitar", "piano", "other"];
 
+type PresetKey = 'karaoke' | 'practiceGuitar' | 'practicePiano' | 'practiceDrums' | 'reset';
+
+const PRESETS: { key: PresetKey; label: string; desc: string }[] = [
+    { key: 'karaoke',        label: '🎤 Karaoke',        desc: 'Mute vocals — sing along' },
+    { key: 'practiceGuitar', label: '🎸 Practice Guitar', desc: 'Guitar reduced to 5%' },
+    { key: 'practicePiano',  label: '🎹 Practice Piano',  desc: 'Piano reduced to 5%' },
+    { key: 'practiceDrums',  label: '🥁 Practice Drums',  desc: 'Drums reduced to 5%' },
+    { key: 'reset',          label: '↺ Full Mix',         desc: 'Reset all stems to 100%' },
+];
+
+const PRESET_CONFIGS: Record<PresetKey, Partial<Record<StemType, { volume: number; muted: boolean }>>> = {
+    karaoke:        { vocals: { volume: 0, muted: true }  },
+    practiceGuitar: { guitar: { volume: 5, muted: false } },
+    practicePiano:  { piano:  { volume: 5, muted: false } },
+    practiceDrums:  { drums:  { volume: 5, muted: false } },
+    reset:          {},
+};
+
 interface StemData {
     url: string;
     audio: AudioBuffer | null;
@@ -38,6 +56,47 @@ interface StemData {
 interface AudioNodes {
     sourceNode: AudioBufferSourceNode | null;
     gainNode: GainNode | null;
+}
+
+// ---------------------------------------------------------------------------
+// WAV encoder — converts an AudioBuffer to a 16-bit PCM WAV Blob in-browser.
+// ---------------------------------------------------------------------------
+function encodeWav(buffer: AudioBuffer): Blob {
+    const numChannels = Math.min(buffer.numberOfChannels, 2);
+    const sampleRate  = buffer.sampleRate;
+    const numFrames   = buffer.length;
+    const bytesPerSample = 2; // 16-bit
+    const blockAlign  = numChannels * bytesPerSample;
+    const dataSize    = numFrames * blockAlign;
+    const wav         = new ArrayBuffer(44 + dataSize);
+    const v           = new DataView(wav);
+
+    const ws = (off: number, s: string) => {
+        for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i));
+    };
+    ws(0,  'RIFF'); v.setUint32(4,  36 + dataSize,           true);
+    ws(8,  'WAVE'); ws(12, 'fmt ');
+    v.setUint32(16, 16,                          true); // subchunk1 size
+    v.setUint16(20, 1,                           true); // PCM
+    v.setUint16(22, numChannels,                 true);
+    v.setUint32(24, sampleRate,                  true);
+    v.setUint32(28, sampleRate * blockAlign,     true); // byte rate
+    v.setUint16(32, blockAlign,                  true);
+    v.setUint16(34, bytesPerSample * 8,          true); // bits per sample
+    ws(36, 'data'); v.setUint32(40, dataSize,    true);
+
+    const channels: Float32Array[] = [];
+    for (let c = 0; c < numChannels; c++) channels.push(buffer.getChannelData(c));
+
+    let offset = 44;
+    for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+            const s = Math.max(-1, Math.min(1, channels[c][i]));
+            v.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            offset += 2;
+        }
+    }
+    return new Blob([wav], { type: 'audio/wav' });
 }
 
 const StemSeparatorPage = () => {
@@ -76,6 +135,8 @@ const StemSeparatorPage = () => {
     const [separated, setSeparated] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [stemFormat, setStemFormat] = useState<"wav" | "mp3">("mp3");
+    const [exportingMix, setExportingMix] = useState(false);
+    const [activePreset, setActivePreset] = useState<PresetKey | null>(null);
 
     // Stem state (without audio nodes - those are in refs)
     const [stems, setStems] = useState<Record<StemType, StemData>>(() => {
@@ -490,6 +551,67 @@ const StemSeparatorPage = () => {
         }
     };
 
+    const applyPreset = (preset: PresetKey) => {
+        setActivePreset(preset);
+        setStems(prev => {
+            const updated = { ...prev };
+            // Step 1 — reset every stem to 100% / unmuted
+            STEM_TYPES.forEach(stem => {
+                updated[stem] = { ...updated[stem], volume: 100, muted: false };
+                const gainNode = audioNodesRef.current[stem].gainNode;
+                if (gainNode) gainNode.gain.value = 1;
+            });
+            // Step 2 — apply preset-specific overrides
+            const config = PRESET_CONFIGS[preset];
+            (Object.entries(config) as [StemType, { volume: number; muted: boolean }][]).forEach(([stem, settings]) => {
+                updated[stem] = { ...updated[stem], ...settings };
+                const gainNode = audioNodesRef.current[stem].gainNode;
+                if (gainNode) gainNode.gain.value = settings.muted ? 0 : settings.volume / 100;
+            });
+            return updated;
+        });
+    };
+
+    const exportMix = async () => {
+        const hasAudio = STEM_TYPES.some(s => stems[s].audio);
+        if (!hasAudio || exportingMix) return;
+        setExportingMix(true);
+        toast({ title: 'Rendering mix…', description: 'Mixing stems at current volumes — this may take a moment.' });
+        try {
+            const firstStem = STEM_TYPES.find(s => stems[s].audio)!;
+            const sampleRate = stems[firstStem].audio!.sampleRate;
+            const offlineCtx = new OfflineAudioContext(2, Math.ceil(duration * sampleRate), sampleRate);
+            STEM_TYPES.forEach(stem => {
+                const stemData = stems[stem];
+                if (!stemData.audio) return;
+                const gain = offlineCtx.createGain();
+                gain.gain.value = stemData.muted ? 0 : stemData.volume / 100;
+                gain.connect(offlineCtx.destination);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = stemData.audio;
+                source.connect(gain);
+                source.start(0);
+            });
+            const rendered = await offlineCtx.startRendering();
+            const blob = encodeWav(rendered);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${selectedFile?.name.replace(/\.[^.]+$/, '') || 'mix'}_backing_track.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+            toast({ title: 'Download started!', description: 'Your custom backing track WAV is ready.' });
+        } catch (err) {
+            toast({
+                title: 'Export failed',
+                description: err instanceof Error ? err.message : 'Unknown error.',
+                variant: 'destructive',
+            });
+        } finally {
+            setExportingMix(false);
+        }
+    };
+
     useEffect(() => {
         if (isPlaying) {
             updateClock();
@@ -649,6 +771,34 @@ const StemSeparatorPage = () => {
                                             {isPlaying ? "⏸ Pause All Stems" : "▶ Play All Stems"}
                                         </Button>
 
+                                        {/* Backing Track Presets */}
+                                        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                                                <Sliders className="w-3.5 h-3.5" />
+                                                <span>Backing Track Presets</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {PRESETS.map(preset => (
+                                                    <button
+                                                        key={preset.key}
+                                                        onClick={() => applyPreset(preset.key)}
+                                                        title={preset.desc}
+                                                        className={cn(
+                                                            "px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all",
+                                                            activePreset === preset.key
+                                                                ? "bg-white text-black border-white shadow-lg"
+                                                                : "bg-white/[0.04] text-white/70 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white"
+                                                        )}
+                                                    >
+                                                        {preset.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground/60">
+                                                Select a preset to instantly configure stem volumes, then click <strong className="text-white/50">Download Mix</strong> below.
+                                            </p>
+                                        </div>
+
                                         {/* 6-Stem Grid */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {STEM_TYPES.map((stem) => {
@@ -745,6 +895,36 @@ const StemSeparatorPage = () => {
                                         <p className="text-xs text-muted-foreground text-center">
                                             Click on any waveform to seek. Use mute buttons to isolate stems.
                                         </p>
+
+                                        {/* Mix & Export Panel */}
+                                        <div className="p-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/20 flex items-center justify-between gap-4 flex-wrap">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2 text-sm font-semibold text-white mb-1">
+                                                    <Layers className="w-4 h-4 text-emerald-400 shrink-0" />
+                                                    Mix &amp; Export Backing Track
+                                                </div>
+                                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                                    Renders all stems at their current volumes into a single .wav file — perfect for practicing, karaoke, or remixing.
+                                                </p>
+                                            </div>
+                                            <Button
+                                                onClick={exportMix}
+                                                disabled={exportingMix}
+                                                className="shrink-0 h-11 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all shadow-lg"
+                                            >
+                                                {exportingMix ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Rendering…
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download className="w-4 h-4 mr-2" />
+                                                        Download Mix
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
