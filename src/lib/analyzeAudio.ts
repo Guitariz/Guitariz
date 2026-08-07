@@ -156,57 +156,91 @@ export function refineKeyFromChords(key: string, scale: string, chords: ChordSeg
   return { key, scale };
 }
 
-function computeEnergyEnvelope(audioBuffer: AudioBuffer, frameSeconds = 0.05): number[] {
+function computeEnergyEnvelope(audioBuffer: AudioBuffer, hopSeconds = 0.01): number[] {
+  // Use a shorter hop (10ms) for higher temporal resolution in autocorrelation
   const channel = audioBuffer.getChannelData(0);
-  const frameSize = Math.max(64, Math.floor(audioBuffer.sampleRate * frameSeconds));
+  const sampleRate = audioBuffer.sampleRate;
+  const frameSize = Math.max(64, Math.floor(sampleRate * hopSeconds));
   const frames: number[] = [];
   for (let i = 0; i < channel.length; i += frameSize) {
     let sum = 0;
-    for (let j = 0; j < frameSize && i + j < channel.length; j += 1) {
-      const v = channel[i + j];
-      sum += v * v;
+    const end = Math.min(i + frameSize, channel.length);
+    for (let j = i; j < end; j++) {
+      sum += channel[j] * channel[j];
     }
-    const rms = Math.sqrt(sum / frameSize);
-    frames.push(rms);
+    frames.push(Math.sqrt(sum / (end - i)));
   }
   return frames;
 }
 
 function estimateTempo(audioBuffer: AudioBuffer): number {
-  // Lightweight onset-based tempo estimate with extra guards for quiet files.
-  const envelope = computeEnergyEnvelope(audioBuffer, 0.05);
-  const maxEnv = Math.max(...envelope, 0);
-  if (maxEnv < 1e-4) return 0; // silence or near-silence
+  // Autocorrelation-based tempo detection — robust for most music genres.
+  const HOP_SECONDS = 0.01; // 10ms hop
+  const envelope = computeEnergyEnvelope(audioBuffer, HOP_SECONDS);
+  const n = envelope.length;
 
-  const diff: number[] = [];
-  for (let i = 1; i < envelope.length; i += 1) {
-    diff.push(Math.max(0, envelope[i] - envelope[i - 1]));
+  if (n < 2) return 0;
+
+  const maxEnv = Math.max(...envelope);
+  if (maxEnv < 1e-5) return 0; // near-silence guard
+
+  // First-order positive difference (onset strength signal)
+  const odf: number[] = new Array(n).fill(0);
+  for (let i = 1; i < n; i++) {
+    odf[i] = Math.max(0, envelope[i] - envelope[i - 1]);
   }
 
-  const threshold = Math.max(0.01, 0.2 * Math.max(...diff, 0));
-  const peaks: number[] = [];
-  for (let i = 1; i < diff.length - 1; i += 1) {
-    if (diff[i] > diff[i - 1] && diff[i] > diff[i + 1] && diff[i] >= threshold) {
-      peaks.push(i);
+  // Compute autocorrelation of the ODF over the BPM range [55, 215]
+  // Lag in frames = 60 / (bpm * HOP_SECONDS)
+  const minBpm = 55;
+  const maxBpm = 215;
+  const minLag = Math.floor(60 / (maxBpm * HOP_SECONDS));
+  const maxLag = Math.ceil(60 / (minBpm * HOP_SECONDS));
+
+  // Only use first 90 seconds of audio for performance
+  const maxFrames = Math.min(n, Math.round(90 / HOP_SECONDS));
+
+  // Normalized autocorrelation
+  const acf: number[] = new Array(maxLag + 1).fill(0);
+  const energy = odf.slice(0, maxFrames).reduce((s, v) => s + v * v, 0);
+  if (energy < 1e-12) return 0;
+
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let sum = 0;
+    for (let i = 0; i < maxFrames - lag; i++) {
+      sum += odf[i] * odf[i + lag];
+    }
+    acf[lag] = sum / energy;
+  }
+
+  // Add harmonic weighting: boost lags that also align at 1/2 and 2x period
+  // to help choose the perceptually correct tempo octave
+  const weighted: number[] = [...acf];
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    const halfLag = Math.round(lag / 2);
+    const doubleLag = lag * 2;
+    if (halfLag >= minLag) weighted[lag] += 0.5 * acf[halfLag];
+    if (doubleLag <= maxLag) weighted[lag] += 0.25 * acf[doubleLag];
+  }
+
+  // Find the lag with the highest weighted score
+  let bestLag = minLag;
+  let bestScore = -Infinity;
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    if (weighted[lag] > bestScore) {
+      bestScore = weighted[lag];
+      bestLag = lag;
     }
   }
 
-  if (peaks.length < 2) return 0;
+  const rawBpm = 60 / (bestLag * HOP_SECONDS);
 
-  const intervals: number[] = [];
-  const hopSeconds = 0.05;
-  for (let i = 1; i < peaks.length; i += 1) {
-    intervals.push((peaks[i] - peaks[i - 1]) * hopSeconds);
-  }
+  // Octave correction: prefer the reading that falls in [75, 165]
+  let bpm = rawBpm;
+  if (bpm < 75 && bpm * 2 <= 165) bpm *= 2;
+  else if (bpm > 165 && bpm / 2 >= 75) bpm /= 2;
 
-  if (!intervals.length) return 0;
-
-  const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-  const bpm = 60 / clamp(avg, 0.2, 3); // clamp to a plausible range
-  // Normalize to common BPM range (80-180) when reasonable
-  if (bpm < 80) return bpm * 2;
-  if (bpm > 180) return bpm / 2;
-  return bpm;
+  return clamp(Math.round(bpm), 55, 215);
 }
 
 function nextPowerOfTwo(n: number): number {
