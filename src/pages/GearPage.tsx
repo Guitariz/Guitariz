@@ -2,22 +2,46 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { Breadcrumb } from "@/components/SEOContent";
 import { ExternalLink, Guitar, Headphones, BookOpen, Cable } from "lucide-react";
 import RelatedTools from "@/components/RelatedTools";
+import { useState, useEffect } from "react";
 
-const AFFILIATE_TAG = "guitariz-21";
+// ─── Affiliate config per region ──────────────────────────────────────────────
+const REGIONS = {
+  IN: {
+    tag: "guitariz-21",
+    domain: "amazon.in",
+  },
+  default: {
+    tag: "guitariz-20",
+    domain: "amazon.com",
+  },
+} as const;
 
-const buildLink = (query: string): string => {
+type RegionKey = keyof typeof REGIONS;
+
+function getRegionConfig(countryCode: string) {
+  const key = (countryCode as RegionKey) in REGIONS ? (countryCode as RegionKey) : "default";
+  return REGIONS[key];
+}
+
+function buildLink(query: string, domain: string, tag: string): string {
   if (query.startsWith("http")) {
     const sep = query.includes("?") ? "&" : "?";
-    return `${query}${sep}tag=${AFFILIATE_TAG}`;
+    return `${query}${sep}tag=${tag}`;
   }
-  return `https://www.amazon.in/s?k=${encodeURIComponent(query)}&tag=${AFFILIATE_TAG}`;
-};
+  return `https://www.${domain}/s?k=${encodeURIComponent(query)}&tag=${tag}`;
+}
+
+// ─── Gear data ─────────────────────────────────────────────────────────────────
+interface PriceRange {
+  IN: string;
+  default: string;
+}
 
 interface GearItem {
   name: string;
   description: string;
   query: string;
-  priceRange: string;
+  priceRange: PriceRange;
 }
 
 interface GearCategory {
@@ -37,31 +61,31 @@ const gearCategories: GearCategory[] = [
         name: "Clip-on Guitar Tuner",
         description: "Accurate tuning even in noisy environments. Essential if you can't use a phone mic.",
         query: "clip on guitar tuner chromatic",
-        priceRange: "₹250 – ₹1,500",
+        priceRange: { IN: "₹250 – ₹1,500", default: "$8 – $25" },
       },
       {
         name: "Guitar Capo",
         description: "Instantly change the key of any song. A must-have for playing along with recordings.",
         query: "guitar capo acoustic electric",
-        priceRange: "₹150 – ₹1,200",
+        priceRange: { IN: "₹150 – ₹1,200", default: "$8 – $30" },
       },
       {
         name: "Guitar Strings (Acoustic)",
         description: "Fresh strings make a huge difference in tone and playability. Change them every 2-3 months.",
         query: "acoustic guitar strings set",
-        priceRange: "₹200 – ₹800",
+        priceRange: { IN: "₹200 – ₹800", default: "$6 – $18" },
       },
       {
         name: "Guitar Picks Variety Pack",
         description: "Different thicknesses for strumming vs. lead playing. Every guitarist needs a good selection.",
         query: "guitar picks variety pack",
-        priceRange: "₹100 – ₹400",
+        priceRange: { IN: "₹100 – ₹400", default: "$5 – $12" },
       },
       {
         name: "Guitar Strap",
         description: "Play standing up comfortably. Essential for practice sessions and performances.",
         query: "guitar strap adjustable",
-        priceRange: "₹200 – ₹1,000",
+        priceRange: { IN: "₹200 – ₹1,000", default: "$10 – $30" },
       },
     ],
   },
@@ -74,25 +98,25 @@ const gearCategories: GearCategory[] = [
         name: "Studio Monitor Headphones",
         description: "Hear every detail in your separated stems. Flat-response headphones reveal what speakers can't.",
         query: "studio monitor headphones Audio Technica",
-        priceRange: "₹1,500 – ₹8,000",
+        priceRange: { IN: "₹1,500 – ₹8,000", default: "$30 – $100" },
       },
       {
         name: "USB Audio Interface",
         description: "Record guitar directly into your computer with zero latency. Essential for home studios.",
         query: "USB audio interface guitar recording",
-        priceRange: "₹3,000 – ₹12,000",
+        priceRange: { IN: "₹3,000 – ₹12,000", default: "$50 – $150" },
       },
       {
         name: "Condenser Microphone (USB)",
         description: "High-quality vocal and instrument recording without an audio interface.",
         query: "USB condenser microphone recording",
-        priceRange: "₹1,500 – ₹5,000",
+        priceRange: { IN: "₹1,500 – ₹5,000", default: "$30 – $80" },
       },
       {
         name: "6.35mm to 3.5mm Adapter",
         description: "Connect studio headphones to your phone or laptop. A cheap cable everyone needs.",
         query: "6.35mm to 3.5mm headphone adapter",
-        priceRange: "₹100 – ₹300",
+        priceRange: { IN: "₹100 – ₹300", default: "$5 – $10" },
       },
     ],
   },
@@ -105,19 +129,19 @@ const gearCategories: GearCategory[] = [
         name: "Guitar Cable (Instrument Cable)",
         description: "A reliable, low-noise cable for connecting your guitar to amps or interfaces.",
         query: "guitar instrument cable 3m",
-        priceRange: "₹200 – ₹1,500",
+        priceRange: { IN: "₹200 – ₹1,500", default: "$8 – $25" },
       },
       {
         name: "Guitar Stand",
         description: "Keep your guitar safe and always ready to play. A guitar on a stand gets played more often.",
         query: "guitar stand folding",
-        priceRange: "₹300 – ₹1,200",
+        priceRange: { IN: "₹300 – ₹1,200", default: "$15 – $30" },
       },
       {
         name: "Music Sheet Stand",
         description: "Hold your phone, tablet, or sheet music at eye level while you practice.",
         query: "music sheet stand adjustable",
-        priceRange: "₹400 – ₹1,500",
+        priceRange: { IN: "₹400 – ₹1,500", default: "$15 – $35" },
       },
     ],
   },
@@ -130,24 +154,53 @@ const gearCategories: GearCategory[] = [
         name: "Hal Leonard Guitar Method",
         description: "The best-selling guitar method book worldwide. Great for structured learning.",
         query: "Hal Leonard guitar method book",
-        priceRange: "₹300 – ₹1,500",
+        priceRange: { IN: "₹300 – ₹1,500", default: "$10 – $25" },
       },
       {
         name: "Music Theory for Guitarists",
         description: "Understand the theory behind scales, chords, and progressions on the fretboard.",
         query: "music theory book guitar",
-        priceRange: "₹300 – ₹1,200",
+        priceRange: { IN: "₹300 – ₹1,200", default: "$10 – $20" },
       },
       {
         name: "Indian Raga Guide",
         description: "Explore the depth of Hindustani and Carnatic music theory for guitar and keyboard.",
         query: "Indian raga music theory book",
-        priceRange: "₹250 – ₹1,000",
+        priceRange: { IN: "₹250 – ₹1,000", default: "$12 – $30" },
       },
     ],
   },
 ];
 
+// ─── Hook: detect country via Cloudflare trace (no API key required) ───────────
+function useCountryCode() {
+  // Fast locale-based guess while the network request is in flight
+  const localeFallback = (() => {
+    try {
+      const lang = navigator.language || "";
+      if (lang === "en-IN" || lang.startsWith("hi") || lang.startsWith("bn") || lang.startsWith("ta")) return "IN";
+    } catch {/* noop */}
+    return "default";
+  })();
+
+  const [countryCode, setCountryCode] = useState<string>(localeFallback);
+  const [resolved, setResolved] = useState(false);
+
+  useEffect(() => {
+    fetch("https://cloudflare.com/cdn-cgi/trace", { cache: "force-cache" })
+      .then((r) => r.text())
+      .then((text) => {
+        const match = text.match(/^loc=(.+)$/m);
+        if (match) setCountryCode(match[1].trim());
+      })
+      .catch(() => {/* keep locale fallback */})
+      .finally(() => setResolved(true));
+  }, []);
+
+  return { countryCode, resolved };
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 const GearPage = () => {
   usePageMetadata({
     title: "Recommended Gear for Musicians | Guitariz Studio",
@@ -159,6 +212,9 @@ const GearPage = () => {
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
   });
+
+  const { countryCode, resolved } = useCountryCode();
+  const region = getRegionConfig(countryCode);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
@@ -210,7 +266,7 @@ const GearPage = () => {
                   {category.items.map((item) => (
                     <a
                       key={item.name}
-                      href={buildLink(item.query)}
+                      href={buildLink(item.query, region.domain, region.tag)}
                       target="_blank"
                       rel="noopener noreferrer nofollow sponsored"
                       className="group relative flex flex-col p-5 rounded-2xl border border-border hover:border-amber-500/30 bg-card/50 hover:bg-card/80 transition-all duration-300 hover:shadow-[0_0_30px_rgba(245,158,11,0.05)]"
@@ -223,8 +279,12 @@ const GearPage = () => {
                         {item.description}
                       </p>
                       <div className="mt-3 pt-3 border-t border-border/50">
-                        <span className="text-[10px] text-amber-400/60 font-medium tracking-wide uppercase">
-                          {item.priceRange}
+                        <span
+                          className={`text-[10px] font-medium tracking-wide uppercase transition-opacity duration-300 ${
+                            resolved ? "text-amber-400/60 opacity-100" : "opacity-0"
+                          }`}
+                        >
+                          {item.priceRange[countryCode as "IN"] ?? item.priceRange.default}
                         </span>
                       </div>
                     </a>
@@ -250,5 +310,6 @@ const GearPage = () => {
     </div>
   );
 };
+
 
 export default GearPage;
