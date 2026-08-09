@@ -173,10 +173,10 @@ const Index = () => {
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ delay: 0.05, duration: 0.6, ease: "easeOut" }}
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
+                className="inline-flex items-start gap-2 px-4 py-2 rounded-full border border-border bg-card/50 backdrop-blur-sm text-muted-foreground text-[10px] font-bold tracking-[0.3em] uppercase"
               >
-                <Headphones className="w-3 h-3" />
-                <span>Free AI Chord Recognition & Music Tools</span>
+                <Headphones className="w-3 h-3 shrink-0 mt-[1px]" />
+                <span>Free AI Chord Recognition &amp; Music Tools</span>
               </motion.div>
 
               <div className="space-y-6">

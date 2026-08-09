@@ -16,11 +16,18 @@ import { Link, useLocation } from "react-router-dom";
 const VocalSplitterPage = () => {
   const location = useLocation();
   const currentUrl = `https://guitariz.studio${location.pathname}`;
+  const isVocalRemoverRoute = location.pathname === "/vocal-remover";
 
   usePageMetadata({
-    title: "Free AI Vocal Remover & Stem Splitter | Guitariz",
-    description: "Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.",
-    keywords: "vocal remover, free online vocal remover, isolate vocals online, acapella maker free, vocal splitter, stem splitter ai, karaoke creator, remove vocals from mp3",
+    title: isVocalRemoverRoute
+      ? "Free Online Vocal Remover – Remove Vocals from Any Song | Guitariz"
+      : "Free AI Vocal Splitter & Stem Separator | Guitariz",
+    description: isVocalRemoverRoute
+      ? "Remove vocals from any song instantly with our free AI vocal remover. Create karaoke tracks and extract instrumentals online — no signup required."
+      : "Separate vocals and instrumentals from any song using AI. High-quality free online vocal splitter and acapella stem extraction for karaoke and practice.",
+    keywords: isVocalRemoverRoute
+      ? "vocal remover, remove vocals from song, free vocal remover online, karaoke maker, instrumental extractor, remove vocals mp3"
+      : "vocal splitter, free online vocal splitter, isolate vocals online, acapella maker free, stem splitter ai, karaoke creator, remove vocals from mp3",
     canonicalUrl: currentUrl,
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
