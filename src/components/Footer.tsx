@@ -99,10 +99,7 @@ const Footer = () => {
                             className="w-[250px] h-[54px] block"
                         />
                     </a>
-                    <div className="flex flex-col items-center gap-2">
-                        <p className="text-[10px] text-zinc-500 text-center max-w-md">
-                            As an Amazon Associate, Guitariz Studio earns from qualifying purchases.
-                        </p>
+                <div className="flex flex-col items-center gap-2">
                         <p className="text-xs text-muted-foreground text-center">
                             © {currentYear} Guitariz Studio. MIT License.
                         </p>

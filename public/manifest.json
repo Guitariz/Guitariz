@@ -29,9 +29,48 @@
             "purpose": "any maskable"
         }
     ],
+    "screenshots": [
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Guitariz Studio – AI Chord Recognition & Music Tools"
+        },
+        {
+            "src": "logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Guitariz Studio – AI Chord Recognition & Music Tools"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Chord AI",
+            "short_name": "Chord AI",
+            "description": "Detect chords from any audio or YouTube link",
+            "url": "/chord-ai",
+            "icons": [{ "src": "logo.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Stem Separator",
+            "short_name": "Stems",
+            "description": "Separate vocals, drums, bass & more",
+            "url": "/stem-separator",
+            "icons": [{ "src": "logo.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Guitar Tuner",
+            "short_name": "Tuner",
+            "description": "Free in-browser guitar tuner",
+            "url": "/tuner",
+            "icons": [{ "src": "logo.png", "sizes": "192x192" }]
+        }
+    ],
     "start_url": "/",
     "display": "standalone",
     "orientation": "portrait-primary",
     "theme_color": "#060606",
     "background_color": "#060606"
-}
+}
