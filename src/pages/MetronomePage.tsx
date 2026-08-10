@@ -74,19 +74,27 @@ const MetronomePage = () => {
           faqs={[
             {
               question: "Why is a metronome essential for music practice?",
-              answer: "A metronome provides a steady beat, which is crucial for developing 'inner clock' and technical precision."
+              answer: "A metronome provides a perfectly steady, unwavering beat reference that your internal sense of time (your 'inner clock') can calibrate against. Research in music education consistently shows that musicians who practice with a metronome develop significantly more even rhythmic precision than those who practice free-time. Even 15 minutes of daily metronome practice accelerates the development of rhythmic consistency. Importantly, practice with a metronome at a slow tempo where you play every note perfectly — then gradually increase the tempo by 4-5 BPM — is far more effective than practicing at full speed with errors."
             },
             {
-              question: "What does 'sample-accurate' mean?",
-              answer: "Our metronome uses the Web Audio API's scheduling system to ensure clicks are perfectly timed regardless of other processes."
+              question: "What does 'sample-accurate' metronome mean?",
+              answer: "A 'sample-accurate' metronome uses the Web Audio API's built-in clock scheduling system to queue clicks at the exact audio sample level — typically at 44,100 or 48,000 samples per second. This is different from using JavaScript's standard setTimeout() or setInterval() functions, which can drift by tens of milliseconds due to the browser's JavaScript event loop. Millisecond-level drift is noticeable to trained musicians and can cause confusion during practice. The Guitariz Metronome's sample-accurate scheduling ensures clicks land at precisely the correct moment, regardless of other browser or system activity."
             },
             {
-              question: "How do I use tap-tempo?",
-              answer: "Simply click the 'TAP' button or press your spacebar in time with a song you are listening to."
+              question: "How do I use the Tap Tempo feature?",
+              answer: "Click the 'TAP' button (or press your spacebar) repeatedly in time with the beat of any song you are listening to. The metronome calculates the average interval between your taps and converts it to BPM (Beats Per Minute). After 3-4 taps, the tempo reading stabilizes. Tap Tempo is ideal for learning the BPM of a song before practicing along to it, or for quickly setting a tempo that feels comfortable for a new song you are working on."
             },
             {
-              question: "Can I use different time signatures?",
-              answer: "Yes! You can adjust the beats per measure to practice in 4/4, 3/4, 6/8, and more."
+              question: "What time signatures does this metronome support?",
+              answer: "The Guitariz Metronome supports all standard time signatures. You can adjust the beats per measure to practice in: 4/4 (the most common, four beats per bar), 3/4 (waltz time, three beats per bar), 6/8 (compound duple, commonly used in Celtic and folk music), 5/4 (complex meter, used in progressive rock and jazz), 7/8 (Balkan and Middle Eastern rhythmic patterns), and more. The first beat of each measure is accented with a different click sound to help you feel the downbeat."
+            },
+            {
+              question: "What BPM ranges are common for different music genres?",
+              answer: "BPM (Beats Per Minute) varies widely across genres: Ballads and slow songs: 60-80 BPM. Pop and R&B: 90-110 BPM. Rock and pop: 110-140 BPM. Dance and EDM: 120-135 BPM. Drum and bass: 160-180 BPM. Bluegrass and fast country: 140-180 BPM. Technical metal: 180-220 BPM. Classical tempo markings: Largo = ~50 BPM, Adagio = ~70 BPM, Andante = ~80 BPM, Moderato = ~96 BPM, Allegro = ~130 BPM, Presto = ~180 BPM."
+            },
+            {
+              question: "How do I practice with a metronome effectively?",
+              answer: "The most effective metronome practice method is to start at a tempo where you can play your chosen piece perfectly with zero errors (often 40-60% of target speed). Play it correctly 3-5 times in a row. Then increase the tempo by 4 BPM and repeat. If you make an error, drop back down 4-8 BPM and rebuild accuracy before increasing again. This gradual increment method trains muscle memory cleanly and produces faster long-term results than immediately attempting target speed."
             }
           ]}
         />

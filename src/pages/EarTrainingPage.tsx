@@ -222,19 +222,27 @@ const EarTrainingPage = () => {
                         faqs={[
                             {
                                 question: "What is ear training and why is it important for musicians?",
-                                answer: "Ear training is the process of connecting music theory with actual sounds. It allows musicians to 'hear' what they see on a page and 'translate' what they hear into their instrument."
+                                answer: "Ear training is the process of connecting music theory concepts with actual sounds — teaching yourself to recognize intervals, chords, rhythms, and scales purely by listening. It allows musicians to 'hear' what they see on a written page and 'translate' what they hear back into notes on their instrument. A guitarist with a trained ear can learn a song from a recording in minutes, improvise freely in any key, and catch errors in their own playing by ear rather than relying on visual feedback. Ear training is the bridge between theoretical knowledge and musical fluency."
                             },
                             {
                                 question: "How does the Ear Training Arcade help me learn?",
-                                answer: "Our Arcade uses gamification to make practice engaging. Short, daily sessions of 10-15 minutes are much more effective than long, infrequent ones."
+                                answer: "The Ear Training Arcade uses gamification principles to make structured practice more engaging. Rather than passively studying theory, you actively listen and identify sounds under time pressure, which accelerates learning through active recall. The game tracks your performance and identifies your specific weaknesses (e.g., you might consistently confuse minor 6ths and major 6ths). Short, daily sessions of 10-15 minutes in the Arcade are significantly more effective than long, infrequent marathon sessions — consistency is the most important factor in ear training progress."
                             },
                             {
                                 question: "What is the difference between relative pitch and perfect pitch?",
-                                answer: "Relative pitch is the ability to identify a note relative to a known reference. Perfect pitch is the ability to identify a note without any reference."
+                                answer: "Relative pitch is the ability to identify a note, interval, or chord quality when you have a reference note to compare against. For example, hearing a note and knowing it is a major 6th above the root is relative pitch. Perfect pitch (also called absolute pitch) is the ability to identify a note with no reference at all — hearing a sound and instantly knowing 'that is an F#' without any comparison. Relative pitch can be developed through training at any age and is the skill that professional musicians cultivate. Perfect pitch is largely innate and extremely rare (found in less than 1 in 10,000 people). For 99% of musicians, developing excellent relative pitch is the realistic and practical goal."
                             },
                             {
-                                question: "Is this tool suitable for singing practice?",
-                                answer: "Yes! Training your ear to recognize intervals and chords directly improves your intonation and ability to harmonize when singing."
+                                question: "Is this tool suitable for singing practice and vocal training?",
+                                answer: "Yes, ear training directly improves singing accuracy. Training your ear to recognize intervals and chord qualities develops two critical vocal skills: intonation (pitch accuracy) and harmony. When you can clearly hear the difference between a major and minor third, you can more reliably produce the correct pitches when singing harmonies. When you can accurately identify intervals, you can reproduce melodic jumps more reliably. Many professional vocal coaches recommend regular interval ear training as one of the most effective practices for improving pitch consistency in singers."
+                            },
+                            {
+                                question: "What are musical intervals and how do I recognize them?",
+                                answer: "A musical interval is the distance in pitch between two notes. There are 12 unique intervals within one octave, each with a distinct sound character. Famous songs are often used as mnemonic references: Minor 2nd = 'Jaws' theme (threatening, tense). Major 2nd = 'Happy Birthday' (first two notes). Minor 3rd = 'Smoke on the Water' riff. Major 3rd = 'When the Saints Go Marching In'. Perfect 4th = 'Here Comes the Bride'. Tritone = 'The Simpsons' theme. Perfect 5th = 'Star Wars' theme. Minor 6th = 'The Entertainer'. Major 6th = 'My Way' (Frank Sinatra). Minor 7th = 'Somewhere' (West Side Story). Major 7th = 'Take On Me' (A-ha). Octave = 'Somewhere Over the Rainbow'. Learning to associate intervals with familiar songs dramatically accelerates recognition speed."
+                            },
+                            {
+                                question: "How long does it take to develop a good musical ear?",
+                                answer: "Most musicians notice significant improvement in interval recognition within 4-8 weeks of consistent daily practice (15 minutes per day). Basic chord quality recognition (major vs. minor) typically develops within 2-4 weeks. More complex skills like recognizing 7th chord types (major 7th vs. dominant 7th vs. minor 7th) typically take 3-6 months. Full chord progression identification by ear — recognizing I-IV-V patterns and common pop progressions without reference — usually develops over 6-18 months of dedicated practice. The timeline varies significantly by previous musical experience."
                             }
                         ]}
                     />
