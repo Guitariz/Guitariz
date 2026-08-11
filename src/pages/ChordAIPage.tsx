@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { useChordAIStore } from "@/stores/chordAIStore";
 import { Link } from "react-router-dom";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle, ArrowUpDown } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -147,6 +147,12 @@ const ChordAIPage = () => {
   const [historyFileName, setHistoryFileName] = useState<string | null>(null);
   const [isSharedView, setIsSharedView] = useState(false);
   const [isMidiDialogOpen, setIsMidiDialogOpen] = useState(false);
+  const [horizontalDiagram, setHorizontalDiagram] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('chord-diagram-horizontal') ?? 'false'); } catch { return false; }
+  });
+  const [flipDiagram, setFlipDiagram] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fretboard-flip-strings') ?? 'false'); } catch { return false; }
+  });
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isYoutubeMode] = useState(false);
@@ -1072,7 +1078,6 @@ const ChordAIPage = () => {
                 <AnalysisSummary
                   tempo={result?.tempo}
                   keySignature={result ? `${transposeKey(result.key, transpose)} ${result.scale || ""}` : null}
-                  confidence={0.96}
                 />
 
                 <div className="pt-2 space-y-6">
@@ -1091,13 +1096,56 @@ const ChordAIPage = () => {
                   </div>
 
                   {currentChord && activeChordVoicing && (
-                    <div className="bg-card/30 rounded-3xl border border-border p-4 flex justify-center animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+                    <div className="bg-card/30 rounded-3xl border border-border p-4 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+                      <div className="flex items-center justify-between w-full px-1">
+                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/50">Chord Shape</span>
+                        <div className="flex items-center gap-1.5">
+                          {/* Flip — only meaningful in vertical box mode */}
+                          {!horizontalDiagram && (
+                            <button
+                              onClick={() => {
+                                const next = !flipDiagram;
+                                setFlipDiagram(next);
+                                try { localStorage.setItem('fretboard-flip-strings', JSON.stringify(next)); } catch (_e) { /* ignore */ }
+                              }}
+                              title={flipDiagram ? "Low E on left (standard)" : "High e on left (flipped)"}
+                              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                                flipDiagram
+                                  ? "bg-primary/20 border-primary/30 text-primary"
+                                  : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                              }`}
+                            >
+                              <ArrowUpDown className="w-3 h-3" />
+                              Flip
+                            </button>
+                          )}
+                          {/* Rotate — switch between chord box and neck view */}
+                          <button
+                            onClick={() => {
+                              const next = !horizontalDiagram;
+                              setHorizontalDiagram(next);
+                              try { localStorage.setItem('chord-diagram-horizontal', JSON.stringify(next)); } catch (_e) { /* ignore */ }
+                            }}
+                            title={horizontalDiagram ? "Switch to chord box view" : "Switch to neck view (face-to-face)"}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                              horizontalDiagram
+                                ? "bg-primary/20 border-primary/30 text-primary"
+                                : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                            }`}
+                          >
+                            <ArrowUpDown className="w-3 h-3 rotate-90" />
+                            {horizontalDiagram ? "Box" : "Neck"}
+                          </button>
+                        </div>
+                      </div>
                       <div className="scale-90 origin-center">
                         <ChordDiagram
                           frets={activeChordVoicing.frets}
                           fingers={activeChordVoicing.fingers}
                           chordName={currentChord.chord}
                           compact={true}
+                          horizontal={horizontalDiagram}
+                          flipped={!horizontalDiagram && flipDiagram}
                         />
                       </div>
                     </div>

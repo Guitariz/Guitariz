@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
-import { Keyboard, Info, Music, Search, X } from "lucide-react";
+import { Keyboard, Info, Music, Search, X, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useKeyboardFretboard } from "@/hooks/useKeyboardFretboard";
 import { usePianoKeyboard } from "@/hooks/usePianoKeyboard";
@@ -131,6 +131,7 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   const [focusScale, setFocusScale] = useState(() => readJson<boolean>('scale-focus', false));
   const [hoverPreviewEnabled, setHoverPreviewEnabled] = useState(() => readJson<boolean>('hover-preview-enabled', true));
   const [hovered, setHovered] = useState<{ string: number; fret: number } | null>(null);
+  const [flipStrings, setFlipStrings] = useState(() => readJson<boolean>('fretboard-flip-strings', false));
 
   useLayoutEffect(() => {
     if (!pianoMode && fretsContainerRef.current) {
@@ -221,6 +222,10 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
   useEffect(() => {
     localStorage.setItem('hover-preview-enabled', JSON.stringify(hoverPreviewEnabled));
   }, [hoverPreviewEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('fretboard-flip-strings', JSON.stringify(flipStrings));
+  }, [flipStrings]);
 
   // Handle Enter key to strum fretboard notes
   // (moved below strum helpers to avoid reference order issues)
@@ -679,6 +684,21 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
             <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block"></div>
 
             <button
+              onClick={() => setFlipStrings(v => !v)}
+              title={flipStrings ? "Standard order (low E on top)" : "Tab order (high e on top)"}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                flipStrings
+                  ? "bg-primary/20 border-primary/30 text-primary-foreground"
+                  : "bg-white/5 border-white/10 text-muted-foreground"
+              }`}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+              <span>Flip Strings</span>
+            </button>
+
+            <div className="h-4 w-[1px] bg-white/10 mx-1 hidden sm:block"></div>
+
+            <button
               onClick={() => setShowHelp(true)}
               className="p-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
               title="Keyboard Shortcuts"
@@ -847,7 +867,9 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                       </div>
                     </div>
 
-                    {NOTES.map((_openNote, stringIndex) => (
+                    {(flipStrings ? [...NOTES].reverse() : NOTES).map((_openNote, i) => {
+                      const stringIndex = flipStrings ? (NOTES.length - 1 - i) : i;
+                      return (
                       <div key={stringIndex} className="flex items-center gap-2">
                         {/* Open string note */}
                         <div className="w-10 text-center font-bold text-xs text-muted-foreground/50 italic">
@@ -1001,7 +1023,7 @@ const Fretboard = ({ initialChordVoicing }: FretboardProps) => {
                           })}
                         </div>
                       </div>
-                    ))}
+                    ); })}
 
                     {/* Fret numbers */}
                     <div className="flex items-center gap-2 mt-6 pl-12">
