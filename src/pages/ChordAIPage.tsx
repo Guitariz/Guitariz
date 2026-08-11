@@ -15,6 +15,9 @@ import { useChordWebSocket } from "@/hooks/useChordWebSocket";
 import { AnalysisResult } from "@/types/chordAI";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import ChordDiagram from "@/components/chord/ChordDiagram";
+import UkuleleDiagram from "@/components/chord/UkuleleDiagram";
+import PianoChordDiagram from "@/components/chord/PianoChordDiagram";
+import { getUkuleleFrets } from "@/lib/chordTones";
 import { findChordByName, chordLibraryData } from "@/data/chordData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -148,10 +151,14 @@ const ChordAIPage = () => {
   const [isSharedView, setIsSharedView] = useState(false);
   const [isMidiDialogOpen, setIsMidiDialogOpen] = useState(false);
   const [horizontalDiagram, setHorizontalDiagram] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('chord-diagram-horizontal') ?? 'false'); } catch { return false; }
+    try { return JSON.parse(localStorage.getItem('chord-diagram-horizontal') ?? 'false'); } catch (_e) { return false; }
   });
   const [flipDiagram, setFlipDiagram] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fretboard-flip-strings') ?? 'false'); } catch { return false; }
+    try { return JSON.parse(localStorage.getItem('fretboard-flip-strings') ?? 'false'); } catch (_e) { return false; }
+  });
+  const [instrument, setInstrument] = useState<'guitar' | 'ukulele' | 'piano'>(() => {
+    const saved = localStorage.getItem('chord-ai-instrument');
+    return (saved === 'ukulele' || saved === 'piano' || saved === 'guitar') ? saved : 'guitar';
   });
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
@@ -483,6 +490,11 @@ const ChordAIPage = () => {
 
     const found = findChordByName(normalized, chordLibraryData.roots);
     return found?.variant.voicings[0] || null;
+  }, [currentChord]);
+
+  const activeUkuleleVoicing = useMemo(() => {
+    if (!currentChord) return null;
+    return getUkuleleFrets(currentChord.chord);
   }, [currentChord]);
 
   const onYoutubeTimeUpdate = (time: number) => {
@@ -1095,12 +1107,34 @@ const ChordAIPage = () => {
                     </div>
                   </div>
 
-                  {currentChord && activeChordVoicing && (
-                    <div className="bg-card/30 rounded-3xl border border-border p-4 flex flex-col items-center gap-2 animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
-                      <div className="flex items-center justify-between w-full px-1">
+                  {currentChord && (activeChordVoicing || instrument === 'piano' || instrument === 'ukulele') && (
+                    <div className="bg-card/30 rounded-3xl border border-border p-4 flex flex-col items-center gap-3 animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
+                      {/* Instrument tabs */}
+                      <div className="flex items-center justify-between w-full">
                         <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/50">Chord Shape</span>
-                        <div className="flex items-center gap-1.5">
-                          {/* Flip — only meaningful in vertical box mode */}
+                        <div className="flex items-center gap-0.5 p-0.5 bg-black/40 rounded-lg border border-white/5">
+                          {(['guitar', 'ukulele', 'piano'] as const).map((inst) => (
+                            <button
+                              key={inst}
+                              onClick={() => {
+                                setInstrument(inst);
+                                try { localStorage.setItem('chord-ai-instrument', inst); } catch (_e) { /* ignore */ }
+                              }}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
+                                instrument === inst
+                                  ? 'bg-primary/20 text-primary'
+                                  : 'text-white/40 hover:text-white/70'
+                              }`}
+                            >
+                              <span className="capitalize">{inst}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* View controls — only for guitar & ukulele */}
+                      {instrument !== 'piano' && (
+                        <div className="flex items-center gap-1.5 self-end">
                           {!horizontalDiagram && (
                             <button
                               onClick={() => {
@@ -1111,42 +1145,61 @@ const ChordAIPage = () => {
                               title={flipDiagram ? "Low E on left (standard)" : "High e on left (flipped)"}
                               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                                 flipDiagram
-                                  ? "bg-primary/20 border-primary/30 text-primary"
-                                  : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                                  ? 'bg-primary/20 border-primary/30 text-primary'
+                                  : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white'
                               }`}
                             >
                               <ArrowUpDown className="w-3 h-3" />
                               Flip
                             </button>
                           )}
-                          {/* Rotate — switch between chord box and neck view */}
                           <button
                             onClick={() => {
                               const next = !horizontalDiagram;
                               setHorizontalDiagram(next);
                               try { localStorage.setItem('chord-diagram-horizontal', JSON.stringify(next)); } catch (_e) { /* ignore */ }
                             }}
-                            title={horizontalDiagram ? "Switch to chord box view" : "Switch to neck view (face-to-face)"}
+                            title={horizontalDiagram ? 'Switch to chord box view' : 'Switch to neck view (face-to-face)'}
                             className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                               horizontalDiagram
-                                ? "bg-primary/20 border-primary/30 text-primary"
-                                : "bg-white/5 border-white/10 text-muted-foreground hover:text-white"
+                                ? 'bg-primary/20 border-primary/30 text-primary'
+                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white'
                             }`}
                           >
                             <ArrowUpDown className="w-3 h-3 rotate-90" />
-                            {horizontalDiagram ? "Box" : "Neck"}
+                            {horizontalDiagram ? 'Box' : 'Neck'}
                           </button>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Diagram */}
                       <div className="scale-90 origin-center">
-                        <ChordDiagram
-                          frets={activeChordVoicing.frets}
-                          fingers={activeChordVoicing.fingers}
-                          chordName={currentChord.chord}
-                          compact={true}
-                          horizontal={horizontalDiagram}
-                          flipped={!horizontalDiagram && flipDiagram}
-                        />
+                        {instrument === 'guitar' && activeChordVoicing && (
+                          <ChordDiagram
+                            frets={activeChordVoicing.frets}
+                            fingers={activeChordVoicing.fingers}
+                            chordName={currentChord.chord}
+                            compact={true}
+                            horizontal={horizontalDiagram}
+                            flipped={!horizontalDiagram && flipDiagram}
+                          />
+                        )}
+                        {instrument === 'ukulele' && activeUkuleleVoicing && (
+                          <UkuleleDiagram
+                            frets={activeUkuleleVoicing.frets}
+                            fingers={activeUkuleleVoicing.fingers}
+                            chordName={currentChord.chord}
+                            compact={true}
+                            horizontal={horizontalDiagram}
+                            flipped={!horizontalDiagram && flipDiagram}
+                          />
+                        )}
+                        {instrument === 'piano' && (
+                          <PianoChordDiagram
+                            chordName={currentChord.chord}
+                            compact={true}
+                          />
+                        )}
                       </div>
                     </div>
                   )}
