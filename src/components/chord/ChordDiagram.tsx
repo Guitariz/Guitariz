@@ -23,7 +23,6 @@ const ChordDiagram = memo(({
 }: ChordDiagramProps) => {
 
   // Compute the starting fret (startFret) of the diagram.
-  // E.g., if a chord voicing spans frets above 5 (like D# at fret 6), we shift the fretboard range.
   const startFret = useMemo(() => {
     const maxFret = Math.max(...frets);
     const frettedFrets = frets.filter(f => f > 0);
@@ -141,21 +140,35 @@ const ChordDiagram = memo(({
             />
           ))}
 
-          {/* Finger dots */}
+          {/* Finger dots with finger numbers inside */}
           {frets.map((fret, si) => {
             if (fret <= 0) return null;
+            const finger = fingers[si];
             return (
-              <circle
-                key={`dot-${si}`}
-                cx={fretCX(fret)}
-                cy={stringY(si)}
-                r={compact ? 7 : 9}
-                className="fill-primary animate-scale-in"
-                style={{
-                  filter: "drop-shadow(0 2px 6px hsl(var(--primary) / 0.5))",
-                  animationDelay: `${si * 0.05}s`,
-                }}
-              />
+              <g key={`dot-${si}`}>
+                <circle
+                  cx={fretCX(fret)}
+                  cy={stringY(si)}
+                  r={compact ? 7 : 9}
+                  className="fill-primary animate-scale-in"
+                  style={{
+                    filter: "drop-shadow(0 2px 6px hsl(var(--primary) / 0.5))",
+                    animationDelay: `${si * 0.05}s`,
+                  }}
+                />
+                {finger !== "0" && finger !== "x" && (
+                  <text
+                    x={fretCX(fret)}
+                    y={stringY(si) + (compact ? 2.5 : 3.5)}
+                    textAnchor="middle"
+                    fontSize={compact ? 7.5 : 10}
+                    fontWeight="bold"
+                    fill="white"
+                  >
+                    {finger}
+                  </text>
+                )}
+              </g>
             );
           })}
 
@@ -194,7 +207,8 @@ const ChordDiagram = memo(({
       <svg
         width={size}
         height={size}
-        viewBox={`0 0 ${size} ${size}`}
+        // Offset viewBox to start at x = -28 to prevent startFret text from clipping
+        viewBox={`-28 0 ${size + 28} ${size}`}
         className="chord-diagram"
         role="img"
         aria-label={`${chordName} guitar chord diagram`}
@@ -205,32 +219,35 @@ const ChordDiagram = memo(({
         {/* Fret number label next to the first fret slot (if starting above fret 1) */}
         {startFret > 1 && (
           <text
-            x={padding - 10}
+            x={padding - 8}
             y={padding + fretSpacing * 0.5 + 4}
             textAnchor="end"
-            fontSize={compact ? 9 : 11}
+            fontSize={compact ? 9.5 : 12}
             fontWeight="bold"
-            className="fill-muted-foreground select-none"
+            className="fill-primary select-none animate-fade-in"
           >
             {startFret}fr
           </text>
         )}
 
-        {/* Finger / mute markers above nut */}
+        {/* Mute / open markers above nut (✕ for mute, ◯ for open, nothing for fretted) */}
         <g className="finger-markers">
           {fingers.map((finger, i) => {
             const displayIdx = flipped ? strings - 1 - i : i;
+            const isMuted = finger === "x" || frets[i] < 0;
+            const isOpen = frets[i] === 0;
+            if (!isMuted && !isOpen) return null;
             return (
               <text
                 key={`finger-${i}`}
                 x={padding + displayIdx * stringSpacing}
                 y={padding - 8}
                 textAnchor="middle"
-                className={`text-xs font-medium ${
-                  finger === "x" ? "fill-destructive" : "fill-muted-foreground"
+                className={`text-xs font-bold ${
+                  isMuted ? "fill-destructive" : "fill-muted-foreground"
                 }`}
               >
-                {finger === "x" ? "✕" : finger}
+                {isMuted ? "✕" : "◯"}
               </text>
             );
           })}
@@ -270,26 +287,41 @@ const ChordDiagram = memo(({
           })}
         </g>
 
-        {/* Finger dots */}
+        {/* Finger dots with finger numbers inside */}
         <g className="finger-dots">
           {frets.map((fret, stringIndex) => {
             if (fret <= 0) return null;
             const displayIdx = flipped ? strings - 1 - stringIndex : stringIndex;
             const x = padding + displayIdx * stringSpacing;
             const y = padding + (fret - startFret + 0.5) * fretSpacing;
+            const finger = fingers[stringIndex];
+
             return (
-              <circle
-                key={`dot-${stringIndex}`}
-                cx={x}
-                cy={y}
-                r={compact ? 8 : 10}
-                className="fill-primary stroke-primary-foreground animate-scale-in"
-                strokeWidth={2}
-                style={{
-                  filter: "drop-shadow(0 2px 4px hsl(var(--primary) / 0.4))",
-                  animationDelay: `${stringIndex * 0.05}s`,
-                }}
-              />
+              <g key={`dot-${stringIndex}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={compact ? 8 : 10}
+                  className="fill-primary stroke-primary-foreground animate-scale-in"
+                  strokeWidth={2}
+                  style={{
+                    filter: "drop-shadow(0 2px 4px hsl(var(--primary) / 0.4))",
+                    animationDelay: `${stringIndex * 0.05}s`,
+                  }}
+                />
+                {finger !== "0" && finger !== "x" && (
+                  <text
+                    x={x}
+                    y={y + (compact ? 2.5 : 3.5)}
+                    textAnchor="middle"
+                    fontSize={compact ? 8.5 : 11}
+                    fontWeight="bold"
+                    fill="white"
+                  >
+                    {finger}
+                  </text>
+                )}
+              </g>
             );
           })}
         </g>

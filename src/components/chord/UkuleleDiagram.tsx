@@ -99,14 +99,29 @@ const UkuleleDiagram = memo(({
               stroke="hsl(var(--border))" strokeWidth={1.5} />
           ))}
 
-          {/* Dots */}
+          {/* Dots with finger numbers inside */}
           {frets.map((fret, si) => {
             if (fret <= 0) return null;
             const row = flipped ? numStrings - 1 - si : si;
+            const finger = fingers[si];
             return (
-              <circle key={`dot-${si}`} cx={fretCX(fret)} cy={stringY(row)}
-                r={compact ? 6 : 8} className="fill-primary animate-scale-in"
-                style={{ filter: "drop-shadow(0 2px 6px hsl(var(--primary) / 0.5))" }} />
+              <g key={`dot-${si}`}>
+                <circle cx={fretCX(fret)} cy={stringY(row)}
+                  r={compact ? 6 : 8} className="fill-primary animate-scale-in"
+                  style={{ filter: "drop-shadow(0 2px 6px hsl(var(--primary) / 0.5))" }} />
+                {finger !== "0" && finger !== "x" && (
+                  <text
+                    x={fretCX(fret)}
+                    y={stringY(row) + (compact ? 2.5 : 3.5)}
+                    textAnchor="middle"
+                    fontSize={compact ? 6.5 : 8.5}
+                    fontWeight="bold"
+                    fill="white"
+                  >
+                    {finger}
+                  </text>
+                )}
+              </g>
             );
           })}
 
@@ -138,35 +153,46 @@ const UkuleleDiagram = memo(({
       {!compact && (
         <h4 className="text-sm font-semibold mb-3 text-foreground">{chordName}</h4>
       )}
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
-        aria-label={`${chordName} ukulele chord diagram`}>
+      <svg
+        width={size}
+        height={size}
+        // Offset viewBox to start at x = -28 to prevent startFret text from clipping
+        viewBox={`-28 0 ${size + 28} ${size}`}
+        role="img"
+        aria-label={`${chordName} ukulele chord diagram`}
+      >
         <title>{`${chordName} Ukulele Chord`}</title>
 
         {/* Fret number label next to the first fret slot (if starting above fret 1) */}
         {startFret > 1 && (
           <text
-            x={padding - 10}
+            x={padding - 8}
             y={padding + fretSpacing * 0.5 + 4}
             textAnchor="end"
-            fontSize={compact ? 9 : 11}
+            fontSize={compact ? 9.5 : 12}
             fontWeight="bold"
-            className="fill-muted-foreground select-none"
+            className="fill-primary select-none animate-fade-in"
           >
             {startFret}fr
           </text>
         )}
 
-        {/* Mute / finger markers above nut */}
-        {fingers.map((finger, i) => {
-          const di = flipped ? numStrings - 1 - i : i;
-          return (
-            <text key={`mk-${i}`} x={padding + di * strSpacing} y={padding - 8}
-              textAnchor="middle"
-              className={`text-xs font-medium ${finger === "x" ? "fill-destructive" : "fill-muted-foreground"}`}>
-              {finger === "x" ? "✕" : finger === "0" ? "" : finger}
-            </text>
-          );
-        })}
+        {/* Mute / open markers above nut (✕ for mute, ◯ for open, nothing for fretted) */}
+        <g className="finger-markers">
+          {fingers.map((finger, i) => {
+            const di = flipped ? numStrings - 1 - i : i;
+            const isMuted = finger === "x" || frets[i] < 0;
+            const isOpen = frets[i] === 0;
+            if (!isMuted && !isOpen) return null;
+            return (
+              <text key={`mk-${i}`} x={padding + di * strSpacing} y={padding - 8}
+                textAnchor="middle"
+                className={`text-xs font-bold ${isMuted ? "fill-destructive" : "fill-muted-foreground"}`}>
+                {isMuted ? "✕" : "◯"}
+              </text>
+            );
+          })}
+        </g>
 
         {/* Fret lines (horizontal) */}
         {Array.from({ length: numFrets + 1 }).map((_, i) => (
@@ -187,18 +213,34 @@ const UkuleleDiagram = memo(({
           );
         })}
 
-        {/* Finger dots */}
+        {/* Finger dots with finger numbers inside */}
         {frets.map((fret, si) => {
           if (fret <= 0) return null;
           const di = flipped ? numStrings - 1 - si : si;
+          const finger = fingers[si];
           return (
-            <circle key={`dot-${si}`}
-              cx={padding + di * strSpacing}
-              cy={padding + (fret - startFret + 0.5) * fretSpacing}
-              r={compact ? 7 : 9}
-              className="fill-primary stroke-primary-foreground animate-scale-in"
-              strokeWidth={2}
-              style={{ filter: "drop-shadow(0 2px 4px hsl(var(--primary) / 0.4))" }} />
+            <g key={`dot-${si}`}>
+              <circle
+                cx={padding + di * strSpacing}
+                cy={padding + (fret - startFret + 0.5) * fretSpacing}
+                r={compact ? 7 : 9}
+                className="fill-primary stroke-primary-foreground animate-scale-in"
+                strokeWidth={2}
+                style={{ filter: "drop-shadow(0 2px 4px hsl(var(--primary) / 0.4))" }}
+              />
+              {finger !== "0" && finger !== "x" && (
+                <text
+                  x={padding + di * strSpacing}
+                  y={padding + (fret - startFret + 0.5) * fretSpacing + (compact ? 2.5 : 3.5)}
+                  textAnchor="middle"
+                  fontSize={compact ? 8 : 10.5}
+                  fontWeight="bold"
+                  fill="white"
+                >
+                  {finger}
+                </text>
+              )}
+            </g>
           );
         })}
 
