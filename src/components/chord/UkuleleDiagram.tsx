@@ -177,18 +177,17 @@ const UkuleleDiagram = memo(({
           </text>
         )}
 
-        {/* Mute / open markers above nut (✕ for mute, ◯ for open, nothing for fretted) */}
+        {/* Absolute fret markers above nut (✕ for mute, 0 for open, absolute fret number otherwise) */}
         <g className="finger-markers">
-          {fingers.map((finger, i) => {
+          {frets.map((fret, i) => {
             const di = flipped ? numStrings - 1 - i : i;
-            const isMuted = finger === "x" || frets[i] < 0;
-            const isOpen = frets[i] === 0;
-            if (!isMuted && !isOpen) return null;
+            const isMuted = fret < 0;
+            const isOpen = fret === 0;
             return (
-              <text key={`mk-${i}`} x={padding + di * strSpacing} y={padding - 8}
+              <text key={`fret-marker-${i}`} x={padding + di * strSpacing} y={padding - 8}
                 textAnchor="middle"
                 className={`text-xs font-bold ${isMuted ? "fill-destructive" : "fill-muted-foreground"}`}>
-                {isMuted ? "✕" : "◯"}
+                {isMuted ? "✕" : isOpen ? "0" : fret}
               </text>
             );
           })}

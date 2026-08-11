@@ -230,16 +230,15 @@ const ChordDiagram = memo(({
           </text>
         )}
 
-        {/* Mute / open markers above nut (✕ for mute, ◯ for open, nothing for fretted) */}
+        {/* Absolute fret markers above nut (✕ for mute, 0 for open, absolute fret number otherwise) */}
         <g className="finger-markers">
-          {fingers.map((finger, i) => {
+          {frets.map((fret, i) => {
             const displayIdx = flipped ? strings - 1 - i : i;
-            const isMuted = finger === "x" || frets[i] < 0;
-            const isOpen = frets[i] === 0;
-            if (!isMuted && !isOpen) return null;
+            const isMuted = fret < 0;
+            const isOpen = fret === 0;
             return (
               <text
-                key={`finger-${i}`}
+                key={`fret-marker-${i}`}
                 x={padding + displayIdx * stringSpacing}
                 y={padding - 8}
                 textAnchor="middle"
@@ -247,7 +246,7 @@ const ChordDiagram = memo(({
                   isMuted ? "fill-destructive" : "fill-muted-foreground"
                 }`}
               >
-                {isMuted ? "✕" : "◯"}
+                {isMuted ? "✕" : isOpen ? "0" : fret}
               </text>
             );
           })}
