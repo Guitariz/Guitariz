@@ -192,9 +192,9 @@ const PianoChordDiagram = memo(({ chordName, compact = false }: PianoChordDiagra
                   cx={x + whiteKeyW / 2}
                   cy={yOffset + whiteKeyH * 0.65}
                   r={compact ? 5 : 7}
-                  fill={isRoot ? "hsl(var(--primary))" : "#0ea5e9"}
+                  fill={isRoot ? "#f59e0b" : "#0ea5e9"}
                   style={{
-                    filter: isRoot ? "drop-shadow(0 0 4px hsl(var(--primary) / 0.8))" : "drop-shadow(0 0 3px rgba(14,165,233,0.6))",
+                    filter: isRoot ? "drop-shadow(0 0 4px rgba(245,158,11,0.8))" : "drop-shadow(0 0 3px rgba(14,165,233,0.6))",
                   }}
                 />
               )}
@@ -236,9 +236,9 @@ const PianoChordDiagram = memo(({ chordName, compact = false }: PianoChordDiagra
                   cx={x + blackKeyW / 2}
                   cy={yOffset + blackKeyH * 0.5}
                   r={compact ? 4 : 5.5}
-                  fill={isRoot ? "hsl(var(--primary))" : "#0ea5e9"}
+                  fill={isRoot ? "#f59e0b" : "#0ea5e9"}
                   style={{
-                    filter: isRoot ? "drop-shadow(0 0 4px hsl(var(--primary) / 0.8))" : "drop-shadow(0 0 3px rgba(14,165,233,0.6))",
+                    filter: isRoot ? "drop-shadow(0 0 4px rgba(245,158,11,0.8))" : "drop-shadow(0 0 3px rgba(14,165,233,0.6))",
                   }}
                 />
               )}
@@ -263,7 +263,7 @@ const PianoChordDiagram = memo(({ chordName, compact = false }: PianoChordDiagra
       {/* Legend */}
       <div className="flex items-center gap-3 mt-1 select-none">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
           <span className="text-[9px] text-muted-foreground font-semibold">Root Note</span>
         </div>
         <div className="flex items-center gap-1.5">
