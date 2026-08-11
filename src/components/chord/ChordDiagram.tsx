@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 
 interface ChordDiagramProps {
   frets: number[];
@@ -22,9 +22,17 @@ const ChordDiagram = memo(({
   horizontal = false,
 }: ChordDiagramProps) => {
 
+  // Compute the starting fret (startFret) of the diagram.
+  // E.g., if a chord voicing spans frets above 5 (like D# at fret 6), we shift the fretboard range.
+  const startFret = useMemo(() => {
+    const maxFret = Math.max(...frets);
+    const frettedFrets = frets.filter(f => f > 0);
+    return maxFret > 5 && frettedFrets.length > 0 
+      ? Math.max(1, Math.min(...frettedFrets)) 
+      : 1;
+  }, [frets]);
+
   // ─── HORIZONTAL / FACE-TO-FACE VIEW ─────────────────────────────────────────
-  // Orientation: Low E at TOP, high e at BOTTOM — like looking at the neck head-on.
-  // String labels on the LEFT. Nut on the left. Frets go right.
   if (horizontal) {
     const numFrets = 5;
     const numStrings = 6;
@@ -43,8 +51,8 @@ const ChordDiagram = memo(({
 
     // Low E (si=0) at top row, high e (si=5) at bottom row
     const stringY = (si: number) => padT + si * strH;
-    // Centre X of fret slot f (1-indexed)
-    const fretCX = (f: number) => padL + (f - 0.5) * fretW;
+    // Centre X of fret slot f (1-indexed relative to startFret)
+    const fretCX = (f: number) => padL + (f - startFret + 0.5) * fretW;
 
     return (
       <div className="flex flex-col items-center">
@@ -109,14 +117,14 @@ const ChordDiagram = memo(({
             />
           ))}
 
-          {/* Nut — thick vertical bar on the left */}
+          {/* Nut — thick vertical bar on the left (only thick if starting at fret 1) */}
           <line
             x1={padL}
             y1={padT}
             x2={padL}
             y2={padT + (numStrings - 1) * strH}
             stroke="hsl(var(--foreground))"
-            strokeWidth={4}
+            strokeWidth={startFret === 1 ? 4 : 1.5}
             strokeLinecap="round"
           />
 
@@ -161,7 +169,7 @@ const ChordDiagram = memo(({
               fontSize={compact ? 7 : 9}
               className="fill-muted-foreground/50 font-bold"
             >
-              {i + 1}
+              {startFret + i}
             </text>
           ))}
         </svg>
@@ -194,10 +202,24 @@ const ChordDiagram = memo(({
         <title>{`${chordName} Guitar Chord Diagram`}</title>
         <desc>{`Interactive guitar chord diagram for ${chordName} showing finger positions, muted strings, and fretboard layout.`}</desc>
 
+        {/* Fret number label next to the first fret slot (if starting above fret 1) */}
+        {startFret > 1 && (
+          <text
+            x={padding - 10}
+            y={padding + fretSpacing * 0.5 + 4}
+            textAnchor="end"
+            fontSize={compact ? 9 : 11}
+            fontWeight="bold"
+            className="fill-muted-foreground select-none"
+          >
+            {startFret}fr
+          </text>
+        )}
+
         {/* Finger / mute markers above nut */}
         <g className="finger-markers">
           {fingers.map((finger, i) => {
-            const displayIdx = flipped ? fingers.length - 1 - i : i;
+            const displayIdx = flipped ? strings - 1 - i : i;
             return (
               <text
                 key={`finger-${i}`}
@@ -224,7 +246,7 @@ const ChordDiagram = memo(({
               x2={size - padding}
               y2={padding + i * fretSpacing}
               stroke="hsl(var(--border))"
-              strokeWidth={i === 0 ? 3 : 1.5}
+              strokeWidth={i === 0 && startFret === 1 ? 3 : 1.5}
             />
           ))}
         </g>
@@ -252,9 +274,9 @@ const ChordDiagram = memo(({
         <g className="finger-dots">
           {frets.map((fret, stringIndex) => {
             if (fret <= 0) return null;
-            const displayIdx = flipped ? frets.length - 1 - stringIndex : stringIndex;
+            const displayIdx = flipped ? strings - 1 - stringIndex : stringIndex;
             const x = padding + displayIdx * stringSpacing;
-            const y = padding + (fret - 0.5) * fretSpacing;
+            const y = padding + (fret - startFret + 0.5) * fretSpacing;
             return (
               <circle
                 key={`dot-${stringIndex}`}
