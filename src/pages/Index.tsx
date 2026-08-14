@@ -94,6 +94,13 @@ const Index = () => {
           }
         },
         {
+          "@type": "WebSite",
+          "@id": "https://guitariz.studio/#website",
+          "name": "Guitariz Studio",
+          "alternateName": ["Guitariz", "GuitarizStudio"],
+          "url": "https://guitariz.studio/"
+        },
+        {
           "@type": "Organization",
           "@id": "https://guitariz.studio/#org",
           "name": "Guitariz Studio",
