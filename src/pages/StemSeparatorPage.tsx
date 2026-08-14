@@ -12,6 +12,7 @@ import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import GearTip from "@/components/GearTip";
 import staticContent from "@/data/staticContent.json";
+import { StemSeparationProgress } from "@/components/StemSeparationProgress";
 
 // Stem configuration with icons and colors
 const STEM_CONFIG = {
@@ -134,6 +135,7 @@ const StemSeparatorPage = () => {
     const [processing, setProcessing] = useState(false);
     const [separated, setSeparated] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [fileDuration, setFileDuration] = useState<number | null>(null);
     const [stemFormat, setStemFormat] = useState<"wav" | "mp3">("mp3");
     const [exportingMix, setExportingMix] = useState(false);
     const [activePreset, setActivePreset] = useState<PresetKey | null>(null);
@@ -320,6 +322,15 @@ const StemSeparatorPage = () => {
         setSelectedFile(file);
         setSeparated(false);
         teardownSources();
+        
+        // Read audio duration client-side
+        const audio = new Audio();
+        audio.src = URL.createObjectURL(file);
+        audio.onloadedmetadata = () => {
+            setFileDuration(audio.duration);
+            URL.revokeObjectURL(audio.src);
+        };
+
         // Reset audio nodes
         STEM_TYPES.forEach(stem => {
             if (audioNodesRef.current[stem].gainNode) {
@@ -712,6 +723,8 @@ const StemSeparatorPage = () => {
                                     <Button
                                         onClick={() => {
                                             setSelectedFile(null);
+                                            setFileDuration(null);
+                                            setUploadProgress(null);
                                             setSeparated(false);
                                         }}
                                         variant="outline"
@@ -721,43 +734,23 @@ const StemSeparatorPage = () => {
                                     </Button>
                                 </div>
 
-                                {/* Process Button */}
-                                {!separated && (
-                                    <Button
-                                        onClick={processSeparation}
-                                        disabled={processing}
-                                        className="w-full h-14 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
-                                    >
-                                        {processing ? (
-                                            <>
-                                                <Loader2 className="w-5 h-5 mr-2" style={{ animation: 'spin 1s linear infinite' }} />
-                                                {uploadProgress !== null && uploadProgress < 100
-                                                    ? `Uploading… ${uploadProgress}%`
-                                                    : "Separating into 6 stems… (2-3 min)"}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Wand2 className="w-5 h-5 mr-2" />
-                                                Separate Into 6 Stems
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-
-                                {/* Upload Progress */}
-                                {processing && uploadProgress !== null && uploadProgress < 100 && (
-                                    <div className="w-full space-y-2">
-                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-blue-500 transition-all duration-300"
-                                                style={{ width: `${uploadProgress}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Uploading</span>
-                                            <span className="text-[10px] text-blue-400 font-mono">{uploadProgress}%</span>
-                                        </div>
-                                    </div>
+                                {/* Progress / Process Button */}
+                                {processing ? (
+                                    <StemSeparationProgress
+                                        uploadProgress={uploadProgress}
+                                        fileDuration={fileDuration}
+                                        isSixStems={true}
+                                    />
+                                ) : (
+                                    !separated && (
+                                        <Button
+                                            onClick={processSeparation}
+                                            className="w-full h-14 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
+                                        >
+                                            <Wand2 className="w-5 h-5 mr-2" />
+                                            Separate Into 6 Stems
+                                        </Button>
+                                    )
                                 )}
 
                                 {/* Stem Controls Grid */}

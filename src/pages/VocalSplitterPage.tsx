@@ -12,6 +12,7 @@ import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import GearTip from "@/components/GearTip";
 import { Link, useLocation } from "react-router-dom";
+import { StemSeparationProgress } from "@/components/StemSeparationProgress";
 
 const VocalSplitterPage = () => {
   const location = useLocation();
@@ -105,6 +106,7 @@ const VocalSplitterPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [fileDuration, setFileDuration] = useState<number | null>(null);
 
   const [downloading, setDownloading] = useState<{ vocals: boolean; instrumental: boolean }>({
     vocals: false,
@@ -248,6 +250,14 @@ const VocalSplitterPage = () => {
     setInstrumentalAudio(null);
     setVocalsUrl(null);
     setInstrumentalUrl(null);
+
+    // Read audio duration client-side
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(file);
+    audio.onloadedmetadata = () => {
+      setFileDuration(audio.duration);
+      URL.revokeObjectURL(audio.src);
+    };
   };
 
   const notifyDone = async () => {
@@ -570,6 +580,8 @@ const VocalSplitterPage = () => {
                   <Button
                     onClick={() => {
                       setSelectedFile(null);
+                      setFileDuration(null);
+                      setUploadProgress(null);
                       setSeparated(false);
                     }}
                     variant="outline"
@@ -579,43 +591,23 @@ const VocalSplitterPage = () => {
                   </Button>
                 </div>
 
-                {/* Process Button */}
-                {!separated && (
-                  <Button
-                    onClick={processSeparation}
-                    disabled={processing}
-                    className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
-                  >
-                    {processing ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        {uploadProgress !== null && uploadProgress < 100
-                          ? `Uploading… ${uploadProgress}%`
-                          : "Separating Audio… (this may take a few minutes)"}
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-5 h-5 mr-2" />
-                        Separate Vocals & Instrumentals
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {/* Upload Progress Bar */}
-                {processing && uploadProgress !== null && uploadProgress < 100 && (
-                  <div className="w-full space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Uploading to Server</span>
-                      <span className="text-[10px] text-blue-400 font-mono">{uploadProgress}%</span>
-                    </div>
-                  </div>
+                {/* Progress / Process Button */}
+                {processing ? (
+                  <StemSeparationProgress
+                    uploadProgress={uploadProgress}
+                    fileDuration={fileDuration}
+                    isSixStems={false}
+                  />
+                ) : (
+                  !separated && (
+                    <Button
+                      onClick={processSeparation}
+                      className="w-full h-16 rounded-2xl bg-white text-black hover:bg-white/90 text-lg font-semibold"
+                    >
+                      <Wand2 className="w-5 h-5 mr-2" />
+                      Separate Vocals & Instrumentals
+                    </Button>
+                  )
                 )}
 
                 {/* Controls */}
