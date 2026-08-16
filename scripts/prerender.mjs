@@ -24,7 +24,11 @@ const routes = [
           '@type': 'WebSite',
           '@id': 'https://guitariz.studio/#website',
           'url': 'https://guitariz.studio/',
-          'name': 'Guitariz',
+          'name': 'Guitariz Studio',
+          'alternateName': [
+            'Guitariz',
+            'GuitarizStudio'
+          ],
           'description': 'Professional music theory and AI analysis tools for musicians.',
           'inLanguage': 'en-US',
           'potentialAction': {
