@@ -31,13 +31,14 @@
 
   <meta name="theme-color" content="#060606" />
   <link rel="canonical" href="https://guitariz.studio/" />
-  <!-- Favicon and App Icons -->
-  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <!-- Favicon and App Icons for Google Search & Browsers -->
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="48x48" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
   <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
   <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
-  <link rel="apple-touch-icon" href="/favicon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192x192.png" />
 
   <!-- Apple PWA tags -->
   <meta name="mobile-web-app-capable" content="yes" />
@@ -45,6 +46,36 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Guitariz Studio" />
   <link rel="manifest" href="/manifest.json" />
+
+  <!-- Organization & Website Structured Data for Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://guitariz.studio/#organization",
+        "name": "Guitariz Studio",
+        "url": "https://guitariz.studio/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://guitariz.studio/logo.png",
+          "width": 512,
+          "height": 512
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://guitariz.studio/#website",
+        "url": "https://guitariz.studio/",
+        "name": "Guitariz Studio",
+        "publisher": {
+          "@id": "https://guitariz.studio/#organization"
+        }
+      }
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
