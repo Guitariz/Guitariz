@@ -3,9 +3,12 @@
  *
  * Auto-scrolling horizontal tape showing the current chord in focus
  * with past and future context.
+ *
+ * Performance: Only re-renders when the active chord index actually
+ * changes — not on every 60fps currentTime tick.
  */
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { ChordSegment } from "@/types/chordAI";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +18,28 @@ interface HorizontalChordTapeProps {
   currentTime?: number;
   onSeek?: (time: number) => void;
   className?: string;
+}
+
+/**
+ * Binary search for the chord index at a given time.
+ * Returns -1 if no chord contains the time.
+ */
+function findChordIndex(chords: ChordSegment[], time: number): number {
+  if (!chords.length) return -1;
+  let lo = 0;
+  let hi = chords.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const c = chords[mid];
+    if (time < c.start) {
+      hi = mid - 1;
+    } else if (time >= c.end) {
+      lo = mid + 1;
+    } else {
+      return mid;
+    }
+  }
+  return -1;
 }
 
 const HorizontalChordTape = ({
@@ -27,16 +52,16 @@ const HorizontalChordTape = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const rawChords = segments ?? chordsProp ?? [];
 
-  // Find current chord index
-  const activeIndex = useMemo(() => {
-    if (!Array.isArray(rawChords) || rawChords.length === 0) return -1;
-    for (let i = 0; i < rawChords.length; i++) {
-      const c = rawChords[i];
-      if (c && currentTime >= c.start && currentTime < c.end) {
-        return i;
-      }
+  // Stable active index state — only updates when the chord segment changes
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const lastIndexRef = useRef(-1);
+
+  useEffect(() => {
+    const idx = findChordIndex(rawChords, currentTime);
+    if (idx !== lastIndexRef.current) {
+      lastIndexRef.current = idx;
+      setActiveIndex(idx);
     }
-    return -1;
   }, [rawChords, currentTime]);
 
   // Show context: 3 chords before and after
@@ -99,3 +124,4 @@ const HorizontalChordTape = ({
 };
 
 export default HorizontalChordTape;
+

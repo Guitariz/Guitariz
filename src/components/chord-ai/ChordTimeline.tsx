@@ -5,7 +5,7 @@
  * Shows chord labels aligned to a horizontal timeline synchronized with audio playback.
  */
 
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { ChordSegment } from "@/types/chordAI";
 import { cn } from "@/lib/utils";
 
@@ -21,8 +21,27 @@ interface ChordTimelineProps {
 
 /** Map confidence [0, 1] to a hue (red → yellow → green) */
 function confidenceColor(confidence: number): string {
-  const hue = Math.round(Math.max(0, Math.min(1, confidence)) * 120); // 0=red, 60=yellow, 120=green
+  const hue = Math.round(Math.max(0, Math.min(1, confidence)) * 120);
   return `hsl(${hue}, 75%, 45%)`;
+}
+
+/** Binary search for the chord index at a given time. */
+function findChordIndex(chords: ChordSegment[], time: number): number {
+  if (!chords.length) return -1;
+  let lo = 0;
+  let hi = chords.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const c = chords[mid];
+    if (time < c.start) {
+      hi = mid - 1;
+    } else if (time >= c.end) {
+      lo = mid + 1;
+    } else {
+      return mid;
+    }
+  }
+  return -1;
 }
 
 const ChordTimeline = ({
@@ -39,16 +58,16 @@ const ChordTimeline = ({
 
   const rawChords = segments ?? chordsProp ?? [];
 
-  // Find active chord
-  const activeIndex = useMemo(() => {
-    if (!Array.isArray(rawChords) || rawChords.length === 0) return -1;
-    for (let i = 0; i < rawChords.length; i++) {
-      const c = rawChords[i];
-      if (c && currentTime >= c.start && currentTime < c.end) {
-        return i;
-      }
+  // Stable active index — only re-renders when the active chord changes
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const lastIndexRef = useRef(-1);
+
+  useEffect(() => {
+    const idx = findChordIndex(rawChords, currentTime);
+    if (idx !== lastIndexRef.current) {
+      lastIndexRef.current = idx;
+      setActiveIndex(idx);
     }
-    return -1;
   }, [rawChords, currentTime]);
 
   // Auto-scroll to active chord

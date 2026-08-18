@@ -511,18 +511,39 @@ const ChordAIPage = () => {
     return merged;
   }, [currentChords]);
 
-  const { currentChord } = useMemo(() => {
-    if (!highConfidenceChords.length) return { currentChord: undefined };
+  const [currentChord, setCurrentChord] = useState<typeof highConfidenceChords[0] | undefined>(undefined);
+  const lastChordIdxRef = useRef(-1);
 
-    const activeIndex = highConfidenceChords.findIndex((seg) => currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1));
-
-    if (activeIndex === -1) {
-      return { currentChord: undefined };
+  useEffect(() => {
+    if (!highConfidenceChords.length) {
+      if (lastChordIdxRef.current !== -1) {
+        lastChordIdxRef.current = -1;
+        setCurrentChord(undefined);
+      }
+      return;
     }
 
-    return {
-      currentChord: highConfidenceChords[activeIndex]
-    };
+    // Binary search for current chord
+    let lo = 0;
+    let hi = highConfidenceChords.length - 1;
+    let idx = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >>> 1;
+      const seg = highConfidenceChords[mid];
+      if (currentTime < seg.start) {
+        hi = mid - 1;
+      } else if (currentTime > (seg.end || seg.start + 0.1)) {
+        lo = mid + 1;
+      } else {
+        idx = mid;
+        break;
+      }
+    }
+
+    if (idx !== lastChordIdxRef.current) {
+      lastChordIdxRef.current = idx;
+      setCurrentChord(idx >= 0 ? highConfidenceChords[idx] : undefined);
+    }
   }, [currentTime, highConfidenceChords]);
 
   const activeChordVoicing = useMemo(() => {
