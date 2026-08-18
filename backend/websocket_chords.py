@@ -1,188 +1,146 @@
 """
-WebSocket endpoint for real-time chord streaming
+backend/websocket_chords.py
+
+WebSocket endpoint for real-time microphone chord detection.
+
+The client sends raw PCM audio chunks over the WebSocket, and the server
+responds with the detected chord label + confidence for each chunk.
+
+Uses the DSP template-matching approach (no ONNX model needed) for low latency.
 """
+from __future__ import annotations
 
-import base64
+import json
+import struct
 
-from fastapi import WebSocket, WebSocketDisconnect
 import numpy as np
-import librosa
+from fastapi import WebSocket, WebSocketDisconnect
 
-# Chord detection setup
-PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-
-CHORD_TEMPLATES = []
-for root in range(12):
-    for name, intervals in {
-        "maj": [0, 4, 7],
-        "min": [0, 3, 7],
-        "7": [0, 4, 7, 10],
-        "maj7": [0, 4, 7, 11],
-        "min7": [0, 3, 7, 10],
-        "dim": [0, 3, 6],
-        "aug": [0, 4, 8],
-        "sus2": [0, 2, 7],
-        "sus4": [0, 5, 7],
-    }.items():
-        v = np.zeros(12)
-        for iv in intervals:
-            v[(root + iv) % 12] = 1.0
-        v[root] += 0.2  # Slight weight to root
-        norm = np.linalg.norm(v)
-        chord_name = f"{PITCH_CLASS_NAMES[root]}"
-        if name != "maj":
-            chord_name += f"{name}"
-        CHORD_TEMPLATES.append((chord_name, v / (norm + 1e-9)))
+from ml.chord_vocab import LABELS, LABEL_TO_IDX, build_templates
+from ml.features import SR, N_CHROMA
 
 
-def detect_chord_from_audio(audio_data: np.ndarray, sr: int = 22050) -> dict:
+def _detect_chord_from_pcm(
+    pcm_data: bytes,
+    sample_rate: int = 44100,
+    templates: np.ndarray | None = None,
+) -> dict:
     """
-    Detect chord from a short audio segment.
-    
+    Detect a single chord from a raw PCM audio chunk.
+
     Args:
-        audio_data: Audio samples as numpy array
-        sr: Sample rate
-        
+        pcm_data: Raw PCM bytes (float32, mono)
+        sample_rate: Sample rate of the incoming audio
+        templates: Pre-computed chord templates (109, 12)
+
     Returns:
-        Dict with chord name and confidence
+        dict with 'chord', 'confidence', 'pitchClasses'
     """
-    if len(audio_data) < sr * 0.1:  # Less than 100ms
-        return {"chord": "N.C.", "confidence": 0.0}
-    
-    try:
-        # Compute chroma features
-        chroma = librosa.feature.chroma_cqt(y=audio_data, sr=sr, hop_length=512)
-        
-        # Average across time
-        vec = chroma.mean(axis=1)
-        norm = np.linalg.norm(vec)
-        
-        if norm < 0.05:
-            return {"chord": "N.C.", "confidence": 0.0}
-        
-        vec = vec / (norm + 1e-9)
-        
-        # Find best matching chord
-        scores = [float(np.dot(vec, tpl[1])) for tpl in CHORD_TEMPLATES]
-        best_idx = int(np.argmax(scores))
-        chord_name, _ = CHORD_TEMPLATES[best_idx]
-        confidence = min(1.0, scores[best_idx])
-        
-        return {"chord": chord_name, "confidence": float(confidence)}
-        
-    except Exception as e:
-        print(f"[WS] Chord detection error: {e}")
-        return {"chord": "N.C.", "confidence": 0.0}
+    if templates is None:
+        templates = build_templates()
+
+    # Decode PCM float32 samples
+    n_samples = len(pcm_data) // 4
+    if n_samples < 512:
+        return {"chord": "N.C.", "confidence": 0.0, "pitchClasses": [0] * 12}
+
+    samples = np.array(struct.unpack(f"<{n_samples}f", pcm_data[:n_samples * 4]), dtype=np.float32)
+
+    # Quick RMS energy check
+    rms = np.sqrt(np.mean(samples ** 2))
+    if rms < 0.01:
+        return {"chord": "N.C.", "confidence": 0.0, "pitchClasses": [0] * 12}
+
+    # Compute chroma using simple FFT-based approach for low latency
+    fft_size = min(4096, len(samples))
+    if fft_size < 512:
+        return {"chord": "N.C.", "confidence": 0.0, "pitchClasses": [0] * 12}
+
+    # Apply Hann window
+    window = np.hanning(fft_size)
+    windowed = samples[:fft_size] * window
+
+    # FFT
+    spectrum = np.abs(np.fft.rfft(windowed))
+    freqs = np.fft.rfftfreq(fft_size, 1.0 / sample_rate)
+
+    # Build pitch class histogram from spectral peaks
+    pitch_classes = np.zeros(12, dtype=np.float32)
+    min_freq, max_freq = 65.0, 2000.0
+
+    for i in range(1, len(spectrum) - 1):
+        freq = freqs[i]
+        mag = spectrum[i]
+        if freq < min_freq or freq > max_freq:
+            continue
+        if mag > spectrum[i - 1] and mag > spectrum[i + 1]:
+            # Peak detected — map to pitch class
+            if freq > 0:
+                midi = 69 + 12 * np.log2(freq / 440.0)
+                pc = int(round(midi)) % 12
+                pitch_classes[pc] += mag
+
+    # Normalize
+    pc_sum = pitch_classes.sum()
+    if pc_sum < 0.01:
+        return {"chord": "N.C.", "confidence": 0.0, "pitchClasses": pitch_classes.tolist()}
+
+    pc_norm = pitch_classes / (pc_sum + 1e-8)
+
+    # Template matching via cosine similarity
+    scores = templates @ pc_norm
+    nc_idx = LABEL_TO_IDX["N.C."]
+    scores[nc_idx] = -1.0  # Suppress N.C. for non-silent
+
+    best_idx = int(np.argmax(scores))
+    best_score = float(scores[best_idx])
+
+    # Map similarity [-1, 1] → confidence [0, 1]
+    confidence = float(np.clip((best_score + 1.0) / 2.0, 0, 1))
+
+    # Clean label: "C:maj" → "C", "A:min" → "Am"
+    label = LABELS[best_idx]
+    if ":" in label:
+        root, qual = label.split(":", 1)
+        if qual == "maj":
+            chord = root
+        elif qual == "min":
+            chord = f"{root}m"
+        else:
+            chord = f"{root}{qual}"
+    else:
+        chord = label
+
+    return {
+        "chord": chord,
+        "confidence": round(confidence, 3),
+        "pitchClasses": pitch_classes.tolist(),
+    }
 
 
-class ChordStreamManager:
-    """Manages WebSocket connections for real-time chord streaming."""
-    
-    def __init__(self):
-        self.active_connections: dict[str, WebSocket] = {}
-    
-    async def connect(self, websocket: WebSocket, client_id: str):
-        await websocket.accept()
-        self.active_connections[client_id] = websocket
-        print(f"[WS] Client {client_id} connected. Total: {len(self.active_connections)}")
-    
-    def disconnect(self, client_id: str):
-        if client_id in self.active_connections:
-            del self.active_connections[client_id]
-            print(f"[WS] Client {client_id} disconnected. Total: {len(self.active_connections)}")
-    
-    async def send_chord(self, client_id: str, data: dict):
-        if client_id in self.active_connections:
-            try:
-                await self.active_connections[client_id].send_json(data)
-            except Exception as e:
-                print(f"[WS] Error sending to {client_id}: {e}")
-                self.disconnect(client_id)
-
-
-# Global manager instance
-chord_stream_manager = ChordStreamManager()
-
-
-async def websocket_chord_endpoint(websocket: WebSocket, client_id: str):
+async def websocket_chord_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for real-time chord detection.
-    
-    Client sends audio chunks as base64-encoded PCM data.
-    Server responds with detected chords.
-    
-    Message format from client:
-    {
-        "type": "audio_chunk",
-        "data": "<base64 PCM 16-bit mono 22050Hz>",
-        "timestamp": <float seconds>
-    }
-    
-    OR:
-    {
-        "type": "analyze_position",
-        "audioUrl": "<url or path>",
-        "position": <float seconds>
-    }
-    
-    Response format:
-    {
-        "type": "chord",
-        "chord": "Cmaj",
-        "confidence": 0.85,
-        "timestamp": <float>
-    }
+    WebSocket handler for real-time chord detection.
+
+    Protocol:
+      - Client sends binary PCM frames (float32, mono, 44100 Hz)
+      - Server responds with JSON: {"chord": "Am", "confidence": 0.85, "pitchClasses": [...]}
     """
-    await chord_stream_manager.connect(websocket, client_id)
-    
-    audio_buffer = np.array([], dtype=np.float32)
-    
+    await websocket.accept()
+    print("[WS] Client connected for live chord detection")
+
+    templates = build_templates()
+
     try:
         while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type")
-            
-            if msg_type == "audio_chunk":
-                # Decode base64 audio
-                audio_b64 = data.get("data", "")
-                timestamp = data.get("timestamp", 0.0)
-                
-                if audio_b64:
-                    try:
-                        # Decode base64 to bytes
-                        audio_bytes = base64.b64decode(audio_b64)
-                        # Convert to numpy (assuming 16-bit PCM mono)
-                        audio_chunk = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
-                        
-                        # Append to buffer
-                        audio_buffer = np.concatenate([audio_buffer, audio_chunk])
-                        
-                        # Keep last 1 second of audio for analysis
-                        max_samples = 22050
-                        if len(audio_buffer) > max_samples:
-                            audio_buffer = audio_buffer[-max_samples:]
-                        
-                        # Detect chord if we have enough audio (at least 0.5s)
-                        if len(audio_buffer) >= 11025:
-                            result = detect_chord_from_audio(audio_buffer, sr=22050)
-                            await chord_stream_manager.send_chord(client_id, {
-                                "type": "chord",
-                                "chord": result["chord"],
-                                "confidence": result["confidence"],
-                                "timestamp": timestamp,
-                            })
-                    except Exception as e:
-                        print(f"[WS] Audio chunk error: {e}")
-            
-            elif msg_type == "ping":
-                await chord_stream_manager.send_chord(client_id, {"type": "pong"})
-            
-            elif msg_type == "clear":
-                audio_buffer = np.array([], dtype=np.float32)
-                await chord_stream_manager.send_chord(client_id, {"type": "cleared"})
-                
+            data = await websocket.receive_bytes()
+            result = _detect_chord_from_pcm(data, sample_rate=44100, templates=templates)
+            await websocket.send_text(json.dumps(result))
     except WebSocketDisconnect:
-        chord_stream_manager.disconnect(client_id)
+        print("[WS] Client disconnected")
     except Exception as e:
-        print(f"[WS] Error in chord stream: {e}")
-        chord_stream_manager.disconnect(client_id)
+        print(f"[WS] Error: {e}")
+        try:
+            await websocket.close()
+        except Exception:
+            pass

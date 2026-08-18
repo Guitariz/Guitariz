@@ -26,13 +26,8 @@ export async function analyzeRemote(
   onUploadProgress?: (percent: number) => void,
   onXhrCreated?: (xhr: XMLHttpRequest) => void
 ): Promise<AnalysisResult> {
-  // If we're in production and using a relative path (empty apiUrl), it will likely fail on Vercel
-  if (import.meta.env.PROD && !import.meta.env.VITE_CHORD_AI_API && endpoint.startsWith("/api")) {
-    // Just silent check
-  }
-
-  // File size limit: 15MB (reasonable for audio files)
-  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
+  // File size limit: 15MB
+  const MAX_FILE_SIZE = 15 * 1024 * 1024;
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 15MB.`);
   }
@@ -43,18 +38,17 @@ export async function analyzeRemote(
   form.append("use_madmom", (analysisMode === "fast").toString());
   form.append("mode", analysisMode);
 
-  // Use XMLHttpRequest to track upload progress
+  // Use XMLHttpRequest for upload progress tracking
   if (onUploadProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       
-      // Notify parent about XHR creation so it can be cancelled if needed
       if (onXhrCreated) {
         onXhrCreated(xhr);
       }
       
-      // Timeout: 5 minutes - Hugging Face can be slow, especially on free tier
-      const timeoutMs = 300000; // 5 minutes
+      // 5 minute timeout for HuggingFace free tier
+      const timeoutMs = 300000;
       xhr.timeout = timeoutMs;
       
       xhr.addEventListener('timeout', () => {
@@ -80,12 +74,7 @@ export async function analyzeRemote(
             const simpleChords = json.simpleChords ? normalizeChords(json.simpleChords, json.duration) : [];
             
             const result = {
-              tempo,
-              key,
-              scale,
-              meter,
-              chords,
-              simpleChords,
+              tempo, key, scale, meter, chords, simpleChords,
               duration: json.duration,
               instrumentalUrl: json.instrumentalUrl,
             };
@@ -132,7 +121,6 @@ export async function analyzeRemote(
 
   const result: AnalysisResult = { tempo, key, scale, meter, chords, simpleChords };
   
-  // Include instrumentalUrl if present (when vocal separation was used)
   if (json.instrumentalUrl) {
     result.instrumentalUrl = json.instrumentalUrl;
   }

@@ -564,11 +564,9 @@ def _simplify_chord_precise(chord: str, key: str, scale: str) -> str:
         return f"{root}dim"
     elif "aug" in suffix:
         return f"{root}aug"
-    elif "min" in suffix or suffix.startswith("m"):
-        return f"{root}min"
-    elif suffix == "" or suffix in ("maj", "6", "add9", "9", "11", "maj7", "maj9"):
+    elif "maj" in suffix or suffix in ("", "6", "add9", "9", "11", "maj7", "maj9"):
         return root
-    elif suffix in ("min7", "min6", "min9"):
+    elif "min" in suffix or suffix.startswith("m"):
         return f"{root}min"
     elif "sus" in suffix:
         # Resolve sus by diatonic quality

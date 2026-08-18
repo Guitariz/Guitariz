@@ -1,43 +1,58 @@
-import { useState, useEffect } from "react";
+/**
+ * src/hooks/useBackendHealth.ts
+ *
+ * Backend health check with cold-start awareness.
+ * Shows "waking up" UI if the HuggingFace Space is sleeping.
+ */
 
-export type HealthStatus = "checking" | "online" | "offline";
+import { useState, useEffect, useRef } from "react";
 
-export const useBackendHealth = (intervalMs: number = 30000) => {
-    const [status, setStatus] = useState<HealthStatus>("checking");
+type HealthStatus = "unknown" | "checking" | "healthy" | "sleeping" | "error";
 
-    useEffect(() => {
-        const checkHealth = async () => {
-            try {
-                const chordsEndpoint = import.meta.env.VITE_CHORD_AI_API || "";
-                const apiUrl = chordsEndpoint
-                    ? new URL(chordsEndpoint).origin
-                    : (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
-                const response = await fetch(`${apiUrl}/health`, {
-                    method: "GET",
-                    headers: {
-                        "Accept": "application/json",
-                    },
-                    // Short timeout for health checks
-                    signal: AbortSignal.timeout(5000)
-                });
+export function useBackendHealth(pollIntervalMs: number = 30000) {
+  const [status, setStatus] = useState<HealthStatus>("unknown");
+  const [fastEngine, setFastEngine] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-                if (response.ok) {
-                    setStatus("online");
-                } else {
-                    setStatus("offline");
-                }
-            } catch (error) {
-                setStatus("offline");
-            }
-        };
+  const check = async () => {
+    setStatus("checking");
+    try {
+      const apiUrl = (
+        import.meta.env.VITE_CHORD_AI_API
+          ? new URL(import.meta.env.VITE_CHORD_AI_API).origin
+          : import.meta.env.VITE_API_URL || ""
+      ).replace(/\/+$/, "");
 
-        checkHealth();
-        const id = setInterval(checkHealth, intervalMs);
+      if (!apiUrl) {
+        setStatus("unknown");
+        return;
+      }
 
-        return () => clearInterval(id);
-    }, [intervalMs]);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
 
-    return status;
-};
+      const res = await fetch(`${apiUrl}/api/health`, { signal: controller.signal });
+      clearTimeout(timeout);
 
-export default useBackendHealth;
+      if (res.ok) {
+        const data = await res.json();
+        setStatus("healthy");
+        setFastEngine(!!data.fast_engine);
+      } else {
+        setStatus("sleeping");
+      }
+    } catch {
+      setStatus("sleeping");
+    }
+  };
+
+  useEffect(() => {
+    check();
+    intervalRef.current = setInterval(check, pollIntervalMs);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [pollIntervalMs]);
+
+  return { status, fastEngine, recheck: check };
+}

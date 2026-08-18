@@ -1,172 +1,125 @@
 /**
- * WebSocket Hook for Real-time Chord Detection
- * Connects to backend WebSocket and streams audio for chord analysis
+ * src/hooks/useChordWebSocket.ts
+ *
+ * WebSocket client for real-time microphone chord detection.
+ *
+ * Connects to the backend's /ws/chords endpoint, streams PCM audio
+ * from the microphone, and receives chord predictions in real-time.
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 interface ChordResult {
-    chord: string;
-    confidence: number;
-    timestamp: number;
+  chord: string;
+  confidence: number;
+  pitchClasses: number[];
 }
 
-interface WebSocketMessage {
-    type: string;
-    chord?: string;
-    confidence?: number;
-    timestamp?: number;
-}
+export function useChordWebSocket() {
+  const [connected, setConnected] = useState(false);
+  const [currentChord, setCurrentChord] = useState<ChordResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-const BACKEND_WS_URL = import.meta.env.VITE_BACKEND_WS_URL || "ws://localhost:7860";
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-export const useChordWebSocket = () => {
-    const [isConnected, setIsConnected] = useState(false);
-    const [currentChord, setCurrentChord] = useState<ChordResult | null>(null);
-    const [error, setError] = useState<string | null>(null);
+  const connect = useCallback(async () => {
+    try {
+      setError(null);
 
-    const wsRef = useRef<WebSocket | null>(null);
-    const clientIdRef = useRef<string>(`client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
-    const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const reconnectAttemptsRef = useRef(0);
+      // Get microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 44100, echoCancellation: true },
+      });
+      streamRef.current = stream;
 
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    const RECONNECT_DELAY = 2000;
+      // Set up audio processing
+      const ctx = new AudioContext({ sampleRate: 44100 });
+      audioContextRef.current = ctx;
 
-    const connect = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            return;
-        }
+      const source = ctx.createMediaStreamSource(stream);
+      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
 
-        try {
-            const wsUrl = `${BACKEND_WS_URL}/ws/chords/${clientIdRef.current}`;
-            const ws = new WebSocket(wsUrl);
-            wsRef.current = ws;
+      // Connect WebSocket
+      const apiUrl = (
+        import.meta.env.VITE_CHORD_AI_API
+          ? new URL(import.meta.env.VITE_CHORD_AI_API).origin
+          : import.meta.env.VITE_API_URL || "http://localhost:7860"
+      ).replace(/\/+$/, "").replace("https://", "wss://").replace("http://", "ws://");
 
-            ws.onopen = () => {
-                setIsConnected(true);
-                setError(null);
-                reconnectAttemptsRef.current = 0;
-            };
+      const ws = new WebSocket(`${apiUrl}/ws/chords`);
+      ws.binaryType = "arraybuffer";
+      wsRef.current = ws;
 
-            ws.onmessage = (event) => {
-                try {
-                    const data: WebSocketMessage = JSON.parse(event.data);
+      ws.onopen = () => {
+        setConnected(true);
+        console.log("[WS] Connected for live chord detection");
 
-                    if (data.type === "chord" && data.chord) {
-                        setCurrentChord({
-                            chord: data.chord,
-                            confidence: data.confidence || 0,
-                            timestamp: data.timestamp || 0,
-                        });
-                    } else if (data.type === "pong") {
-                        // Keepalive response
-                    }
-                } catch (e) {
-                    console.error("[WS] Parse error:", e);
-                }
-            };
-
-            ws.onerror = (e) => {
-                console.error("[WS] Error:", e);
-                setError("WebSocket connection error");
-            };
-
-            ws.onclose = () => {
-                setIsConnected(false);
-                wsRef.current = null;
-
-                // Attempt reconnection
-                if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-                    reconnectAttemptsRef.current++;
-                    reconnectTimeoutRef.current = setTimeout(() => {
-                        connect();
-                    }, RECONNECT_DELAY * reconnectAttemptsRef.current);
-                } else {
-                    setError("Failed to connect after multiple attempts");
-                }
-            };
-        } catch (e) {
-            console.error("[WS] Connection error:", e);
-            setError("Failed to create WebSocket connection");
-        }
-    }, []);
-
-    const disconnect = useCallback(() => {
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-            reconnectTimeoutRef.current = null;
-        }
-
-        if (wsRef.current) {
-            wsRef.current.close();
-            wsRef.current = null;
-        }
-
-        setIsConnected(false);
-        reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS; // Prevent auto-reconnect
-    }, []);
-
-    const sendAudioChunk = useCallback((audioData: Float32Array, timestamp: number) => {
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-            return false;
-        }
-
-        try {
-            // Convert Float32Array to 16-bit PCM
-            const pcmData = new Int16Array(audioData.length);
-            for (let i = 0; i < audioData.length; i++) {
-                const s = Math.max(-1, Math.min(1, audioData[i]));
-                pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-            }
-
-            // Convert to base64
-            const bytes = new Uint8Array(pcmData.buffer);
-            const base64 = btoa(String.fromCharCode(...bytes));
-
-            wsRef.current.send(JSON.stringify({
-                type: "audio_chunk",
-                data: base64,
-                timestamp,
-            }));
-
-            return true;
-        } catch (e) {
-            console.error("[WS] Send error:", e);
-            return false;
-        }
-    }, []);
-
-    const clearBuffer = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: "clear" }));
-        }
-        setCurrentChord(null);
-    }, []);
-
-    const ping = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: "ping" }));
-        }
-    }, []);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            disconnect();
+        // Start sending audio
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const buffer = new Float32Array(inputData);
+            ws.send(buffer.buffer);
+          }
         };
-    }, [disconnect]);
 
-    return {
-        isConnected,
-        currentChord,
-        error,
-        connect,
-        disconnect,
-        sendAudioChunk,
-        clearBuffer,
-        ping,
-    };
-};
+        source.connect(processor);
+        processor.connect(ctx.destination);
+      };
 
-export default useChordWebSocket;
+      ws.onmessage = (event) => {
+        try {
+          const result = JSON.parse(event.data) as ChordResult;
+          setCurrentChord(result);
+        } catch {
+          console.warn("[WS] Failed to parse chord result");
+        }
+      };
+
+      ws.onerror = () => {
+        setError("WebSocket connection error");
+        setConnected(false);
+      };
+
+      ws.onclose = () => {
+        setConnected(false);
+      };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to access microphone";
+      setError(msg);
+      setConnected(false);
+    }
+  }, []);
+
+  const disconnect = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setConnected(false);
+    setCurrentChord(null);
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { disconnect(); };
+  }, [disconnect]);
+
+  return { connected, currentChord, error, connect, disconnect };
+}

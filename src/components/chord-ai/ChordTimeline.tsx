@@ -1,159 +1,120 @@
+/**
+ * src/components/chord-ai/ChordTimeline.tsx
+ *
+ * Time-aligned chord blocks with color-coded confidence and click-to-seek.
+ * Shows chord labels aligned to a horizontal timeline synchronized with audio playback.
+ */
+
+import { useMemo, useRef, useEffect } from "react";
 import { ChordSegment } from "@/types/chordAI";
-import { useEffect, useRef } from "react";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export type ChordTimelineProps = {
-  segments: ChordSegment[];
-  currentTime: number;
-  onSeek: (time: number) => void;
-};
+interface ChordTimelineProps {
+  segments?: ChordSegment[];
+  chords?: ChordSegment[];
+  currentTime?: number;
+  duration?: number;
+  onSeek?: (time: number) => void;
+  transposeSemitones?: number;
+  className?: string;
+}
 
-const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${m}:${s}`;
-};
+/** Map confidence [0, 1] to a hue (red → yellow → green) */
+function confidenceColor(confidence: number): string {
+  const hue = Math.round(Math.max(0, Math.min(1, confidence)) * 120); // 0=red, 60=yellow, 120=green
+  return `hsl(${hue}, 75%, 45%)`;
+}
 
-// Determine confidence level and styling
-const getConfidenceLevel = (confidence: number) => {
-  if (confidence >= 0.85) {
-    return {
-      label: "High",
-      color: "text-green-400",
-      bg: "bg-green-500/10",
-      border: "border-green-500/30",
-      icon: CheckCircle
-    };
-  } else if (confidence >= 0.70) {
-    return {
-      label: "Good",
-      color: "text-blue-400",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/30",
-      icon: CheckCircle
-    };
-  } else if (confidence >= 0.55) {
-    return {
-      label: "Medium",
-      color: "text-yellow-400",
-      bg: "bg-yellow-500/10",
-      border: "border-yellow-500/30",
-      icon: AlertCircle
-    };
-  } else {
-    return {
-      label: "Low",
-      color: "text-orange-400",
-      bg: "bg-orange-500/10",
-      border: "border-orange-500/40",
-      icon: AlertCircle
-    };
-  }
-};
-
-const ChordTimeline = ({ segments, currentTime, onSeek }: ChordTimelineProps) => {
+const ChordTimeline = ({
+  segments,
+  chords: chordsProp,
+  currentTime = 0,
+  duration = 0,
+  onSeek,
+  transposeSemitones = 0,
+  className,
+}: ChordTimelineProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
-  const activeIndex = segments.findIndex(s => currentTime >= s.start && currentTime <= (s.end || s.start + 0.1));
+  const rawChords = segments ?? chordsProp ?? [];
 
+  // Find active chord
+  const activeIndex = useMemo(() => {
+    if (!Array.isArray(rawChords) || rawChords.length === 0) return -1;
+    for (let i = 0; i < rawChords.length; i++) {
+      const c = rawChords[i];
+      if (c && currentTime >= c.start && currentTime < c.end) {
+        return i;
+      }
+    }
+    return -1;
+  }, [rawChords, currentTime]);
+
+  // Auto-scroll to active chord
   useEffect(() => {
     if (activeRef.current && containerRef.current) {
       const container = containerRef.current;
-      const activeElement = activeRef.current;
-      
-      const elementTop = activeElement.offsetTop;
-      const elementHeight = activeElement.offsetHeight;
-      const containerHeight = container.clientHeight;
+      const active = activeRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
 
-      container.scrollTo({
-        top: elementTop - (containerHeight / 2) + (elementHeight / 2),
-        behavior: "smooth"
-      });
+      const isVisible =
+        activeRect.left >= containerRect.left &&
+        activeRect.right <= containerRect.right;
+
+      if (!isVisible) {
+        active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
     }
   }, [activeIndex]);
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop += e.deltaY;
-    }
-  };
+  if (!Array.isArray(rawChords) || rawChords.length === 0) return null;
+
+  const effectiveDur = duration > 0 ? duration : (rawChords[rawChords.length - 1]?.end ?? 1);
 
   return (
-    <div 
-      ref={containerRef}
-      onWheel={handleWheel}
-      className="h-[320px] md:h-[432px] overflow-y-auto px-3 sm:px-4 custom-scrollbar scroll-smooth relative"
-    >
-      <div className="space-y-3 py-2">
-        {segments.map((seg, idx) => {
-          const isActive = currentTime >= seg.start && currentTime <= (seg.end || seg.start + 0.1);
-          const progress = isActive && seg.end ? ((currentTime - seg.start) / (seg.end - seg.start)) * 100 : 0;
-          const confidence = seg.confidence ?? 0.75;
-          const confLevel = getConfidenceLevel(confidence);
-          const Icon = confLevel.icon;
-          
+    <div className={cn("w-full", className)}>
+      <div
+        ref={containerRef}
+        className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted"
+      >
+        {rawChords.map((chord, i) => {
+          if (!chord) return null;
+          const isActive = i === activeIndex;
+          const chordDur = Math.max(0.1, (chord.end ?? 0) - (chord.start ?? 0));
+          const widthPercent = effectiveDur > 0
+            ? Math.max(2, (chordDur / effectiveDur) * 100)
+            : 10;
+
           return (
             <div
-              key={`${seg.chord}-${seg.start}-${idx}`}
-              ref={isActive ? activeRef : null}
-              onClick={() => onSeek(seg.start)}
-              className={`group relative overflow-hidden rounded-2xl border px-4 py-4 sm:px-5 sm:py-5 cursor-pointer transition-all duration-300 ${
-                isActive 
-                  ? `border-white ${confLevel.bg} scale-[1.02] shadow-xl` 
-                  : `border-white/5 bg-white/[0.01] opacity-40 hover:opacity-100 hover:border-white/10 hover:bg-white/[0.02]`
-              }`}
-            >
-              {/* Progress Line */}
-              {isActive && (
-                <div 
-                  className={`absolute bottom-0 left-0 h-0.5 ${confLevel.color.replace('text-', 'bg-')} transition-none`}
-                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                />
+              key={`${chord.start ?? i}-${chord.chord ?? 'nc'}`}
+              ref={isActive ? activeRef : undefined}
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center rounded-md px-2 py-2 cursor-pointer transition-all duration-150",
+                "text-xs font-bold select-none border",
+                isActive
+                  ? "ring-2 ring-primary scale-105 bg-primary/15 border-primary/40 text-primary"
+                  : "bg-muted/40 border-border/50 text-foreground/80 hover:bg-muted/60"
               )}
-
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex flex-col min-w-0">
-                  <span className={`text-lg sm:text-2xl font-light tracking-tight truncate notranslate ${isActive ? "text-white" : "text-muted-foreground"}`} translate="no">
-                    {seg.chord}
-                  </span>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <div className={`text-[10px] sm:text-[11px] uppercase font-bold tracking-widest px-2 py-0.5 rounded border ${isActive ? "border-white/20 text-white" : "border-white/5 text-muted-foreground"}`}>
-                      <Icon className="w-3 h-3 inline-block mr-1" />
-                      {Math.round(confidence * 100)}%
-                    </div>
-                    {confidence < 0.70 && (
-                      <span className="text-[9px] text-orange-400/80 font-semibold uppercase tracking-wide">
-                        Review
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-xs font-mono text-muted-foreground tabular-nums">
-                    {formatTime(seg.start)}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground/40 mt-1 uppercase font-bold tracking-tighter">
-                    {((seg.end || seg.start) - seg.start).toFixed(1)}s
-                  </div>
-                </div>
-              </div>
+              style={{
+                minWidth: `${Math.max(40, widthPercent * 3)}px`,
+                borderLeftColor: confidenceColor(chord.confidence ?? 0.5),
+                borderLeftWidth: "3px",
+              }}
+              onClick={() => onSeek?.(chord.start ?? 0)}
+              title={`${chord.chord} (${Math.round((chord.confidence ?? 0) * 100)}% confidence)\n${(chord.start ?? 0).toFixed(1)}s - ${(chord.end ?? 0).toFixed(1)}s`}
+            >
+              <span className="truncate">
+                {chord.chord === "N.C." ? "—" : chord.chord}
+              </span>
             </div>
           );
         })}
-        {segments.length === 0 && (
-           <div className="h-full flex items-center justify-center text-muted-foreground text-sm font-light italic opacity-50">
-             Waiting for harmonic sequence...
-           </div>
-        )}
       </div>
     </div>
   );
 };
 
 export default ChordTimeline;
-
-

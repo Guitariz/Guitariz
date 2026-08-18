@@ -1,187 +1,152 @@
+/**
+ * src/components/chord-ai/ConfidenceSummary.tsx
+ *
+ * Overall and per-chord confidence breakdown with visual bars.
+ */
+
+import { useMemo } from "react";
 import { ChordSegment } from "@/types/chordAI";
-import { AlertTriangle, CheckCircle2, AlertCircle, Info } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export type ConfidenceSummaryProps = {
-  segments: ChordSegment[];
-  onSeek: (time: number) => void;
-};
+interface ConfidenceSummaryProps {
+  segments?: ChordSegment[];
+  chords?: ChordSegment[];
+  stats?: Record<string, unknown>;
+  onSeek?: (time: number) => void;
+  className?: string;
+}
 
-const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${m}:${s}`;
-};
+function confidenceLabel(confidence: number): { label: string; color: string } {
+  if (confidence >= 0.85) return { label: "High", color: "text-green-500" };
+  if (confidence >= 0.65) return { label: "Medium", color: "text-yellow-500" };
+  if (confidence >= 0.45) return { label: "Low", color: "text-orange-500" };
+  return { label: "Very Low", color: "text-red-500" };
+}
 
-const ConfidenceSummary = ({ segments, onSeek }: ConfidenceSummaryProps) => {
-  // Calculate statistics
-  const totalSegments = segments.length;
-  const lowConfidence = segments.filter(s => (s.confidence ?? 0.75) < 0.70);
-  const mediumConfidence = segments.filter(s => {
-    const c = s.confidence ?? 0.75;
-    return c >= 0.70 && c < 0.85;
-  });
-  const highConfidence = segments.filter(s => (s.confidence ?? 0.75) >= 0.85);
-  
-  const avgConfidence = segments.length > 0 
-    ? segments.reduce((sum, s) => sum + (s.confidence ?? 0.75), 0) / segments.length 
-    : 0;
+function confidenceBarColor(confidence: number): string {
+  if (confidence >= 0.85) return "bg-green-500";
+  if (confidence >= 0.65) return "bg-yellow-500";
+  if (confidence >= 0.45) return "bg-orange-500";
+  return "bg-red-500";
+}
 
-  // Overall quality rating
-  const getQualityRating = () => {
-    const lowPercent = (lowConfidence.length / totalSegments) * 100;
-    
-    if (avgConfidence >= 0.85 && lowPercent < 5) {
-      return {
-        label: "Excellent",
-        color: "text-green-400",
-        bg: "bg-green-500/10",
-        icon: CheckCircle2
-      };
-    } else if (avgConfidence >= 0.75 && lowPercent < 15) {
-      return {
-        label: "Good",
-        color: "text-blue-400",
-        bg: "bg-blue-500/10",
-        icon: CheckCircle2
-      };
-    } else if (avgConfidence >= 0.65) {
-      return {
-        label: "Fair",
-        color: "text-yellow-400",
-        bg: "bg-yellow-500/10",
-        icon: AlertCircle
-      };
-    } else {
-      return {
-        label: "Needs Review",
-        color: "text-orange-400",
-        bg: "bg-orange-500/10",
-        icon: AlertTriangle
-      };
+const ConfidenceSummary = ({
+  segments,
+  chords: chordsProp,
+  onSeek,
+  className,
+}: ConfidenceSummaryProps) => {
+  const rawChords = segments ?? chordsProp ?? [];
+
+  const calculatedStats = useMemo(() => {
+    if (!Array.isArray(rawChords) || rawChords.length === 0) return null;
+
+    const nonNC = rawChords.filter(c => c && c.chord !== "N.C.");
+    if (!nonNC.length) return null;
+
+    let totalDuration = 0;
+    let weightedConfidence = 0;
+    const perChord: Record<string, { totalConf: number; totalDur: number; count: number }> = {};
+
+    for (const c of nonNC) {
+      const dur = Math.max(0.1, (c.end ?? 0) - (c.start ?? 0));
+      totalDuration += dur;
+      weightedConfidence += (c.confidence ?? 0.5) * dur;
+
+      if (!perChord[c.chord]) {
+        perChord[c.chord] = { totalConf: 0, totalDur: 0, count: 0 };
+      }
+      perChord[c.chord].totalConf += (c.confidence ?? 0.5) * dur;
+      perChord[c.chord].totalDur += dur;
+      perChord[c.chord].count += 1;
     }
-  };
 
-  const quality = getQualityRating();
-  const QualityIcon = quality.icon;
+    const overall = totalDuration > 0 ? weightedConfidence / totalDuration : 0;
 
-  if (totalSegments === 0) return null;
+    const chordList = Object.entries(perChord)
+      .map(([name, data]) => ({
+        name,
+        confidence: data.totalDur > 0 ? data.totalConf / data.totalDur : 0,
+        duration: data.totalDur,
+        count: data.count,
+      }))
+      .sort((a, b) => b.duration - a.duration)
+      .slice(0, 8);
+
+    const high = nonNC.filter(c => (c.confidence ?? 0) >= 0.85).length;
+    const medium = nonNC.filter(c => (c.confidence ?? 0) >= 0.65 && (c.confidence ?? 0) < 0.85).length;
+    const low = nonNC.filter(c => (c.confidence ?? 0) >= 0.45 && (c.confidence ?? 0) < 0.65).length;
+    const veryLow = nonNC.filter(c => (c.confidence ?? 0) < 0.45).length;
+
+    return { overall, chordList, distribution: { high, medium, low, veryLow }, totalChords: nonNC.length };
+  }, [rawChords]);
+
+  if (!calculatedStats) return null;
+
+  const { label: overallLabel, color: overallColor } = confidenceLabel(calculatedStats.overall);
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 truncate">
-              <Info className="w-4 h-4" />
-              Analysis Confidence
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1 text-muted-foreground">
-              Detection quality overview
-            </CardDescription>
+    <div className={cn("space-y-4", className)}>
+      {/* Overall confidence */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm font-medium text-muted-foreground">Overall Confidence</span>
+            <span className={cn("text-sm font-bold", overallColor)}>
+              {Math.round(calculatedStats.overall * 100)}% — {overallLabel}
+            </span>
           </div>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${quality.bg} ${quality.color} shrink-0`}>
-            <QualityIcon className="w-4 h-4" />
-            <span className="text-sm font-semibold">{quality.label}</span>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4 p-3 sm:p-4">
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white/[0.02] border border-white/5 rounded-lg p-3 flex flex-col items-start sm:items-center">
-            <div className="text-lg sm:text-2xl font-bold text-white leading-none">
-              {Math.round(avgConfidence * 100)}%
-            </div>
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase font-semibold tracking-wide mt-1">
-              Avg Score
-            </div>
-          </div>
-          
-          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 flex flex-col items-start sm:items-center">
-            <div className="text-lg sm:text-2xl font-bold text-green-400 leading-none">
-              {highConfidence.length}
-            </div>
-            <div className="text-[10px] sm:text-xs text-green-400/70 uppercase font-semibold tracking-wide mt-1">
-              High (≥85%)
-            </div>
-          </div>
-          
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-lg p-3 flex flex-col items-start sm:items-center">
-            <div className="text-lg sm:text-2xl font-bold text-yellow-400 leading-none">
-              {mediumConfidence.length}
-            </div>
-            <div className="text-[10px] sm:text-xs text-yellow-400/70 uppercase font-semibold tracking-wide mt-1">
-              Medium (70-84%)
-            </div>
-          </div>
-          
-          <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 flex flex-col items-start sm:items-center">
-            <div className="text-lg sm:text-2xl font-bold text-orange-400 leading-none">
-              {lowConfidence.length}
-            </div>
-            <div className="text-[10px] sm:text-xs text-orange-400/70 uppercase font-semibold tracking-wide mt-1">
-              Low (&lt;70%)
-            </div>
+          <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all", confidenceBarColor(calculatedStats.overall))}
+              style={{ width: `${calculatedStats.overall * 100}%` }}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Low confidence segments list */}
-        {lowConfidence.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-orange-400" />
-              <h4 className="text-sm sm:text-base font-semibold text-orange-400">
-                Segments Needing Review ({lowConfidence.length})
-              </h4>
-            </div>
-            
-            <div className="space-y-2 max-h-52 sm:max-h-40 overflow-y-auto custom-scrollbar">
-              {lowConfidence.map((seg, idx) => (
-                <button
-                  key={`low-conf-${seg.start}-${idx}`}
-                  onClick={() => onSeek(seg.start)}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-3 sm:px-3 sm:py-2 bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/30 rounded-lg transition-colors text-left group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Badge variant="outline" className="border-orange-500/30 text-orange-400 shrink-0 px-2 py-0.5 text-xs">
-                      {seg.chord}
-                    </Badge>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-sm sm:text-base font-medium truncate">{formatTime(seg.start)}</span>
-                      <span className="text-xs text-muted-foreground truncate">{((seg.end || seg.start) - seg.start).toFixed(1)}s</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-semibold text-orange-400">
-                      {Math.round((seg.confidence || 0) * 100)}%
-                    </span>
-                    <span className="text-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                      →
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Distribution */}
+      <div className="grid grid-cols-4 gap-2 text-center">
+        <div className="p-2 rounded-lg bg-green-500/10">
+          <div className="text-lg font-bold text-green-500">{calculatedStats.distribution.high}</div>
+          <div className="text-[10px] text-muted-foreground">High</div>
+        </div>
+        <div className="p-2 rounded-lg bg-yellow-500/10">
+          <div className="text-lg font-bold text-yellow-500">{calculatedStats.distribution.medium}</div>
+          <div className="text-[10px] text-muted-foreground">Medium</div>
+        </div>
+        <div className="p-2 rounded-lg bg-orange-500/10">
+          <div className="text-lg font-bold text-orange-500">{calculatedStats.distribution.low}</div>
+          <div className="text-[10px] text-muted-foreground">Low</div>
+        </div>
+        <div className="p-2 rounded-lg bg-red-500/10">
+          <div className="text-lg font-bold text-red-500">{calculatedStats.distribution.veryLow}</div>
+          <div className="text-[10px] text-muted-foreground">Very Low</div>
+        </div>
+      </div>
 
-        {/* Success message for high quality */}
-        {lowConfidence.length === 0 && avgConfidence >= 0.85 && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-500/5 border border-green-500/20 rounded-lg">
-            <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
-            <p className="text-sm sm:text-xs text-green-400/90">
-              All chord detections have high confidence. No manual review needed!
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      {/* Per-chord breakdown */}
+      <div className="space-y-2">
+        <span className="text-xs text-muted-foreground font-medium">Top Chords</span>
+        {calculatedStats.chordList.map((chord) => {
+          const { color } = confidenceLabel(chord.confidence);
+          return (
+            <div key={chord.name} className="flex items-center gap-2">
+              <span className="text-xs font-bold w-12 text-right">{chord.name}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full", confidenceBarColor(chord.confidence))}
+                  style={{ width: `${chord.confidence * 100}%` }}
+                />
+              </div>
+              <span className={cn("text-[10px] font-medium w-8", color)}>
+                {Math.round(chord.confidence * 100)}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 

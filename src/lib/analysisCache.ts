@@ -1,81 +1,110 @@
-// Lightweight IndexedDB cache for analysis results
-type CachedAnalysis = {
-  result: unknown;
-  instrumentalUrl?: string;
-  ts: number;
-  ttl?: number; // ms
-};
+/**
+ * src/lib/analysisCache.ts
+ *
+ * IndexedDB-based analysis result caching.
+ * Avoids re-analyzing the same file by caching results keyed by
+ * file hash (name + size + last modified + settings).
+ *
+ * Cache TTL: 24 hours.
+ */
 
-const DB_NAME = "guitariz-cache";
+import { AnalysisResult } from "@/types/chordAI";
+
+const DB_NAME = "guitariz-analysis-cache";
 const STORE_NAME = "analyses";
 const DB_VERSION = 1;
+const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-function openDb(): Promise<IDBDatabase> {
+interface CachedEntry {
+  key: string;
+  result: AnalysisResult;
+  instrumentalUrl?: string;
+  timestamp: number;
+}
+
+function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+        db.createObjectStore(STORE_NAME, { keyPath: "key" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
   });
 }
 
-export async function getCachedAnalysis(key: string): Promise<CachedAnalysis | null> {
+export async function getCachedAnalysis(key: string): Promise<CachedEntry | null> {
   try {
-    const db = await openDb();
-    return await new Promise((resolve, reject) => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readonly");
       const store = tx.objectStore(STORE_NAME);
       const req = store.get(key);
-      req.onsuccess = () => {
-        resolve((req.result as CachedAnalysis) ?? null);
-      };
+      req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => reject(req.error);
     });
-  } catch (err) {
-    console.warn("analysisCache:getCachedAnalysis error", err);
+  } catch {
     return null;
   }
 }
 
-export async function setCachedAnalysis(key: string, data: { result: unknown; instrumentalUrl?: string }, ttlMs = 1000 * 60 * 60 * 24 * 30) {
+export async function setCachedAnalysis(
+  key: string,
+  data: { result: AnalysisResult; instrumentalUrl?: string }
+): Promise<void> {
   try {
-    const db = await openDb();
-    const payload: CachedAnalysis = { result: data.result, instrumentalUrl: data.instrumentalUrl, ts: Date.now(), ttl: ttlMs };
-    return await new Promise<void>((resolve, reject) => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
-      const req = store.put(payload, key);
+      const entry: CachedEntry = {
+        key,
+        result: data.result,
+        instrumentalUrl: data.instrumentalUrl,
+        timestamp: Date.now(),
+      };
+      const req = store.put(entry);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
-  } catch (err) {
-    console.warn("analysisCache:setCachedAnalysis error", err);
+  } catch {
+    // Silently fail — cache is a best-effort optimization
   }
 }
 
-export async function deleteCachedAnalysis(key: string) {
+export async function removeCachedAnalysis(key: string): Promise<void> {
   try {
-    const db = await openDb();
-    return await new Promise<void>((resolve, reject) => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
       const req = store.delete(key);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
-  } catch (err) {
-    console.warn("analysisCache:deleteCachedAnalysis error", err);
+  } catch {
+    // Silently fail
   }
 }
 
-export function isExpired(cached: CachedAnalysis | null) {
-  if (!cached) return true;
-  if (!cached.ts) return true;
-  const ttl = cached.ttl ?? 0;
-  return Date.now() - cached.ts > ttl;
+export async function clearAllAnalysisCache(): Promise<void> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+export function isExpired(entry: CachedEntry): boolean {
+  return Date.now() - entry.timestamp > TTL_MS;
 }

@@ -1,3 +1,17 @@
+"""
+backend/main.py
+
+FastAPI server for the Guitariz Chord AI backend.
+
+Endpoints:
+  POST /api/analyze         — Full file upload → JSON response
+  POST /api/analyze-stream  — Streaming NDJSON response (progressive chords)
+  GET  /api/health          — Health check
+  GET  /api/analyze/download/{id}/{filename} — Serve separated audio files
+  WS   /ws/chords           — Real-time microphone chord detection
+
+Deployed on HuggingFace Spaces (Docker, port 7860).
+"""
 import logging
 import os
 import shutil
@@ -50,20 +64,19 @@ except Exception as e:
         analyze_file_precise = None
         print(f"[Startup] ℹ Precise chord analysis engine not available | Error: {e} | {e2}", flush=True)
 
+
 class QuietScanFilter(logging.Filter):
-    """Filters out noisy 404 access logs from scanner bots to keep the console clean."""
+    """Filters out noisy 404 access logs from scanner bots."""
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.getMessage()
         if " 404 " in msg or "404 Not Found" in msg:
             return False
         if record.args:
-            # Uvicorn passes access args as a tuple: (client_addr, method, path, http_version, status_code)
             for arg in record.args:
                 if str(arg) == "404":
                     return False
         return True
 
-# Apply to uvicorn access logger
 logging.getLogger("uvicorn.access").addFilter(QuietScanFilter())
 
 # --- NETWORK DIAGNOSTICS & PATCH ---
@@ -81,40 +94,36 @@ except Exception as e:
     print(f"[DIAG] ❌ dnspython FAILED: {e}")
     DNS_BYPASS_POSSIBLE = False
 
-# 2. Apply Monkey Patches
+# 2. Monkey-patch socket DNS for YouTube domains
+_original_getaddrinfo = socket.getaddrinfo
+_original_gethostbyname = socket.gethostbyname
+
 try:
-    print("[DNS] 🛠️ Patching socket..." if DNS_BYPASS_POSSIBLE else "[DNS] ⚠️ Applying patch anyway...")
-    
-    _original_getaddrinfo = socket.getaddrinfo
-    _original_gethostbyname = socket.gethostbyname
+    if DNS_BYPASS_POSSIBLE:
+        def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+            yt_domains = {"www.youtube.com", "youtube.com", "music.youtube.com",
+                          "manifest.googlevideo.com", "rr1.googlevideo.com"}
+            if host in yt_domains:
+                try:
+                    answers = res.resolve(host, 'A')
+                    ip = answers[0].to_text()
+                    return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (ip, port or 443))]
+                except Exception:
+                    pass
+            return _original_getaddrinfo(host, port, family, type, proto, flags)
 
-    def patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
-        # Only patch YouTube domains to bypass potential system-level poisoning/blocking
-        if host == "www.youtube.com" or host == "youtube.com" or host == "music.youtube.com":
-            try:
-                # Use dnspython to query 8.8.8.8 directly
-                answers = res.resolve(host, 'A')
-                ip = answers[0].to_text()
-                # print(f"[DNS Patch] Resolved {host} -> {ip}")
-                return _original_getaddrinfo(ip, port, family, type, proto, flags)
-            except Exception:
-                pass
-        
-        # Fallback to system DNS for everything else
-        return _original_getaddrinfo(host, port, family, type, proto, flags)
+        def patched_gethostbyname(hostname):
+            if hostname in {"www.youtube.com", "youtube.com", "music.youtube.com"}:
+                try:
+                    answers = res.resolve(hostname, 'A')
+                    return answers[0].to_text()
+                except Exception:
+                    pass
+            return _original_gethostbyname(hostname)
 
-    def patched_gethostbyname(hostname):
-        if hostname == "www.youtube.com" or hostname == "youtube.com" or hostname == "music.youtube.com":
-            try:
-                answers = res.resolve(hostname, 'A')
-                return answers[0].to_text()
-            except Exception:
-                pass
-        return _original_gethostbyname(hostname)
-
-    socket.getaddrinfo = patched_getaddrinfo
-    socket.gethostbyname = patched_gethostbyname
-    print("[DNS] ✓ Patches applied to getaddrinfo and gethostbyname.")
+        socket.getaddrinfo = patched_getaddrinfo
+        socket.gethostbyname = patched_gethostbyname
+        print("[DNS] ✓ Patches applied to getaddrinfo and gethostbyname.")
 except Exception as e:
     print(f"[DIAG] ❌ Patching Failed: {e}")
 
@@ -136,33 +145,26 @@ except Exception as e:
     print(f"[DIAG] ❌ HTTPS FAILED: {e}")
 
 print("[DIAG] Diagnostics complete.\n")
-# ---------------------------
 
-
+# ── State management ────────────────────────────────────────────────────────
 
 # Store separated audio files temporarily (in production, use S3/cloud storage)
-# Format: { id: {"paths": [path1, path2], "timestamp": float} }
-separated_files = {}
+separated_files: dict[str, dict] = {}
 
 # Concurrency Control
-# Limit max concurrent heavy Demucs tasks (stem separation) to prevent OOM
 MAX_CONCURRENT_SEPARATION = 1
 separation_semaphore = threading.Semaphore(MAX_CONCURRENT_SEPARATION)
-
-# Limit max concurrent Chord AI (fast/librosa) tasks to prevent CPU saturation
 MAX_CONCURRENT_CHORDS = 3
 chord_semaphore = threading.Semaphore(MAX_CONCURRENT_CHORDS)
+
 
 def cleanup_loop():
     """Background thread to clean up old files after 1 hour."""
     while True:
         try:
             now = time.time()
-            to_delete = []
-            for fid, info in separated_files.items():
-                if now - info.get("timestamp", 0) > 3600: # 1 hour
-                    to_delete.append(fid)
-            
+            to_delete = [fid for fid, info in separated_files.items()
+                         if now - info.get("timestamp", 0) > 3600]
             for fid in to_delete:
                 info = separated_files.pop(fid, {})
                 for p in info.get("paths", []):
@@ -175,26 +177,27 @@ def cleanup_loop():
                         print(f"[Cleanup] Error deleting {p}: {e}")
         except Exception as e:
             print(f"[Cleanup] Error in loop: {e}")
-        time.sleep(600) # Run every 10 minutes
+        time.sleep(600)
+
+
+# ── App lifecycle ───────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Preload models on startup
     print("[Startup] Preloading models...")
     try:
         from analysis import _get_separator, _get_separator_6stem
-        # This will load the model into memory
         _get_separator()
         _get_separator_6stem()
         print("[Startup] ✓ Models preloaded and ready")
     except Exception as e:
         print(f"[Startup] ⚠️ Model preload failed: {e}")
-    
-    # Start cleanup thread
+
     thread = threading.Thread(target=cleanup_loop, daemon=True)
     thread.start()
     print("[Startup] ✓ Cleanup thread started")
     yield
+
 
 app = FastAPI(title="Chord AI Backend", version="1.3.4", lifespan=lifespan)
 
@@ -207,44 +210,48 @@ app.add_middleware(
 )
 
 
+# ── Health check ────────────────────────────────────────────────────────────
+
+@app.get("/api/health")
+def health():
+    """Health check endpoint for cold-start detection."""
+    return {
+        "status": "ok",
+        "fast_engine": FAST_ENGINE_AVAILABLE,
+        "precise_engine": analyze_file_precise is not None,
+        "version": "1.3.4",
+    }
+
+
+# ── Chord analysis endpoints ───────────────────────────────────────────────
+
 @app.post("/api/analyze")
 def analyze(
     file: UploadFile = File(...),
     separate_vocals: bool = Form(False),
     use_madmom: bool = Form(True),
-    mode: str = Form("fast")
+    mode: str = Form("fast"),
 ):
-    """Analyze audio file for chords.
-    
-    Args:
-        file: Audio file to analyze
-        separate_vocals: If True, separate vocals before analysis for better accuracy (slower)
-        use_madmom: If True, use fast engine. If False, use legacy detailed engine (slower)
-        mode: Engine mode ("fast" | "accurate")
-    """
-    # Resolve mode based on parameter or legacy fallback
+    """Analyze audio file for chords, key, tempo, and meter."""
     resolved_mode = mode
     if not use_madmom and mode == "fast" or mode == "accurate":
         resolved_mode = "balanced"
 
     print(f"Received analysis request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
-    
-    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
+
     is_heavy = separate_vocals or resolved_mode == "precise"
     active_semaphore = separation_semaphore if is_heavy else chord_semaphore
-    
-    # Acquire semaphore (queueing if busy)
+
     with active_semaphore:
         try:
             if not file.filename:
                 raise HTTPException(status_code=400, detail="File required")
 
             suffix = Path(file.filename).suffix or ".tmp"
-
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 shutil.copyfileobj(file.file, tmp)
                 tmp_path = Path(tmp.name)
-        
+
             try:
                 if resolved_mode == "precise":
                     if analyze_file_precise is not None:
@@ -275,23 +282,23 @@ def analyze(
                     else:
                         print("[API] Fast engine not available, falling back to BALANCED mode")
                         result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                
-                # If vocal separation was used, store the instrumental file and return its URL
+
+                # Store instrumental file if vocal separation was used
                 if "instrumentalPath" in result:
                     file_id = str(uuid.uuid4())
                     path = result["instrumentalPath"]
                     separated_files[file_id] = {
                         "paths": [path],
                         "timestamp": time.time(),
-                        "type": "analysis"
+                        "type": "analysis",
                     }
                     result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
-                    print(f"Stored instrumental file with ID: {file_id}, URL: {result['instrumentalUrl']}")
-                    del result["instrumentalPath"]  # Remove the local path from response
-                
+                    print(f"Stored instrumental file with ID: {file_id}")
+                    del result["instrumentalPath"]
+
                 print(f"Returning result with keys: {result.keys()}")
                 return JSONResponse(result)
-            except Exception as e: 
+            except Exception as e:
                 print(f"[API] Analysis failed: {e}")
                 import traceback
                 traceback.print_exc()
@@ -304,66 +311,59 @@ def analyze(
                 pass
 
 
-
 @app.post("/api/analyze-stream")
 def analyze_stream(
     file: UploadFile = File(...),
     separate_vocals: bool = Form(False),
     use_madmom: bool = Form(True),
-    mode: str = Form("fast")
+    mode: str = Form("fast"),
 ):
-    """Analyze audio file and stream pre-computed chords back in NDJSON chunks."""
+    """Analyze audio and stream chords back in NDJSON chunks."""
     import json
     import math
-    # Resolve mode based on parameter or legacy fallback
+
     resolved_mode = mode
     if not use_madmom and mode == "fast" or mode == "accurate":
         resolved_mode = "balanced"
 
-    print(f"Received analysis streaming request for file: {file.filename} (separate_vocals={separate_vocals}, mode={resolved_mode})")
-    
+    print(f"Received streaming request for file: {file.filename} (mode={resolved_mode})")
+
     is_heavy = separate_vocals or resolved_mode == "precise"
     active_semaphore = separation_semaphore if is_heavy else chord_semaphore
-    
+
     try:
         if not file.filename:
             raise HTTPException(status_code=400, detail="File required")
 
         suffix = Path(file.filename).suffix or ".tmp"
-
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             shutil.copyfileobj(file.file, tmp)
             tmp_path = Path(tmp.name)
-    
-        # Define the generator that will be executed by StreamingResponse
+
         def ndjson_generator():
-            import queue
-            import threading
-            
-            # Acquire semaphore inside the generator context to prevent concurrent CPU exhaustion
             with active_semaphore:
                 try:
-                    if resolved_mode == "precise":
+                    if resolved_mode == "precise" and analyze_file_precise is not None:
+                        import queue
                         q = queue.Queue()
+
                         def run_precise():
                             try:
                                 res = analyze_file_precise(
                                     tmp_path,
                                     separate_vocals=separate_vocals,
                                     progress_cb=lambda stage, msg, pct: q.put({
-                                        "type": "progress",
-                                        "stage": stage,
-                                        "message": msg,
-                                        "percent": pct
-                                    })
+                                        "type": "progress", "stage": stage,
+                                        "message": msg, "percent": pct,
+                                    }),
                                 )
                                 q.put({"type": "result", "result": res})
                             except Exception as inner_err:
                                 q.put({"type": "error", "detail": str(inner_err)})
-                        
+
                         t_thread = threading.Thread(target=run_precise)
                         t_thread.start()
-                        
+
                         result = None
                         while True:
                             item = q.get()
@@ -375,45 +375,36 @@ def analyze_stream(
                             elif item["type"] == "error":
                                 raise Exception(item["detail"])
                     else:
-                        # Balanced or Fast mode
+                        # Fast or Balanced mode
                         if resolved_mode == "balanced":
-                            print(f"[API Stream] Running BALANCED mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
                             result = analyze_file(tmp_path, separate_vocals=separate_vocals)
                         else:
-                            # Fast mode (Custom ONNX)
                             if FAST_ENGINE_AVAILABLE:
                                 if separate_vocals:
-                                    print("[API Stream] Running FAST mode with vocal separation...")
                                     separated = separate_audio_full(tmp_path)
                                     if separated and separated.get("instrumental"):
-                                        instr_path = separated["instrumental"]
-                                        result = analyze_file_fast(instr_path, mode="fast")
-                                        result["instrumentalPath"] = instr_path
+                                        result = analyze_file_fast(separated["instrumental"], mode="fast")
+                                        result["instrumentalPath"] = separated["instrumental"]
                                     else:
-                                        print("[API Stream] Vocal separation failed, using original audio")
                                         result = analyze_file_fast(tmp_path, mode="fast")
                                 else:
-                                    print("[API Stream] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
                                     result = analyze_file_fast(tmp_path, mode="fast")
                             else:
-                                print("[API Stream] Fast engine not available, falling back to BALANCED mode")
                                 result = analyze_file(tmp_path, separate_vocals=separate_vocals)
-                    
-                    # Extract instrumental info if needed
+
+                    # Handle instrumental file
                     instrumental_url = None
                     if "instrumentalPath" in result:
                         file_id = str(uuid.uuid4())
                         path = result["instrumentalPath"]
                         separated_files[file_id] = {
-                            "paths": [path],
-                            "timestamp": time.time(),
-                            "type": "analysis"
+                            "paths": [path], "timestamp": time.time(), "type": "analysis",
                         }
                         instrumental_url = f"/api/analyze/download/{file_id}/instrumental.wav"
-                        print(f"Stored instrumental file with ID: {file_id}, URL: {instrumental_url}")
-                    
-                    # Extract basic metadata
+
+                    # Yield metadata
                     metadata = {
+                        "type": "metadata",
                         "tempo": result.get("tempo", 120),
                         "meter": result.get("meter", 4),
                         "key": result.get("key", "C"),
@@ -421,26 +412,18 @@ def analyze_stream(
                     }
                     if instrumental_url:
                         metadata["instrumentalUrl"] = instrumental_url
-                    
-                    # Yield initial metadata chunk
-                    yield json.dumps({"type": "metadata", **metadata}) + "\n"
-                    
+                    yield json.dumps(metadata) + "\n"
+
+                    # Yield chords in 30-second chunks
                     chords = result.get("chords", [])
                     simple_chords = result.get("simpleChords", chords)
-                    
-                    # Chunk the chords list into 30-second intervals to yield progressively
+                    duration = max((c["end"] for c in chords), default=0)
+
                     chunk_size_sec = 30.0
-                    duration = 0.0
-                    if chords:
-                        duration = max(c["end"] for c in chords)
-                    
                     if duration <= 0:
                         yield json.dumps({
-                            "type": "chords",
-                            "start": 0,
-                            "end": 0,
-                            "chords": chords,
-                            "simpleChords": simple_chords
+                            "type": "chords", "start": 0, "end": 0,
+                            "chords": chords, "simpleChords": simple_chords,
                         }) + "\n"
                         return
 
@@ -448,521 +431,165 @@ def analyze_stream(
                     for i in range(num_chunks):
                         c_start = i * chunk_size_sec
                         c_end = (i + 1) * chunk_size_sec
-                        
                         chunk_chords = [c for c in chords if c["end"] > c_start and c["start"] < c_end]
-                        chunk_simple_chords = [c for c in simple_chords if c["end"] > c_start and c["start"] < c_end]
-                        
+                        chunk_simple = [c for c in simple_chords if c["end"] > c_start and c["start"] < c_end]
                         yield json.dumps({
-                            "type": "chords",
-                            "start": c_start,
-                            "end": min(duration, c_end),
-                            "chords": chunk_chords,
-                            "simpleChords": chunk_simple_chords
+                            "type": "chords", "start": c_start, "end": c_end,
+                            "chords": chunk_chords, "simpleChords": chunk_simple,
                         }) + "\n"
-                except Exception as gen_err:
-                    print(f"[API Stream] Generator error: {gen_err}")
-                    yield json.dumps({"type": "error", "detail": str(gen_err)}) + "\n"
+
+                except Exception as e:
+                    yield json.dumps({"type": "error", "detail": str(e)}) + "\n"
                 finally:
-                    # Clean up temporary uploaded file once generation finishes
                     try:
                         tmp_path.unlink(missing_ok=True)
                     except Exception:
                         pass
-        
-        # Set X-Accel-Buffering: no header to prevent Nginx buffering
-        headers = {
-            "X-Accel-Buffering": "no",
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive"
-        }
-        return StreamingResponse(ndjson_generator(), media_type="application/x-ndjson", headers=headers)
-        
+
+        return StreamingResponse(ndjson_generator(), media_type="application/x-ndjson")
     except Exception as e:
-        print(f"[API Stream] Request initial setup failed: {e}")
-        if 'tmp_path' in locals() and tmp_path.exists():
-            tmp_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/analyze-youtube")
-def analyze_youtube(
+# ── File download ───────────────────────────────────────────────────────────
+
+@app.get("/api/analyze/download/{file_id}/{filename}")
+def download_file(file_id: str, filename: str):
+    """Serve separated audio files."""
+    if file_id not in separated_files:
+        raise HTTPException(status_code=404, detail="File not found or expired")
+
+    info = separated_files[file_id]
+    paths = info.get("paths", [])
+
+    for p in paths:
+        if Path(p).exists():
+            return FileResponse(
+                path=p,
+                media_type="audio/wav",
+                filename=filename,
+            )
+
+    raise HTTPException(status_code=404, detail="File no longer available")
+
+
+# ── Stem separation endpoints ──────────────────────────────────────────────
+
+@app.post("/api/separate")
+def separate(
+    file: UploadFile = File(...),
+    stems: str = Form("4"),
+):
+    """Separate audio into stems (4-stem or 6-stem)."""
+    with separation_semaphore:
+        try:
+            suffix = Path(file.filename).suffix or ".tmp"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                tmp_path = Path(tmp.name)
+
+            if stems == "6":
+                result = separate_audio_stems(tmp_path)
+            else:
+                result = separate_audio_full(tmp_path)
+
+            if not result:
+                raise HTTPException(status_code=500, detail="Separation failed")
+
+            file_id = str(uuid.uuid4())
+            all_paths = list(result.values())
+            separated_files[file_id] = {
+                "paths": all_paths,
+                "timestamp": time.time(),
+                "type": "separation",
+            }
+
+            urls = {}
+            for stem_name, stem_path in result.items():
+                urls[stem_name] = f"/api/analyze/download/{file_id}/{stem_name}.wav"
+
+            return JSONResponse({"id": file_id, "stems": urls})
+        finally:
+            try:
+                if 'tmp_path' in locals():
+                    tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+
+# ── YouTube endpoints ───────────────────────────────────────────────────────
+
+@app.post("/api/youtube/analyze")
+def youtube_analyze(
     url: str = Form(...),
     separate_vocals: bool = Form(False),
-    use_madmom: bool = Form(True),
-    client_ip: str = Form("unknown"),
-    mode: str = Form("fast")
+    mode: str = Form("fast"),
 ):
-    """Analyze YouTube video for chords.
-    
-    Args:
-        url: YouTube video URL
-        separate_vocals: If True, separate vocals before analysis (slower, more accurate)
-        use_madmom: If True, use fast engine. If False, use legacy detailed engine.
-        client_ip: Client IP for rate limiting
-        mode: Engine mode ("fast" | "accurate")
-    
-    Returns:
-        Video metadata + chord analysis result
-    """
-    # Resolve mode based on parameter or legacy fallback
-    resolved_mode = mode
-    if not use_madmom and mode == "fast" or mode == "accurate":
-        resolved_mode = "balanced"
-
-    print(f"[YouTube] Received request for URL: {url} | Mode: {resolved_mode}")
-    
-    # Rate limiting check
-    if not check_rate_limit(client_ip):
-        remaining = get_remaining_requests(client_ip)
-        raise HTTPException(
-            status_code=429, 
-            detail=f"Rate limit exceeded. Maximum 5 YouTube analyses per hour. Remaining: {remaining}"
-        )
-    
-    # Validate URL
+    """Analyze a YouTube video's audio."""
     video_id = extract_video_id(url)
     if not video_id:
         raise HTTPException(status_code=400, detail="Invalid YouTube URL")
-    
-    # Choose semaphore based on whether we are running Demucs (heavy) or just chords (light)
-    is_heavy = separate_vocals or resolved_mode == "precise"
-    active_semaphore = separation_semaphore if is_heavy else chord_semaphore
-    
-    # Acquire semaphore (queueing if busy)
-    with active_semaphore:
+
+    if not check_rate_limit(video_id):
+        remaining = get_remaining_requests()
+        raise HTTPException(status_code=429, detail=f"Rate limit exceeded. {remaining} requests remaining.")
+
+    try:
+        audio_path = extract_audio(url)
+        if not audio_path:
+            raise HTTPException(status_code=500, detail="Failed to extract audio from YouTube")
+
+        tmp_path = Path(audio_path)
+
+        if FAST_ENGINE_AVAILABLE and mode == "fast":
+            result = analyze_file_fast(tmp_path, mode="fast")
+        else:
+            result = analyze_file(tmp_path, separate_vocals=separate_vocals)
+
+        # Add video info
+        info = get_video_info(url)
+        if info:
+            result["videoTitle"] = info.get("title", "")
+            result["videoDuration"] = info.get("duration", 0)
+
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {e}")
+    finally:
         try:
-            # Extract audio from YouTube
-            print(f"[YouTube] Extracting audio for video: {video_id}")
-            audio_info = extract_audio(url)
-            audio_path = Path(audio_info['audio_path'])
-            
-            if not audio_path.exists():
-                raise HTTPException(status_code=500, detail="Failed to download audio")
-            
-            print(f"[YouTube] Audio extracted: {audio_path} (cached: {audio_info.get('cached', False)})")
-            
-            # Analyze the audio
-            print(f"[YouTube] Starting analysis (mode={resolved_mode}, vocals={separate_vocals})")
-            if resolved_mode == "precise":
-                if analyze_file_precise is not None:
-                    print("[YouTube] Running PRECISE mode (Deep 5-stage pipeline)")
-                    result = analyze_file_precise(audio_path, separate_vocals=separate_vocals)
-                else:
-                    print("[YouTube] Precise engine not available, falling back to BALANCED mode")
-                    result = analyze_file(audio_path, separate_vocals=separate_vocals)
-            elif resolved_mode == "balanced":
-                print(f"[YouTube] Running BALANCED mode (Librosa DSP pipeline) | Vocal Filter: {separate_vocals}")
-                result = analyze_file(audio_path, separate_vocals=separate_vocals)
-            else:
-                # Fast mode (Custom ONNX)
-                if FAST_ENGINE_AVAILABLE:
-                    if separate_vocals:
-                        print("[YouTube] Running FAST mode with vocal separation...")
-                        separated = separate_audio_full(audio_path)
-                        if separated and separated.get("instrumental"):
-                            instr_path = separated["instrumental"]
-                            result = analyze_file_fast(instr_path, mode="fast")
-                            result["instrumentalPath"] = instr_path
-                        else:
-                            print("[YouTube] Vocal separation failed, using original audio")
-                            result = analyze_file_fast(audio_path, mode="fast")
-                    else:
-                        print("[YouTube] Running FAST mode (Custom ONNX) | Vocal Filter: OFF")
-                        result = analyze_file_fast(audio_path, mode="fast")
-                else:
-                    print("[YouTube] Fast engine not available, falling back to BALANCED mode")
-                    result = analyze_file(audio_path, separate_vocals=separate_vocals)
-            
-            # Handle instrumental file if vocal separation was used
-            if "instrumentalPath" in result:
-                file_id = str(uuid.uuid4())
-                path = result["instrumentalPath"]
-                separated_files[file_id] = {
-                    "paths": [path],
-                    "timestamp": time.time(),
-                    "type": "youtube_analysis"
-                }
-                result["instrumentalUrl"] = f"/api/analyze/download/{file_id}/instrumental.wav"
-                del result["instrumentalPath"]
-                
-            # Register the original audio file for download (for waveform visualization)
-            audio_id = str(uuid.uuid4())
-            separated_files[audio_id] = {
-                "paths": [str(audio_path)],
-                "timestamp": time.time(),
-                "type": "youtube_audio"
-            }
-            result["audioUrl"] = f"/api/analyze/download/{audio_id}/original.mp3"
-            
-            # Add YouTube video metadata
-            result["youtube"] = {
-                "videoId": audio_info['video_id'],
-                "title": audio_info['title'],
-                "duration": audio_info['duration'],
-                "thumbnail": audio_info['thumbnail'],
-                "channel": audio_info.get('channel', 'Unknown'),
-            }
-            result["remainingRequests"] = get_remaining_requests(client_ip)
-            
-            print(f"[YouTube] Analysis complete for: {audio_info['title']}")
-            return JSONResponse(result)
-            
-        except HTTPException:
-            raise
-        except Exception as exc:
-            print(f"[YouTube] Analysis failed: {exc}")
-            raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {exc}")
+            if 'tmp_path' in locals():
+                tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 @app.get("/api/youtube/info")
 def youtube_info(url: str):
-    """Get YouTube video info without downloading.
-    
-    Args:
-        url: YouTube video URL
-    
-    Returns:
-        Video metadata (title, duration, thumbnail, channel)
-    """
-    try:
-        info = get_video_info(url)
-        return JSONResponse(info)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get video info: {e}")
+    """Get YouTube video info without downloading."""
+    video_id = extract_video_id(url)
+    if not video_id:
+        raise HTTPException(status_code=400, detail="Invalid YouTube URL")
+
+    info = get_video_info(url)
+    if not info:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    return JSONResponse(info)
 
 
-@app.post("/api/separate")
-def separate_audio(
-    file: UploadFile = File(...),
-    format: str = Form("wav"),
-):
-    """Separate vocals and instrumentals from audio file.
+# ── WebSocket ───────────────────────────────────────────────────────────────
 
-    Args:
-        file: Audio file upload
-        format: Output container for stems. Supported: "wav" (default), "mp3".
-
-    Notes:
-        - MP3 is smaller and typically faster to transfer to the browser.
-        - WAV is lossless but larger.
-    """
-    print(f"Received separation request for file: {file.filename} (format={format})")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="File required")
-
-    format = (format or "wav").lower().strip()
-    if format not in {"wav", "mp3"}:
-        raise HTTPException(status_code=400, detail="Invalid format. Use 'wav' or 'mp3'.")
-
-    suffix = Path(file.filename).suffix or ".tmp"
-    
-    # Acquire semaphore (queueing if busy)
-    with separation_semaphore:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            shutil.copyfileobj(file.file, tmp)
-            tmp_path = Path(tmp.name)
-
-        try:
-            # Perform full separation (writes WAV stems)
-            # Note: Analysis.py now handles truncation internally using librosa
-            print(f"Starting separation for {file.filename}...")
-            result = separate_audio_full(tmp_path)
-
-            if not result:
-                raise HTTPException(status_code=500, detail="Separation failed - model error")
-
-            print("Separation finished, starting transcoding...")
-            session_id = str(uuid.uuid4())
-
-            vocals_path = Path(result["vocals"])
-            instrumental_path = Path(result["instrumental"])
-
-            # Optionally transcode to MP3 for faster downloads
-            if format == "mp3":
-                def to_mp3(src: Path) -> Path:
-                    dst = src.with_suffix(".mp3")
-                    # 192k is a good quality/size tradeoff; adjust if needed
-                    subprocess.run(
-                        [
-                            "ffmpeg",
-                            "-y",
-                            "-i",
-                            str(src),
-                            "-codec:a",
-                            "libmp3lame",
-                            "-b:a",
-                            "192k",
-                            str(dst),
-                        ],
-                        check=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                    )
-                    return dst
-
-                try:
-                    vocals_path = to_mp3(vocals_path)
-                    instrumental_path = to_mp3(instrumental_path)
-                except subprocess.CalledProcessError as e:
-                    # Fallback to WAV if MP3 conversion fails
-                    print(f"MP3 conversion failed, falling back to WAV: {e}")
-                    format = "wav"
-                except FileNotFoundError:
-                    # ffmpeg not installed
-                    print("ffmpeg not found, falling back to WAV format")
-                    format = "wav"
-
-            # Store paths temporarily
-            separated_files[session_id] = {
-                "vocals": str(vocals_path),
-                "instrumental": str(instrumental_path),
-                "paths": [str(vocals_path), str(instrumental_path)],
-                "format": format,
-                "timestamp": time.time(),
-                "type": "separation"
-            }
-
-            return JSONResponse(
-                {
-                    "session_id": session_id,
-                    "format": format,
-                    "vocalsUrl": f"/api/separate/download/{session_id}/vocals?format={format}",
-                    "instrumentalUrl": f"/api/separate/download/{session_id}/instrumental?format={format}",
-                }
-            )
-        except Exception as exc:
-            print(f"Separation error: {exc}")
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Separation failed: {exc!s}")
-        finally:
-            # Clean up original upload
-            try:
-                tmp_path.unlink(missing_ok=True)
-            except Exception:
-                pass
+@app.websocket("/ws/chords")
+async def ws_chords(websocket: WebSocket):
+    """WebSocket endpoint for real-time microphone chord detection."""
+    await websocket_chord_endpoint(websocket)
 
 
-@app.post("/api/separate-stems")
-def separate_audio_6stems(
-    file: UploadFile = File(...),
-    format: str = Form("wav"),
-):
-    """Separate audio into 6 stems: vocals, drums, bass, guitar, piano, other.
-
-    Uses the htdemucs_6s model for high-quality 6-stem separation.
-
-    Args:
-        file: Audio file upload
-        format: Output container for stems. Supported: "wav" (default), "mp3".
-
-    Returns:
-        JSON with session_id and URLs for each stem download.
-        
-    Notes:
-        - Processing takes 5-10 minutes for a 3-minute song on CPU.
-        - MP3 is smaller and faster to transfer.
-        - WAV is lossless but larger.
-    """
-    print(f"Received 6-stem separation request for file: {file.filename} (format={format})")
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="File required")
-
-    format = (format or "wav").lower().strip()
-    if format not in {"wav", "mp3"}:
-        raise HTTPException(status_code=400, detail="Invalid format. Use 'wav' or 'mp3'.")
-
-    suffix = Path(file.filename).suffix or ".tmp"
-    
-    # Acquire semaphore (queueing if busy)
-    with separation_semaphore:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            shutil.copyfileobj(file.file, tmp)
-            tmp_path = Path(tmp.name)
-
-        try:
-            print(f"Starting 6-stem separation for {file.filename}...")
-            result = separate_audio_stems(tmp_path)
-
-            if not result:
-                raise HTTPException(status_code=500, detail="6-stem separation failed - model error")
-
-            print("6-stem separation finished, starting transcoding...")
-            session_id = str(uuid.uuid4())
-
-            stem_data = {}
-            all_paths = []
-            
-            for stem_name, stem_path in result.items():
-                stem_path = Path(stem_path)
-                
-                # Optionally transcode to MP3
-                if format == "mp3":
-                    try:
-                        mp3_path = stem_path.with_suffix(".mp3")
-                        subprocess.run(
-                            [
-                                "ffmpeg",
-                                "-y",
-                                "-i",
-                                str(stem_path),
-                                "-codec:a",
-                                "libmp3lame",
-                                "-b:a",
-                                "192k",
-                                "-loglevel", "quiet", # fix: suppress ffmpeg output which might clutter logs or cause issues
-                                str(mp3_path),
-                            ],
-                            check=True,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
-                        stem_path = mp3_path
-                    except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                        print(f"MP3 conversion failed for {stem_name}, keeping WAV: {e}")
-                
-                stem_data[stem_name] = str(stem_path)
-                all_paths.append(str(stem_path))
-
-            # Store paths temporarily
-            separated_files[session_id] = {
-                **stem_data,
-                "paths": all_paths,
-                "format": format,
-                "timestamp": time.time(),
-                "type": "6stem-separation"
-            }
-
-            # Build response with download URLs for each stem
-            stem_urls = {}
-            for stem_name in ["vocals", "drums", "bass", "guitar", "piano", "other"]:
-                if stem_name in stem_data:
-                    stem_urls[f"{stem_name}Url"] = f"/api/separate-stems/download/{session_id}/{stem_name}?format={format}"
-
-            return JSONResponse(
-                {
-                    "session_id": session_id,
-                    "format": format,
-                    "stems": list(stem_data.keys()),
-                    **stem_urls,
-                }
-            )
-        except Exception as exc:
-            print(f"6-stem separation error: {exc}")
-            import traceback
-            traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"6-stem separation failed: {exc!s}")
-        finally:
-            # Clean up original upload
-            try:
-                tmp_path.unlink(missing_ok=True)
-            except Exception:
-                pass
-
-
-@app.get("/api/separate-stems/download/{session_id}/{stem_type}")
-async def download_stem(session_id: str, stem_type: str, format: str = "wav"):
-    """Download a specific stem from 6-stem separation.
-
-    Args:
-        session_id: Separation session
-        stem_type: One of: vocals, drums, bass, guitar, piano, other
-        format: "wav" or "mp3" (should match what was requested during /api/separate-stems)
-    """
-    if session_id not in separated_files:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    if stem_type not in STEM_TYPES:
-        raise HTTPException(status_code=400, detail=f"Invalid stem type. Must be one of: {', '.join(STEM_TYPES)}")
-
-    stored = separated_files[session_id]
-    
-    if stem_type not in stored:
-        raise HTTPException(status_code=404, detail=f"Stem '{stem_type}' not found in this session")
-    
-    file_path = Path(stored[stem_type])
-
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File no longer available")
-
-    ext = file_path.suffix.lower()
-    if ext == ".mp3":
-        media_type = "audio/mpeg"
-        filename = f"{stem_type}.mp3"
-    else:
-        media_type = "audio/wav"
-        filename = f"{stem_type}.wav"
-
-    return FileResponse(file_path, media_type=media_type, filename=filename)
-
-
-@app.get("/api/analyze/download/{file_id}/{filename}")
-async def download_instrumental(file_id: str, filename: str):
-    """Download instrumental track from chord analysis.
-    
-    Args:
-        file_id: File ID from analysis response
-        filename: Filename (for browser download naming)
-    """
-    if file_id not in separated_files:
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    info = separated_files[file_id]
-    file_path = Path(info["paths"][0])
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File no longer available")
-    
-    return FileResponse(file_path, media_type="audio/wav", filename=filename)
-
-
-@app.get("/api/separate/download/{session_id}/{track_type}")
-async def download_separated(session_id: str, track_type: str, format: str = "wav"):
-    """Download separated audio track.
-
-    Args:
-        session_id: Separation session
-        track_type: "vocals" or "instrumental"
-        format: "wav" or "mp3" (should match what was requested during /api/separate)
-    """
-    if session_id not in separated_files:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    if track_type not in ["vocals", "instrumental"]:
-        raise HTTPException(status_code=400, detail="Invalid track type")
-
-    stored = separated_files[session_id]
-    file_path = Path(stored[track_type])
-
-    # If client requests a format that doesn't match stored, just serve what we have.
-    # (Prevents 404s if someone tweaks the query string.)
-    ext = file_path.suffix.lower()
-    if ext == ".mp3":
-        media_type = "audio/mpeg"
-        filename = f"{track_type}.mp3"
-    else:
-        media_type = "audio/wav"
-        filename = f"{track_type}.wav"
-
-    return FileResponse(file_path, media_type=media_type, filename=filename)
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-
-@app.websocket("/ws/chords/{client_id}")
-async def websocket_chords(websocket: WebSocket, client_id: str):
-    """WebSocket endpoint for real-time chord detection.
-    
-    Send audio chunks as base64 PCM and receive chord detections.
-    """
-    await websocket_chord_endpoint(websocket, client_id)
+# ── Entry point ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # Hugging Face Spaces uses port 7860 by default
     port = int(os.environ.get("PORT", 7860))
+    print(f"\n[Main] Starting Chord AI Backend on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)

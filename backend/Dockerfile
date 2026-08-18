@@ -24,8 +24,11 @@ ENV PATH="/home/user/.local/bin:$PATH"
 # Copy the requirements file into the container
 COPY --chown=user requirements.txt .
 
-# Install CPU-only Torch first (Much smaller download, prevents build timeout)
-RUN pip install --no-cache-dir torch==2.2.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cpu
+# Upgrade pip to ensure wheel compatibility
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install CPU-only Torch first with PyPI fallback for standard dependencies
+RUN pip install --no-cache-dir torch==2.2.2 torchaudio==2.2.2 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # Install remaining dependencies
 RUN pip install --no-cache-dir -r requirements.txt

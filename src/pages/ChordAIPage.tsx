@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { useChordAIStore } from "@/stores/chordAIStore";
 import { Link } from "react-router-dom";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle, ArrowUpDown, RotateCcw } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -34,6 +34,8 @@ import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import { generateShareUrl, copyToClipboard, getShareParamFromUrl, decodeShareableState, clearShareParamFromUrl } from "@/lib/shareUtils";
 import { exportChordsToMidi } from "@/lib/midiExport";
+import { clearAllAnalysisCache } from "@/lib/analysisCache";
+import { clearAllAudioCache } from "@/lib/audioCache";
 import staticContent from "@/data/staticContent.json";
 import {
   Dialog,
@@ -175,7 +177,7 @@ const ChordAIPage = () => {
   const [cachedResults, setCachedResults] = useState<Record<string, { result: AnalysisResult; instrumentalUrl?: string }>>({});
   const [currentFileId, setCurrentFileId] = useState<string | null>(null);
 
-  const { isConnected, currentChord: liveChord, connect, disconnect, sendAudioChunk } = useChordWebSocket();
+  const { connected: isConnected, currentChord: liveChord, connect, disconnect } = useChordWebSocket();
   const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const cacheKey = currentFileId ? `${currentFileId}-${separateVocals}-${analysisMode}` : undefined;
@@ -190,7 +192,7 @@ const ChordAIPage = () => {
       streamingIntervalRef.current = setInterval(() => {
         const chunk = getAudioChunk();
         if (chunk) {
-          sendAudioChunk(chunk, currentTime);
+          // Live chord chunks handled internally by the WebSocket hook
         }
       }, 100);
 
@@ -206,7 +208,7 @@ const ChordAIPage = () => {
         streamingIntervalRef.current = null;
       }
     }
-  }, [liveChordEnabled, isPlaying, audioBuffer, isConnected, connect, getAudioChunk, sendAudioChunk, currentTime]);
+  }, [liveChordEnabled, isPlaying, audioBuffer, isConnected, connect, getAudioChunk, currentTime]);
 
   useEffect(() => {
     return () => {
@@ -214,7 +216,7 @@ const ChordAIPage = () => {
     };
   }, [disconnect]);
 
-  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress, progressMessage } = useChordAnalysis(
+  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress, progressMessage, isFromCache, reanalyze } = useChordAnalysis(
     audioBuffer,
     selectedFile,
     true,
@@ -268,23 +270,34 @@ const ChordAIPage = () => {
         }));
 
         if (fileInfo && !hasCachedResult) {
-          saveToHistory({
-            fileName: fileInfo.name,
+          saveToHistory(
+            fileInfo.name,
             result,
             instrumentalUrl,
-            analysisMode,
-            separateVocals
-          });
+            separateVocals,
+            analysisMode
+          );
         }
       }
 
       if (separateVocals && !instrumentalUrl) return;
 
-      const resKey = `${currentFileId}-${separateVocals}-${analysisMode}`;
+      const resKey = `${currentFileId}-${separateVocals}-${analysisMode}-${isFromCache}`;
       if (lastNotifiedResultRef.current === resKey) return;
       lastNotifiedResultRef.current = resKey;
 
-      if (analysisMode === "precise") {
+      if (isFromCache) {
+        toast({
+          title: "Loaded from Cache ⚡",
+          description: "Showing previous chords. We've upgraded our AI & DSP model — want to re-analyze for higher accuracy?",
+          action: (
+            <ToastAction altText="Re-analyze" onClick={handleClearCacheAndReanalyze}>
+              Re-analyze
+            </ToastAction>
+          ),
+          duration: 9000,
+        });
+      } else if (analysisMode === "precise") {
         toast({
           title: "Precise map ready! :))",
           description: `Isolated ${result.key} ${result.scale || ""} harmonic map at ${Math.round(result.tempo || 0)} BPM`,
@@ -325,7 +338,8 @@ const ChordAIPage = () => {
         console.warn("sessionStorage unavailable", err);
       }
     }
-  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, analysisMode, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, analysisLoading, separateVocals, instrumentalUrl, currentFileId, analysisMode, cacheKey, cachedResults, toast, fileInfo, hasCachedResult, saveToHistory, isFromCache]);
 
   useEffect(() => {
     if (analysisError) {
@@ -336,6 +350,38 @@ const ChordAIPage = () => {
       });
     }
   }, [analysisError, toast]);
+
+  const handleClearCacheAndReanalyze = async () => {
+    try {
+      setCachedResults({});
+      lastNotifiedResultRef.current = null;
+
+      toast({
+        title: "Cache Cleared ⚡",
+        description: "Re-analyzing audio with the latest engine...",
+      });
+
+      await reanalyze();
+    } catch (err) {
+      console.warn("Failed to clear cache:", err);
+    }
+  };
+
+  const handleClearAllCaches = async () => {
+    try {
+      await clearAllAnalysisCache();
+      await clearAllAudioCache();
+      await clearHistory();
+      setCachedResults({});
+      lastNotifiedResultRef.current = null;
+      toast({
+        title: "Cache Reset",
+        description: "All stored analyses and audio caches have been cleared.",
+      });
+    } catch (err) {
+      console.warn("Failed to clear all cache:", err);
+    }
+  };
 
   useEffect(() => {
     if (fileInfo && !analysisLoading && !isInstrumentalLoaded && !separateVocals && !result) {
@@ -981,19 +1027,31 @@ const ChordAIPage = () => {
                         </Dialog>
                       )}
                       {result && effectiveFileName && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-[10px] font-bold uppercase tracking-widest h-8 px-3 rounded-lg hover:bg-card/50 text-emerald-400"
-                          onClick={async () => {
-                            const shareUrl = generateShareUrl(effectiveFileName, result);
-                            const success = await copyToClipboard(shareUrl);
-                            if (success) toast({ title: "Link copied!" });
-                          }}
-                        >
-                          <Share2 className="w-3 h-3 mr-2" />
-                          Share Link
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[10px] font-bold uppercase tracking-widest h-8 px-3 rounded-lg hover:bg-card/50 text-amber-400"
+                            onClick={handleClearCacheAndReanalyze}
+                            title="Clear cached results and re-run fresh analysis"
+                          >
+                            <RotateCcw className="w-3 h-3 mr-2" />
+                            Re-analyze
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-[10px] font-bold uppercase tracking-widest h-8 px-3 rounded-lg hover:bg-card/50 text-emerald-400"
+                            onClick={async () => {
+                              const shareUrl = generateShareUrl(effectiveFileName, result);
+                              const success = await copyToClipboard(shareUrl);
+                              if (success) toast({ title: "Link copied!" });
+                            }}
+                          >
+                            <Share2 className="w-3 h-3 mr-2" />
+                            Share Link
+                          </Button>
+                        </>
                       )}
                     </div>
 
@@ -1089,7 +1147,7 @@ const ChordAIPage = () => {
 
                 <AnalysisSummary
                   tempo={result?.tempo}
-                  keySignature={result ? `${transposeKey(result.key, transpose)} ${result.scale || ""}` : null}
+                  keySignature={result?.key ? `${transposeKey(result.key, transpose)} ${result.scale || ""}` : null}
                 />
 
                 <div className="pt-2 space-y-6">
@@ -1261,9 +1319,9 @@ const ChordAIPage = () => {
 
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Clear History</DialogTitle>
+                          <DialogTitle>Clear History & Cache</DialogTitle>
                           <DialogDescription>
-                            Are you sure you want to clear your local analysis history? This cannot be undone.
+                            Are you sure you want to clear your local analysis history and cached audio files? This will reset all saved sessions and force fresh analyses.
                           </DialogDescription>
                         </DialogHeader>
 
@@ -1275,7 +1333,7 @@ const ChordAIPage = () => {
                           <DialogClose asChild>
                             <Button
                               variant="destructive"
-                              onClick={clearHistory}
+                              onClick={handleClearAllCaches}
                             >
                               Clear All
                             </Button>
@@ -1298,17 +1356,18 @@ const ChordAIPage = () => {
                         key={entry.id}
                         className="group relative p-4 rounded-2xl bg-card/30 border border-border hover:bg-card/50 hover:border-border/80 transition-all cursor-pointer"
                         onClick={() => {
+                          if (!entry || !entry.result) return;
                           setCachedResults(prev => ({
                             ...prev,
-                            [`${entry.fileName}-${entry.separateVocals}-${entry.analysisMode}`]: {
+                            [`${entry.fileName}-${entry.separateVocals || false}-${entry.analysisMode || "balanced"}`]: {
                               result: entry.result,
                               instrumentalUrl: entry.instrumentalUrl
                             }
                           }));
                           setCurrentFileId(entry.fileName);
                           setHistoryFileName(entry.fileName);
-                          setSeparateVocals(entry.separateVocals);
-                          setAnalysisMode(entry.analysisMode);
+                          if (typeof entry.separateVocals === "boolean") setSeparateVocals(entry.separateVocals);
+                          if (entry.analysisMode) setAnalysisMode(entry.analysisMode);
 
                           toast({
                             title: "History item loaded",
@@ -1320,9 +1379,9 @@ const ChordAIPage = () => {
                           <div className="space-y-1 overflow-hidden">
                             <div className="text-xs font-medium text-foreground truncate">{entry.fileName}</div>
                             <div className="flex items-center gap-2 text-[9px] text-muted-foreground uppercase tracking-wider font-bold">
-                              <span>{entry.result.key} {entry.result.scale}</span>
+                              <span>{entry.result?.key || "C"} {entry.result?.scale || ""}</span>
                               <span>•</span>
-                              <span>{Math.round(entry.result.tempo || 0)} BPM</span>
+                              <span>{Math.round(entry.result?.tempo || 0)} BPM</span>
                             </div>
                           </div>
                           <Dialog>

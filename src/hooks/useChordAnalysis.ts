@@ -1,8 +1,23 @@
-import { useEffect, useState, useRef } from "react";
+/**
+ * src/hooks/useChordAnalysis.ts
+ *
+ * Central analysis orchestration hook.
+ *
+ * Flow:
+ *   1. Check IndexedDB cache → return immediately if hit
+ *   2. If mode is fast/precise → use NDJSON streaming (/api/analyze-stream)
+ *      - Run local DSP for key/tempo immediately (instant feedback)
+ *      - Stream chord chunks from backend progressively
+ *   3. If mode is balanced → use standard POST (/api/analyze)
+ *   4. If backend fails → fall back to local analyzeTrack() (browser-only)
+ *   5. Cache results in IndexedDB + audio in Cache Storage
+ */
+
+import { useEffect, useState, useRef, useCallback } from "react";
 import { analyzeTrack, refineKeyFromChords } from "@/lib/analyzeAudio";
 import { analyzeRemote } from "@/lib/api/analyzeClient";
-import { getCachedAnalysis, setCachedAnalysis, isExpired } from "@/lib/analysisCache";
-import { computeAudioCacheKey, getCachedAudio, setCachedAudio, cacheUrlResponse } from "@/lib/audioCache";
+import { getCachedAnalysis, setCachedAnalysis, isExpired, removeCachedAnalysis } from "@/lib/analysisCache";
+import { computeAudioCacheKey, getCachedAudio, setCachedAudio, cacheUrlResponse, removeCachedAudio } from "@/lib/audioCache";
 import { AnalysisResult } from "@/types/chordAI";
 import { parseNdjsonLines } from "@/lib/chunkUtils";
 import { AnalysisMode } from "@/stores/chordAIStore";
@@ -14,6 +29,8 @@ export type UseChordAnalysisState = {
   instrumentalUrl?: string;
   uploadProgress?: number;
   progressMessage?: string | null;
+  isFromCache?: boolean;
+  reanalyze: () => Promise<void>;
 };
 
 export const useChordAnalysis = (
@@ -21,8 +38,8 @@ export const useChordAnalysis = (
   file?: File | null,
   useRemote: boolean = true,
   separateVocals: boolean = false,
-  cacheKey?: string, // File identifier for cache checking
-  cachedResult?: { result: AnalysisResult | null; instrumentalUrl?: string }, // Cached result if available
+  cacheKey?: string,
+  cachedResult?: { result: AnalysisResult | null; instrumentalUrl?: string },
   analysisMode: AnalysisMode = "balanced"
 ) => {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -31,48 +48,68 @@ export const useChordAnalysis = (
   const [instrumentalUrl, setInstrumentalUrl] = useState<string | undefined>(undefined);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [isFromCache, setIsFromCache] = useState<boolean>(false);
+  const [reanalyzeCount, setReanalyzeCount] = useState<number>(0);
   const currentXhrRef = useRef<XMLHttpRequest | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef<number>(0);
 
-  useEffect(() => {
-    // compute a fallback cache key if not provided
-    const computeKey = () => {
-      if (cacheKey) return cacheKey;
-      if (!file) return undefined;
-      try {
-        const parts = [file.name, String(file.size), String(file.lastModified), String(separateVocals), String(analysisMode)];
-        return parts.join("::");
-      } catch (err) {
-        return undefined;
-      }
-    };
+  const computeKey = useCallback(() => {
+    if (cacheKey) return cacheKey;
+    if (!file) return undefined;
+    try {
+      const parts = [file.name, String(file.size), String(file.lastModified), String(separateVocals), String(analysisMode)];
+      return parts.join("::");
+    } catch {
+      return undefined;
+    }
+  }, [cacheKey, file, separateVocals, analysisMode]);
 
+  const reanalyze = useCallback(async () => {
+    const key = computeKey();
+    if (key) {
+      await removeCachedAnalysis(key);
+    }
+    if (file) {
+      try {
+        const audioKey = await computeAudioCacheKey(file);
+        await removeCachedAudio(audioKey);
+      } catch {
+        // ignore
+      }
+    }
+    setResult(null);
+    setIsFromCache(false);
+    setReanalyzeCount(prev => prev + 1);
+  }, [computeKey, file]);
+
+  useEffect(() => {
     const resolvedKey = computeKey();
-    
-    // Generate unique ID for this request
     const thisRequestId = ++requestIdRef.current;
+    const isForcedReanalyze = reanalyzeCount > 0;
 
     const run = async () => {
-      // 1. If we have a cached result passed in props, use it immediately and skip fetching
-      if (cachedResult && cacheKey) {
+      // 1. Use cached result from props (only if not forced)
+      if (!isForcedReanalyze && cachedResult && cacheKey) {
         if (thisRequestId !== requestIdRef.current) return;
         setResult(cachedResult.result);
         setInstrumentalUrl(cachedResult.instrumentalUrl);
+        setIsFromCache(true);
         setLoading(false);
         setError(null);
         setProgressMessage(null);
         return;
       }
 
-      // 2. If we have a cached result in IndexedDB, use it and skip fetching
-      if (resolvedKey && typeof indexedDB !== "undefined") {
+      // 2. Check IndexedDB cache (only if not forced)
+      if (!isForcedReanalyze && resolvedKey && typeof indexedDB !== "undefined") {
         try {
           const cached = await getCachedAnalysis(resolvedKey);
           if (cached && !isExpired(cached)) {
             if (thisRequestId !== requestIdRef.current) return;
             setResult(cached.result as AnalysisResult);
             setInstrumentalUrl(cached.instrumentalUrl);
+            setIsFromCache(true);
             setLoading(false);
             setError(null);
             setProgressMessage(null);
@@ -83,12 +120,29 @@ export const useChordAnalysis = (
         }
       }
 
-      // Only run analysis when file changes
-      if (!file) return;
-
+      if (!file) {
+        // Local buffer fallback if no file provided
+        if (audioBuffer && !result) {
+          try {
+            setLoading(true);
+            const localResult = await analyzeTrack(audioBuffer);
+            if (thisRequestId === requestIdRef.current) {
+              setResult(localResult);
+              setLoading(false);
+            }
+          } catch (e) {
+            if (thisRequestId === requestIdRef.current) {
+              setError(e instanceof Error ? e.message : "Analysis failed");
+              setLoading(false);
+            }
+          }
+        }
+        return;
+      }
       if (thisRequestId !== requestIdRef.current) return;
 
       try {
+        setIsFromCache(false);
         setLoading(true);
         setError(null);
         setInstrumentalUrl(undefined);
@@ -97,54 +151,51 @@ export const useChordAnalysis = (
 
         let fileToUpload: File | undefined = file;
 
-        // If audio Cache Storage has the original file, we can reuse it to avoid re-upload
+        // Try to reuse cached audio file
         if (resolvedKey && 'caches' in window) {
           try {
             const audioKey = await computeAudioCacheKey(file);
             const cachedBlob = await getCachedAudio(audioKey);
             if (cachedBlob) {
-              const cachedFile = new File([cachedBlob], file.name, { type: cachedBlob.type });
-              fileToUpload = cachedFile as File;
+              fileToUpload = new File([cachedBlob], file.name, { type: cachedBlob.type });
             }
           } catch (err) {
             console.warn('useChordAnalysis: audio cache read error', err);
           }
         }
-        
+
         if (thisRequestId !== requestIdRef.current) return;
 
-        // Real-Time JSON Streaming Analysis:
-        // We do streaming analysis if we are using the remote model and mode is 'fast' or 'precise'
+        // ── STREAMING PATH (fast/precise modes) ────────────────────────────
         const isStreamingMode = analysisMode === "fast" || analysisMode === "precise";
         if (useRemote && isStreamingMode && audioBuffer) {
           let hasStartedRendering = false;
           let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
-          
+
           try {
             const chordsEndpoint = import.meta.env.VITE_CHORD_AI_API || "";
             const apiUrl = chordsEndpoint
               ? new URL(chordsEndpoint).origin
               : (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
-            
-            const targetEndpoint = chordsEndpoint 
+
+            const targetEndpoint = chordsEndpoint
               ? chordsEndpoint.replace("/api/analyze", "/api/analyze-stream")
               : `${apiUrl}/api/analyze-stream`;
 
-            // Step A: Decouple key and tempo estimation - run local DSP once on the full AudioBuffer at start
+            // Run local DSP first for instant key/tempo feedback
             const localResult = await analyzeTrack(audioBuffer);
             if (thisRequestId !== requestIdRef.current) return;
-            
-            // Set initial state with key, scale, and tempo
+
             setResult({
               tempo: localResult.tempo,
               key: localResult.key,
               scale: localResult.scale,
               meter: 4,
               chords: [],
-              simpleChords: []
+              simpleChords: [],
             });
 
-            // Initialize AbortController for streaming fetch request
+            // Start streaming fetch
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
@@ -157,23 +208,17 @@ export const useChordAnalysis = (
             const response = await fetch(targetEndpoint, {
               method: "POST",
               body: formData,
-              signal: controller.signal
+              signal: controller.signal,
             });
 
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            if (!response.body) {
-              throw new Error("No response body available for streaming");
-            }
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.body) throw new Error("No response body available for streaming");
 
             reader = response.body.getReader();
             const decoder = new TextDecoder();
             let streamBuffer = "";
             let percentage = 0;
 
-            // Start reading the NDJSON stream
             while (true) {
               if (thisRequestId !== requestIdRef.current) {
                 await reader.cancel();
@@ -185,7 +230,6 @@ export const useChordAnalysis = (
               if (done) break;
 
               streamBuffer += decoder.decode(value, { stream: true });
-              
               const parseResult = parseNdjsonLines(streamBuffer);
               streamBuffer = parseResult.remaining;
 
@@ -203,7 +247,7 @@ export const useChordAnalysis = (
                       scale: item.scale ?? localResult.scale,
                       meter: item.meter ?? 4,
                       chords: [],
-                      simpleChords: []
+                      simpleChords: [],
                     };
                     return {
                       ...base,
@@ -211,15 +255,13 @@ export const useChordAnalysis = (
                       key: item.key ?? base.key,
                       scale: item.scale ?? base.scale,
                       meter: item.meter ?? base.meter,
-                      instrumentalUrl: item.instrumentalUrl
+                      instrumentalUrl: item.instrumentalUrl,
                     };
                   });
-                  
                   if (item.instrumentalUrl) {
                     setInstrumentalUrl(apiUrl + item.instrumentalUrl);
                   }
                 } else if (item.type === "chords") {
-                  // Clear progress message once chords start streaming
                   setProgressMessage(null);
                   setResult(prev => {
                     const base = prev || {
@@ -228,9 +270,9 @@ export const useChordAnalysis = (
                       scale: localResult.scale,
                       meter: 4,
                       chords: [],
-                      simpleChords: []
+                      simpleChords: [],
                     };
-                    
+
                     const filteredChords = base.chords.filter(
                       c => c.end <= item.start || c.start >= item.end
                     );
@@ -241,11 +283,7 @@ export const useChordAnalysis = (
                     const newChords = [...filteredChords, ...item.chords].sort((a, b) => a.start - b.start);
                     const newSimpleChords = [...filteredSimpleChords, ...item.simpleChords].sort((a, b) => a.start - b.start);
 
-                    const mergedResult = {
-                      ...base,
-                      chords: newChords,
-                      simpleChords: newSimpleChords
-                    };
+                    const mergedResult = { ...base, chords: newChords, simpleChords: newSimpleChords };
 
                     if (resolvedKey) {
                       setCachedAnalysis(resolvedKey, { result: mergedResult }).catch(e => {
@@ -273,7 +311,7 @@ export const useChordAnalysis = (
 
             if (thisRequestId !== requestIdRef.current) return;
 
-            // Cache original audio in Cache Storage when completed
+            // Cache audio on success
             if (resolvedKey && file) {
               try {
                 const audioKey = await computeAudioCacheKey(file);
@@ -294,16 +332,12 @@ export const useChordAnalysis = (
             }
 
             console.error("[useChordAnalysis] Streaming pipeline failed, falling back to local DSP:", streamErr);
-            
+
             if (reader) {
-              try {
-                await reader.cancel();
-              } catch (e) {
-                // ignore
-              }
+              try { await reader.cancel(); } catch { /* ignore */ }
             }
 
-            // Fallback: run full local DSP analysis
+            // Fallback to local DSP
             if (audioBuffer && thisRequestId === requestIdRef.current) {
               const local = await analyzeTrack(audioBuffer);
               if (thisRequestId === requestIdRef.current) {
@@ -313,11 +347,7 @@ export const useChordAnalysis = (
                 setProgressMessage(null);
               }
               if (resolvedKey) {
-                try {
-                  await setCachedAnalysis(resolvedKey, { result: local });
-                } catch (e) {
-                  console.warn("useChordAnalysis: cache write error", e);
-                }
+                try { await setCachedAnalysis(resolvedKey, { result: local }); } catch { /* ignore */ }
               }
             }
             return;
@@ -328,7 +358,7 @@ export const useChordAnalysis = (
           }
         }
 
-        // Fallback or Standard Full File Analysis path (if mode is balanced or streaming is disabled)
+        // ── STANDARD PATH (balanced mode or non-streaming) ─────────────────
         if (thisRequestId !== requestIdRef.current) return;
 
         if (useRemote && fileToUpload) {
@@ -337,18 +367,14 @@ export const useChordAnalysis = (
             const apiUrl = chordsEndpoint
               ? new URL(chordsEndpoint).origin
               : (import.meta.env.VITE_API_URL || "http://localhost:7860").replace(/\/+$/, "");
-            
+
             const remote = await analyzeRemote(
               fileToUpload,
               undefined,
               separateVocals,
               analysisMode,
-              (percent) => {
-                setUploadProgress(Math.round(percent));
-              },
-              (xhr) => {
-                currentXhrRef.current = xhr;
-              }
+              (percent) => { setUploadProgress(Math.round(percent)); },
+              (xhr) => { currentXhrRef.current = xhr; }
             );
 
             if (thisRequestId === requestIdRef.current) {
@@ -369,32 +395,26 @@ export const useChordAnalysis = (
               if (resolvedKey) {
                 try {
                   await setCachedAnalysis(resolvedKey, { result: remote, instrumentalUrl: remote.instrumentalUrl });
-                } catch (e) {
-                  console.warn("useChordAnalysis: cache write error", e);
-                }
+                } catch { /* ignore */ }
               }
 
               if (resolvedKey && file) {
                 try {
                   const audioKey = await computeAudioCacheKey(file);
                   await setCachedAudio(audioKey, file);
-                } catch (err) {
-                  console.warn('useChordAnalysis: set audio cache error', err);
-                }
+                } catch { /* ignore */ }
               }
 
               if (remote.instrumentalUrl && resolvedKey) {
                 try {
                   const instrumentalKey = `${resolvedKey}::instrumental`;
                   await cacheUrlResponse(instrumentalKey, apiUrl + remote.instrumentalUrl);
-                } catch (err) {
-                  console.warn('useChordAnalysis: cache instrumental error', err);
-                }
+                } catch { /* ignore */ }
               }
 
               return;
             }
-          } catch (remoteErr) {
+          } catch {
             setUploadProgress(undefined);
             setProgressMessage(null);
             currentXhrRef.current = null;
@@ -402,9 +422,7 @@ export const useChordAnalysis = (
               const local = await analyzeTrack(audioBuffer);
               if (thisRequestId === requestIdRef.current) setResult(local);
               if (resolvedKey) {
-                try {
-                  await setCachedAnalysis(resolvedKey, { result: local });
-                } catch (e) { console.warn("useChordAnalysis: cache write error", e); }
+                try { await setCachedAnalysis(resolvedKey, { result: local }); } catch { /* ignore */ }
               }
             }
           }
@@ -412,7 +430,7 @@ export const useChordAnalysis = (
           const local = await analyzeTrack(audioBuffer);
           if (thisRequestId === requestIdRef.current) setResult(local);
           if (resolvedKey) {
-            try { await setCachedAnalysis(resolvedKey, { result: local }); } catch (e) { console.warn("useChordAnalysis: cache write error", e); }
+            try { await setCachedAnalysis(resolvedKey, { result: local }); } catch { /* ignore */ }
           }
         } else if (thisRequestId === requestIdRef.current) {
           setError("No audio available for analysis.");
@@ -447,9 +465,9 @@ export const useChordAnalysis = (
         abortControllerRef.current = null;
       }
     };
-  }, [file, useRemote, separateVocals, cacheKey, cachedResult, analysisMode, audioBuffer]);
+  }, [file, useRemote, separateVocals, cacheKey, cachedResult, analysisMode, audioBuffer, reanalyzeCount, computeKey]);
 
-  return { result, loading, error, instrumentalUrl, uploadProgress, progressMessage };
+  return { result, loading, error, instrumentalUrl, uploadProgress, progressMessage, isFromCache, reanalyze };
 };
 
 export default useChordAnalysis;

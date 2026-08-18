@@ -1,7 +1,21 @@
+"""
+backend/analysis.py
+
+Legacy/balanced mode chord analysis + Demucs vocal/stem separation.
+
+Provides:
+  - analyze_file(): Full librosa-based chord/key/tempo analysis (balanced mode)
+  - separate_audio_full(): Demucs 4-stem separation (vocals, drums, bass, other)
+  - separate_audio_stems(): Demucs 6-stem separation (+ guitar, piano)
+  - _get_diatonic_quality(): Helper for key-aware chord simplification
+
+All dependencies are commercially safe:
+  - librosa (ISC), demucs (MIT), torch (BSD), numpy (BSD), scipy (BSD)
+"""
+from __future__ import annotations
+
 import gc
 import hashlib
-
-# Configure torch for CPU efficiency
 import multiprocessing
 import subprocess
 import tempfile
@@ -12,6 +26,7 @@ import numpy as np
 import soundfile as sf
 import torch
 
+# Configure torch for CPU efficiency
 num_cores = min(multiprocessing.cpu_count(), 4)
 torch.set_num_threads(num_cores)
 
@@ -22,8 +37,60 @@ _DEMUCS_6STEM_WRAPPER = None
 # Stem types for 6-stem separation (htdemucs_6s model)
 STEM_TYPES = ["vocals", "drums", "bass", "guitar", "piano", "other"]
 
+# ── Diatonic quality helper ─────────────────────────────────────────────────
+
+NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+# Diatonic scale intervals for major and minor keys
+MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11]
+MINOR_SCALE_INTERVALS = [0, 2, 3, 5, 7, 8, 10]
+
+# Quality of each scale degree
+MAJOR_SCALE_QUALITIES = ["maj", "min", "min", "maj", "maj", "min", "dim"]
+MINOR_SCALE_QUALITIES = ["min", "dim", "maj", "min", "min", "maj", "maj"]
+
+
+def _get_diatonic_quality(root: str, key: str, scale: str) -> str:
+    """
+    Return the expected quality (maj/min/dim) of a chord root within the given key.
+    Used by chord_fast.py to resolve ambiguous simplified chords.
+    """
+    # Normalize enharmonics
+    enharmonic = {
+        "Db": "C#", "Eb": "D#", "Fb": "E", "Gb": "F#",
+        "Ab": "G#", "Bb": "A#", "Cb": "B",
+        "E#": "F", "B#": "C",
+    }
+    root = enharmonic.get(root, root)
+    key = enharmonic.get(key, key)
+
+    if root not in NOTE_NAMES or key not in NOTE_NAMES:
+        return "maj"
+
+    key_idx = NOTE_NAMES.index(key)
+    root_idx = NOTE_NAMES.index(root)
+    interval = (root_idx - key_idx) % 12
+
+    if scale == "minor":
+        intervals = MINOR_SCALE_INTERVALS
+        qualities = MINOR_SCALE_QUALITIES
+    else:
+        intervals = MAJOR_SCALE_INTERVALS
+        qualities = MAJOR_SCALE_QUALITIES
+
+    if interval in intervals:
+        degree = intervals.index(interval)
+        return qualities[degree]
+
+    return "maj"  # Default for non-diatonic roots
+
+
+# ── Demucs vocal separation ────────────────────────────────────────────────
+
 class DemucsSeparator:
-    def __init__(self, model_name="htdemucs"):
+    """Wraps a Demucs model for audio source separation."""
+
+    def __init__(self, model_name: str = "htdemucs"):
         from demucs.pretrained import get_model
         print(f"[Demucs] Loading model {model_name} into memory...")
         self.model = get_model(model_name)
@@ -31,705 +98,247 @@ class DemucsSeparator:
         self.model.eval()
         self.samplerate = self.model.samplerate
 
-    def separate_audio_file(self, path):
+    def separate_audio_file(self, path: str | Path) -> dict[str, torch.Tensor]:
+        """Separate audio into stems. Returns dict of stem_name → tensor."""
         from demucs.apply import apply_model
-        
-        # Load with librosa to bypass torchaudio backend issues on Windows
-        # We process in chunks to stay within memory limits on CPU
+
         print(f"[Demucs] Loading audio {Path(path).name}...")
-        y, sr = librosa.load(str(path), sr=self.samplerate, mono=False, duration=300) # Max 5 mins for web CPU
-        
+        y, sr = librosa.load(str(path), sr=self.samplerate, mono=False, duration=300)
+
         if len(y.shape) == 1:
             wav = torch.from_numpy(y).unsqueeze(0)
         else:
             wav = torch.from_numpy(y)
 
         if wav.shape[0] > self.model.audio_channels:
-             wav = wav[:self.model.audio_channels]
+            wav = wav[:self.model.audio_channels]
         elif wav.shape[0] < self.model.audio_channels:
-             wav = wav.repeat(self.model.audio_channels, 1)
+            wav = wav.repeat(self.model.audio_channels, 1)
 
-        # Standard demucs normalization 
+        # Standard demucs normalization
         ref = wav.mean(0)
         wav = (wav - ref.mean()) / (ref.std() + 1e-8)
-        
-        print(f"[Demucs] Running inference on {wav.shape[1]/sr:.1f}s of audio (CPU)...")
-        with torch.no_grad():
-            # Use overlap=0.1 and shifts=0 for maximum speed on CPU
-            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
-        
-        sources = sources * ref.std() + ref.mean()
-        return sr, dict(zip(self.model.sources, sources))
 
-def _get_separator():
+        print(f"[Demucs] Running inference on {wav.shape[1] / sr:.1f}s of audio (CPU)...")
+        with torch.no_grad():
+            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
+
+        return {
+            name: sources[i]
+            for i, name in enumerate(self.model.sources)
+        }
+
+
+def _get_separator() -> DemucsSeparator:
+    """Get or create the 4-stem Demucs separator."""
     global _DEMUCS_WRAPPER
     if _DEMUCS_WRAPPER is None:
-        _DEMUCS_WRAPPER = DemucsSeparator()
+        _DEMUCS_WRAPPER = DemucsSeparator("htdemucs")
     return _DEMUCS_WRAPPER
 
 
-class DemucsSeparator6Stem:
-    """6-stem separator using htdemucs_6s model.
-    
-    Separates audio into: vocals, drums, bass, guitar, piano, other.
-    """
-    def __init__(self, model_name="htdemucs_6s"):
-        from demucs.pretrained import get_model
-        print(f"[Demucs 6-Stem] Loading model {model_name} into memory...")
-        self.model = get_model(model_name)
-        self.model.cpu()
-        self.model.eval()
-        self.samplerate = self.model.samplerate
-
-    def separate_audio_file(self, path, max_duration=300):
-        from demucs.apply import apply_model
-        
-        # Load with librosa to bypass torchaudio backend issues on Windows
-        print(f"[Demucs 6-Stem] Loading audio {Path(path).name}...")
-        y, sr = librosa.load(str(path), sr=self.samplerate, mono=False, duration=max_duration)
-        
-        if len(y.shape) == 1:
-            wav = torch.from_numpy(y).unsqueeze(0)
-        else:
-            wav = torch.from_numpy(y)
-
-        if wav.shape[0] > self.model.audio_channels:
-             wav = wav[:self.model.audio_channels]
-        elif wav.shape[0] < self.model.audio_channels:
-             wav = wav.repeat(self.model.audio_channels, 1)
-
-        # Standard demucs normalization 
-        ref = wav.mean(0)
-        wav = (wav - ref.mean()) / (ref.std() + 1e-8)
-        
-        print(f"[Demucs 6-Stem] Running inference on {wav.shape[1]/sr:.1f}s of audio (CPU)... This may take 5-10 minutes.")
-        with torch.no_grad():
-            # Use overlap=0.1 and shifts=0 for maximum speed on CPU
-            sources = apply_model(self.model, wav[None], shifts=0, overlap=0.1, progress=True)[0]
-        
-        sources = sources * ref.std() + ref.mean()
-        return sr, dict(zip(self.model.sources, sources))
-
-
-def _get_separator_6stem():
-    """Get or create the 6-stem separator instance."""
+def _get_separator_6stem() -> DemucsSeparator:
+    """Get or create the 6-stem Demucs separator."""
     global _DEMUCS_6STEM_WRAPPER
     if _DEMUCS_6STEM_WRAPPER is None:
-        _DEMUCS_6STEM_WRAPPER = DemucsSeparator6Stem()
+        _DEMUCS_6STEM_WRAPPER = DemucsSeparator("htdemucs_6s")
     return _DEMUCS_6STEM_WRAPPER
 
 
-def separate_audio_stems(audio_path: Path) -> dict | None:
-    """Separate audio into 6 stems: vocals, drums, bass, guitar, piano, other.
-    
-    Returns dict with stem names as keys and file paths as values.
-    Example: {"vocals": Path(...), "drums": Path(...), ...}
+def separate_audio_full(file_path: Path) -> dict | None:
+    """
+    Separate audio into vocals + instrumental (everything except vocals).
+    Returns dict with 'vocals' and 'instrumental' temp file paths.
     """
     try:
-        wrapper = _get_separator_6stem()
-        sr, sources = wrapper.separate_audio_file(audio_path)
-        
-        stem_paths = {}
-        for stem_name in STEM_TYPES:
-            if stem_name in sources:
-                stem_audio = sources[stem_name].cpu().numpy().T
-                stem_path = audio_path.parent / f"{audio_path.stem}_{stem_name}.wav"
-                sf.write(str(stem_path), stem_audio, sr)
-                stem_paths[stem_name] = stem_path
-                print(f"[Demucs 6-Stem] Saved {stem_name} stem")
-        
-        print("[Demucs 6-Stem] Done. All 6 stems saved.")
+        separator = _get_separator()
+        stems = separator.separate_audio_file(file_path)
+
+        result = {}
+        sr = separator.samplerate
+
+        # Sum all non-vocal stems for instrumental
+        instrumental = None
+        for name, tensor in stems.items():
+            audio_np = tensor.cpu().numpy()
+            if audio_np.ndim > 1:
+                audio_np = audio_np.mean(axis=0)
+
+            if name == "vocals":
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix="_vocals.wav")
+                sf.write(tmp.name, audio_np, sr)
+                result["vocals"] = tmp.name
+            else:
+                if instrumental is None:
+                    instrumental = audio_np
+                else:
+                    instrumental = instrumental + audio_np
+
+        if instrumental is not None:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix="_instrumental.wav")
+            sf.write(tmp.name, instrumental, sr)
+            result["instrumental"] = tmp.name
+
         gc.collect()
-        
-        return stem_paths
-        
+        return result
     except Exception as e:
-        print(f"6-stem audio separation failed: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-
-PITCH_CLASS_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
-MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
-
-CHORD_TEMPLATES: list[tuple[str, np.ndarray]] = []
-for root in range(12):
-    for name, intervals in {
-        "maj": [0, 4, 7],
-        "min": [0, 3, 7],
-        "7": [0, 4, 7, 10],
-        "maj7": [0, 4, 7, 11],
-        "min7": [0, 3, 7, 10],
-        "dim": [0, 3, 6],
-        "aug": [0, 4, 8],
-        "sus2": [0, 2, 7],
-        "sus4": [0, 5, 7],
-        "6": [0, 4, 7, 9],
-        "m6": [0, 3, 7, 9],
-    }.items():
-        v = np.zeros(12)
-        for iv in intervals:
-            v[(root + iv) % 12] = 1.0
-            v[(root + iv + 7) % 12] += 0.05
-        v[root] += 0.2
-
-        # Compensate for the natural harmonic-series bias toward major:
-        # real instruments produce faint major-3rd overtones even when
-        # playing a minor chord (harmonics 4:5:6 form a major triad),
-        # so minor-quality templates get a small explicit boost on the
-        # minor 3rd degree to offset that inherent physical skew.
-        if "min" in name or name == "dim" or name == "m6":
-            minor_third_pc = (root + 3) % 12
-            v[minor_third_pc] += 0.10
-
-        norm = np.linalg.norm(v)
-        chord_name = f"{PITCH_CLASS_NAMES[root]}"
-        if name != "maj":
-            chord_name += f"{name}"
-        CHORD_TEMPLATES.append((chord_name, v / (norm + 1e-9)))
+        print(f"[Demucs] Separation failed: {e}")
+        return None
 
 
-def get_file_hash(file_path: Path) -> str:
-    """Generate MD5 hash based on file content and size for robust caching."""
-    hasher = hashlib.md5()
+def separate_audio_stems(file_path: Path) -> dict | None:
+    """
+    6-stem separation: vocals, drums, bass, guitar, piano, other.
+    Returns dict of stem_name → temp file path.
+    """
     try:
-        stats = file_path.stat()
-        hasher.update(str(stats.st_size).encode())
-        with open(file_path, 'rb') as f:
-            chunk = f.read(1024 * 1024)
-            hasher.update(chunk)
-            if stats.st_size > 2 * 1024 * 1024:
-                f.seek(-1024 * 1024, 2)
-                chunk = f.read(1024 * 1024)
-                hasher.update(chunk)
-        return hasher.hexdigest()
+        separator = _get_separator_6stem()
+        stems = separator.separate_audio_file(file_path)
+
+        result = {}
+        sr = separator.samplerate
+
+        for name, tensor in stems.items():
+            audio_np = tensor.cpu().numpy()
+            if audio_np.ndim > 1:
+                audio_np = audio_np.mean(axis=0)
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f"_{name}.wav")
+            sf.write(tmp.name, audio_np, sr)
+            result[name] = tmp.name
+
+        gc.collect()
+        return result
     except Exception as e:
-        print(f"[Analysis] Hashing failed: {e}")
-        return hashlib.md5(str(file_path.name).encode()).hexdigest()
+        print(f"[Demucs] 6-stem separation failed: {e}")
+        return None
 
 
-def _ffmpeg_to_wav(src: Path, dst: Path):
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", str(src), "-ac", "1", "-ar", "44100", str(dst)],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+# ── Balanced mode analysis ─────────────────────────────────────────────────
+
+def analyze_file(
+    file_path: Path,
+    separate_vocals: bool = False,
+) -> dict:
+    """
+    High-precision DSP chord analysis (balanced mode).
+
+    Features:
+      - Center-channel vocal attenuation (reduces vocals without Demucs)
+      - HPSS harmonic isolation (extracts stationary chords from transients/drums)
+      - Dynamic RMS silence gating (no random chord guesses during silence/pauses)
+      - Ergodic HMM Viterbi smoothing for musical timing
+      - Zero ONNX dependency
+
+    Returns dict with: tempo, meter, key, scale, chords, simpleChords,
+    and optionally instrumentalPath.
+    """
+    from ml.chord_templates import detect_chords_template
+    from ml.dsp_tempo_key import detect_key_dsp, detect_tempo_dsp
+
+    analysis_path = file_path
+    instrumental_path = None
+
+    # Optional heavy Demucs vocal separation (if explicitly toggled)
+    if separate_vocals:
+        separated = separate_audio_full(file_path)
+        if separated and separated.get("instrumental"):
+            analysis_path = Path(separated["instrumental"])
+            instrumental_path = separated["instrumental"]
+
+    # 1. Detect Key & Scale using Krumhansl-Schmuckler profiles
+    key_str = detect_key_dsp(str(analysis_path))
+    parts = key_str.split()
+    key = parts[0] if parts else "C"
+    scale = parts[1] if len(parts) > 1 else "major"
+
+    # 2. Detect Tempo using autocorrelation
+    tempo = float(detect_tempo_dsp(str(analysis_path)))
+
+    # 3. Detect chords using high-precision DSP engine with vocal attenuation and diatonic key prior
+    raw_segments = detect_chords_template(
+        analysis_path,
+        use_vocal_suppression=True,
+        detected_key=f"{key} {scale}",
+        min_duration_ms=400.0,
+        self_transition_prob=0.96,
     )
 
+    chords: list[dict] = []
+    simple_chords: list[dict] = []
 
-def _separate_vocals(audio_path: Path) -> Path | None:
-    """Separate vocals from music using Demucs. Returns path to instrumental track."""
-    try:
-        wrapper = _get_separator()
-        sr, sources = wrapper.separate_audio_file(audio_path)
-        
-        # Instrumental = drum + bass + other
-        instrumental = sources["drums"] + sources["bass"] + sources["other"]
-        
-        # Convert to numpy for soundfile
-        instrumental_np = instrumental.cpu().numpy().T
-        
-        output_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
-        sf.write(str(output_path), instrumental_np, sr)
-        
-        print("[Demucs] Done. Saved instrumental.")
-        gc.collect()
-        return output_path
-        
-    except Exception as e:
-        print(f"Vocal separation failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-def separate_audio_full(audio_path: Path) -> dict | None:
-    """Separate audio into vocals and instrumental tracks. Returns paths to both."""
-    try:
-        wrapper = _get_separator()
-        sr, sources = wrapper.separate_audio_file(audio_path)
-        
-        vocals = sources["vocals"].cpu().numpy().T
-        instrumental = (sources["drums"] + sources["bass"] + sources["other"]).cpu().numpy().T
-        
-        vocals_path = audio_path.parent / f"{audio_path.stem}_vocals.wav"
-        instrumental_path = audio_path.parent / f"{audio_path.stem}_instrumental.wav"
-        
-        sf.write(str(vocals_path), vocals, sr)
-        sf.write(str(instrumental_path), instrumental, sr)
-        
-        print("[Demucs] Done. Stems saved.")
-        gc.collect()
-        
-        return {
-            "vocals": vocals_path,
-            "instrumental": instrumental_path,
-        }
-        
-    except Exception as e:
-        print(f"Full audio separation failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
-
-def _estimate_key(chroma: np.ndarray) -> tuple[str, str]:
-    # Compute mean chroma across time
-    chroma_mean = chroma.mean(axis=1)
-    if chroma_mean.sum() == 0:
-        return "C", "major"
-    
-    # Krumhansl-Schmuckler profiles (shifted)
-    best_score = -1e9
-    best = ("C", "major")
-    
-    for tonic in range(12):
-        # Rotate profiles to match tonic
-        # Shift profiles to tonic
-        maj_profile_shifted = np.roll(MAJOR_PROFILE, tonic)
-        min_profile_shifted = np.roll(MINOR_PROFILE, tonic)
-        
-        # Pearson correlation would be better but simple dot is okay on normalized chroma
-        maj_score = np.dot(chroma_mean, maj_profile_shifted)
-        if maj_score > best_score:
-            best_score = maj_score
-            best = (PITCH_CLASS_NAMES[tonic], "major")
-            
-        min_score = np.dot(chroma_mean, min_profile_shifted)
-        if min_score > best_score:
-            best_score = min_score
-            best = (PITCH_CLASS_NAMES[tonic], "minor")
-            
-    return best
-
-
-# Scale degree (semitones above tonic) -> expected chord quality, for major keys
-MAJOR_KEY_DIATONIC_QUALITY = {
-    0: "maj",   # I
-    2: "min",   # ii
-    4: "min",   # iii
-    5: "maj",   # IV
-    7: "maj",   # V
-    9: "min",   # vi
-    11: "dim",  # vii°
-}
-
-# For minor keys (natural minor as the base assumption)
-MINOR_KEY_DIATONIC_QUALITY = {
-    0: "min",   # i
-    2: "dim",   # ii°
-    3: "maj",   # III
-    5: "min",   # iv
-    7: "min",   # v (often maj in harmonic minor — treated as soft bias, not hard rule)
-    8: "maj",   # VI
-    10: "maj",  # VII
-}
-
-def _diatonic_bias_multiplier(chord_name: str, key_root: str, scale: str) -> float:
-    """Boost chord templates that match the expected quality for their
-    scale degree in the song's detected key. This directly targets the
-    common ii/vi-misdetected-as-major failure mode."""
-    if chord_name == "N.C.":
-        return 1.0
-
-    if len(chord_name) > 1 and chord_name[1] == "#":
-        root, suffix = chord_name[:2], chord_name[2:]
-    else:
-        root, suffix = chord_name[0], chord_name[1:]
-
-    root_idx = PITCH_CLASS_NAMES.index(root)
-    key_idx = PITCH_CLASS_NAMES.index(key_root)
-    degree = (root_idx - key_idx) % 12
-
-    table = MAJOR_KEY_DIATONIC_QUALITY if scale == "major" else MINOR_KEY_DIATONIC_QUALITY
-    expected = table.get(degree)
-    if expected is None:
-        return 1.0  # non-diatonic degree, no opinion
-
-    # Determine this template's actual quality bucket
-    if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
-        actual = "min"
-    elif suffix.startswith("dim"):
-        actual = "dim"
-    elif suffix.startswith("aug"):
-        actual = "aug"
-    else:
-        actual = "maj"  # covers maj, 7, maj7, 6, sus2, sus4 — all "major-family" for this purpose
-
-    if actual == expected:
-        return 1.12  # modest boost — nudge, don't override real evidence
-    return 1.0
-
-
-def _segment_chords(
-    chroma: np.ndarray,
-    sr: int,
-    beats: np.ndarray,
-    hop_length: int,
-    key: str = "C",
-    scale: str = "major",
-    beats_per_bar: int = 4,
-) -> list[dict]:
-    # Apply gentle median smoothing (don't over-process)
-    from scipy.ndimage import median_filter
-    chroma = median_filter(chroma, size=(1, 3))  # Reduced from 7 to 3
-
-    # If we lack reliable beats, fall back to ~0.5s windows
-    if beats is None or len(beats) < 2:
-        step = max(1, librosa.time_to_frames(0.5, sr=sr, hop_length=hop_length))
-        beats = np.arange(0, chroma.shape[1], step)
-
-    segments: list[dict] = []
-    prev_chord_idx = -1
-    
-    for i in range(len(beats) - 1):
-        s_frame = int(beats[i])
-        e_frame = int(beats[i+1])
-        if e_frame <= s_frame:
-            continue
-
-        cseg = chroma[:, s_frame:e_frame]
-        vec = cseg.mean(axis=1)
-        norm = np.linalg.norm(vec)
-        
-        if norm < 0.05: # Threshold for silence/noise
-            chord = "N.C."
-            conf = 0.0
-            best_idx = -1
+    for start, end, chord_label, conf in raw_segments:
+        # Convert internal format (e.g., 'C:maj', 'A:min', 'G:7') to display format
+        if chord_label == "N.C.":
+            cleaned = "N.C."
+        elif ":" in chord_label:
+            root, qual = chord_label.split(":", 1)
+            if qual == "maj":
+                cleaned = root
+            elif qual == "min":
+                cleaned = f"{root}min"
+            else:
+                cleaned = f"{root}{qual}"
         else:
-            vec = vec / (norm + 1e-9)
-            scores = [float(np.dot(vec, tpl[1])) for tpl in CHORD_TEMPLATES]
-            
-            # Apply persistence bias: if previous chord is still decent, keep it
-            if prev_chord_idx != -1:
-                scores[prev_chord_idx] *= 1.2 # 20% bias to stay
-                
-            # Apply diatonic key bias using the already-computed song key
-            for idx, (name, _) in enumerate(CHORD_TEMPLATES):
-                scores[idx] *= _diatonic_bias_multiplier(name, key, scale)
+            cleaned = chord_label
 
-            scores_arr = np.array(scores)
-            best_idx = int(np.argmax(scores_arr))
-
-            # Explicit near-tie resolution: if the top two candidates are within
-            # 2% of each other, don't silently default to whichever template
-            # happens to be earlier in the list — compare actual measured energy
-            # at the major vs minor 3rd degree directly and let that decide.
-            top2 = np.argsort(scores_arr)[-2:]
-            if abs(scores_arr[top2[0]] - scores_arr[top2[1]]) < 0.02 * scores_arr[top2[1]]:
-                name_a, name_b = CHORD_TEMPLATES[top2[0]][0], CHORD_TEMPLATES[top2[1]][0]
-                root_a = name_a[0] + ("#" if len(name_a) > 1 and name_a[1] == "#" else "")
-                # only intervene if it's genuinely a maj/min pair on the same root
-                if name_b.startswith(root_a) and (
-                    (name_a == root_a and "min" in name_b) or
-                    (name_b == root_a and "min" in name_a)
-                ):
-                    root_idx = PITCH_CLASS_NAMES.index(root_a)
-                    maj_third_energy = vec[(root_idx + 4) % 12]
-                    min_third_energy = vec[(root_idx + 3) % 12]
-                    best_idx = top2[1] if min_third_energy >= maj_third_energy else top2[0]
-
-            chord, conf = CHORD_TEMPLATES[best_idx]
-            # Get actual dot product for confidence
-            conf = float(np.dot(vec, CHORD_TEMPLATES[best_idx][1]))
-
-        segments.append(
-            {
-                "start": float(librosa.frames_to_time(s_frame, sr=sr, hop_length=hop_length)),
-                "end": float(librosa.frames_to_time(e_frame, sr=sr, hop_length=hop_length)),
-                "chord": chord,
-                "confidence": float(min(1.0, conf)),
-            }
-        )
-        prev_chord_idx = best_idx
-
-    return segments
-
-
-def _simplify_chord(chord_name: str) -> str:
-    """
-    Simplifies complex chords to their basic triad form for the
-    simpleChords view. Only maj / min / dim / aug survive — all
-    7th/6th extensions and sus2/sus4 collapse to their nearest
-    plain triad.
-    """
-    if chord_name == "N.C.":
-        return "N.C."
-
-    if len(chord_name) > 1 and chord_name[1] == "#":
-        root = chord_name[:2]
-        suffix = chord_name[2:]
-    else:
-        root = chord_name[0]
-        suffix = chord_name[1:]
-
-    if suffix.startswith("min") or (suffix.startswith("m") and not suffix.startswith("maj")):
-        return f"{root}min"
-    if suffix.startswith("dim"):
-        return f"{root}dim"
-    if suffix.startswith("aug"):
-        return f"{root}aug"
-
-    # Everything else — 7, maj7, 6, sus2, sus4, or bare major — collapses to plain major
-    return root
-
-
-def _smooth_chords(chords: list[dict], min_duration: float = 0.5) -> list[dict]:
-    if not chords:
-        return []
-    
-    # Initial merge of identical consecutive chords
-    merged = []
-    current = chords[0].copy()
-    for i in range(1, len(chords)):
-        if chords[i]["chord"] == current["chord"]:
-            current["end"] = chords[i]["end"]
-            current["confidence"] = max(current["confidence"], chords[i]["confidence"])
-        else:
-            merged.append(current)
-            current = chords[i].copy()
-    merged.append(current)
-    
-    # Filter out very short chords by merging them into neighbors
-    if len(merged) < 2:
-        return merged
-        
-    final = []
-    i = 0
-    while i < len(merged):
-        curr = merged[i]
-        dur = curr["end"] - curr["start"]
-        
-        if dur < min_duration:
-            # Try to merge with neighbor
-            if i > 0 and i < len(merged) - 1:
-                # Merge with the one that has higher confidence or is longer?
-                # For simplicity, merge with previous if it exists
-                final[-1]["end"] = curr["end"]
-                # Skip this one
-            elif i == 0:
-                # Merge into next
-                merged[i+1]["start"] = curr["start"]
-            elif i == len(merged) - 1:
-                # Merge into previous
-                final[-1]["end"] = curr["end"]
-        else:
-            final.append(curr)
-        i += 1
-        
-    return final
-
-
-def _estimate_meter(y: np.ndarray, sr: int, tempo: float) -> int:
-    """Estimate if song is 4/4 or 3/4."""
-    if tempo <= 0:
-        return 4
-    
-    try:
-        # Get onset envelope
-        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        # Check autocorrelation at lags corresponding to 3 and 4 beats
-        # One beat in frames:
-        hop_length = 512
-        beat_gap = (60.0 / tempo) * sr / hop_length
-        
-        # We check lag for 3 beats and 4 beats
-        lags = [int(beat_gap * 3), int(beat_gap * 4)]
-        ac = librosa.autocorrelate(onset_env, max_size=max(lags) + 2)
-        
-        score3 = ac[lags[0]] if lags[0] < len(ac) else 0
-        score4 = ac[lags[1]] if lags[1] < len(ac) else 0
-        
-        if score3 > score4 * 1.1: # Significant bias to 3
-            return 3
-        return 4
-    except Exception:
-        return 4
-
-
-def _merge_chords_to_bars(chords: list[dict], tempo: float, duration: float, beats_per_bar: int = 4) -> list[dict]:
-    # Quantize chords so each bar has one representative chord, picked by overlap.
-    if duration <= 0:
-        return chords
-
-    bar_len = (beats_per_bar * 60.0 / tempo) if tempo and tempo > 0 else 2.0
-    bar_len = float(np.clip(bar_len, 0.5, 12.0))
-
-    merged: list[dict] = []
-    t = 0.0
-    chords_sorted = sorted(chords, key=lambda c: c.get("start", 0.0))
-
-    while t < duration - 1e-6:
-        window_end = min(duration, t + bar_len)
-        best = None
-        best_overlap = 0.0
-        for ch in chords_sorted:
-            overlap = max(0.0, min(window_end, ch.get("end", 0.0)) - max(t, ch.get("start", 0.0)))
-            if overlap > best_overlap:
-                best_overlap = overlap
-                best = ch
-
-        if best is None:
-            best = {
-                "chord": "N.C.",
-                "confidence": 0.0,
-            }
-
-        merged.append(
-            {
-                "start": float(t),
-                "end": float(window_end),
-                "chord": best.get("chord", "N.C."),
-                "confidence": float(best.get("confidence", 0.0)),
-            }
-        )
-        t += bar_len
-
-    return merged
-
-def _apply_chroma_noise_floor(chroma: np.ndarray, floor_ratio: float = 0.15) -> np.ndarray:
-    """Zero out chroma bins below floor_ratio of that frame's peak energy.
-    Suppresses low-level bleed/leakage (e.g. a slightly-detuned root
-    smearing into the adjacent major-7 bin) without touching real chord tones,
-    which are always near-peak energy in a clean chroma frame."""
-    peak = chroma.max(axis=0, keepdims=True)
-    mask = chroma >= (floor_ratio * peak)
-    return chroma * mask
-
-
-def analyze_file(file_path: Path, separate_vocals: bool = False) -> dict:
-    """Analyze audio file for chords, tempo, and key.
-    
-    Args:
-        file_path: Path to audio file
-        separate_vocals: If True, separate vocals from music before analysis (more accurate)
-    """
-    actual_path = file_path
-    separated_path = None
-    
-    # If vocal separation is requested, process the file first
-    if separate_vocals:
-        print("Separating vocals from instrumental...")
-        separated_path = _separate_vocals(file_path)
-        if separated_path:
-            actual_path = separated_path
-            print(f"Using separated instrumental track: {actual_path}")
-        else:
-            print("Vocal separation failed, using original audio")
-    
-    # Try loading directly first (librosa handles most formats including MP3)
-    try:
-        # Limit to 5 minutes for CPU safety
-        print(f"[Analysis] Loading audio {actual_path.name} (max 300s)...")
-        y, sr = librosa.load(str(actual_path), sr=22050, mono=True, duration=300)
-    except Exception as e:
-        # Fallback to ffmpeg only if direct load fails
-        print(f"[Analysis] Librosa load failed, trying ffmpeg fallback: {e}")
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp_wav:
-                # We need to use shutil to write to the temp file if we want to bypass subprocess sometimes,
-                # but ffmpeg is still needed for this specific fallback.
-                _ffmpeg_to_wav(actual_path, Path(tmp_wav.name))
-                y, sr = librosa.load(tmp_wav.name, sr=22050, mono=True, duration=300)
-        except Exception as e2:
-            print(f"[Analysis] Critical failure: Could not load audio. {e2}")
-            raise RuntimeError(f"Could not load audio file. (Error: {e2})")
-
-    if y.size == 0:
-        return {"tempo": 0, "key": "C", "scale": "major", "chords": []}
-
-    hop_length = 512
-    
-    # Separate harmonic for better chord detection
-    y_harmonic = librosa.effects.hpss(y)[0]
-    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr, hop_length=hop_length)
-    
-    # Use Chroma CQT (works better than STFT for chords) with high bins_per_octave resolution (36)
-    chroma = librosa.feature.chroma_cqt(y=y_harmonic, sr=sr, hop_length=hop_length, bins_per_octave=36)
-    
-    # Light normalization
-    chroma = librosa.util.normalize(chroma, axis=0)
-    chroma = _apply_chroma_noise_floor(chroma, floor_ratio=0.15)
-    
-    key, scale = _estimate_key(chroma)
-    meter = _estimate_meter(y, sr, tempo)
-    
-    # If beat tracking returned nothing, create artificial beats
-    if beat_frames is None or len(beat_frames) < 2:
-        beat_frames = np.arange(0, chroma.shape[1], 22050 // (2 * hop_length))
-
-    # Precise chords (passing key and scale for diatonic bias)
-    chords = _segment_chords(chroma, sr, beat_frames, hop_length=hop_length, key=key, scale=scale, beats_per_bar=2)
-    
-    # Simple chords (larger windows or smoothed)
-    simple_chords = []
-    for c in chords:
-        simple_chords.append({
-            **c,
-            "chord": _simplify_chord(c["chord"])
+        chords.append({
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "chord": cleaned,
+            "confidence": round(conf, 3),
         })
-    
-    # Merge consecutive identical chords and smooth
-    merged_precise = _smooth_chords(chords, min_duration=0.2)
-    merged_simple = _smooth_chords(simple_chords, min_duration=0.8)
+
+        simplified = _simplify_chord(cleaned, key, scale)
+        simple_chords.append({
+            "start": round(start, 3),
+            "end": round(end, 3),
+            "chord": simplified,
+            "confidence": round(conf, 3),
+        })
 
     result = {
-        "tempo": float(round(float(tempo), 2)),
-        "meter": meter,
+        "tempo": round(tempo, 1),
+        "meter": 4,
         "key": key,
         "scale": scale,
-        "chords": merged_precise,
-        "simpleChords": merged_simple,
+        "chords": chords,
+        "simpleChords": simple_chords,
     }
-    
-    # Include separated track path if vocal separation was used
-    if separated_path:
-        result["instrumentalPath"] = str(separated_path)
-    
+
+    if instrumental_path:
+        result["instrumentalPath"] = instrumental_path
+
     return result
 
 
-def _get_diatonic_quality(root_name: str, key: str, scale: str) -> str:
-    """Returns 'maj', 'min', or 'dim' based on the root's diatonic role in the key.
-    Added for backwards compatibility with chord_fast.py.
-    """
-    try:
-        map_flats = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#"}
-        root_std = map_flats.get(root_name, root_name)
-        key_std = map_flats.get(key, key)
-        
-        if root_std not in PITCH_CLASS_NAMES or key_std not in PITCH_CLASS_NAMES:
-            return "maj"
-            
-        root_pc = PITCH_CLASS_NAMES.index(root_std)
-        key_pc = PITCH_CLASS_NAMES.index(key_std)
-        
-        interval = (root_pc - key_pc) % 12
-        
-        if scale == "minor":
-            if interval == 0:
-                return "min"
-            elif interval == 2:
-                return "dim"
-            elif interval == 3:
-                return "maj"
-            elif interval == 5 or interval == 7:
-                return "min"
-            elif interval == 8 or interval == 10:
-                return "maj"
-        else: # major
-            if interval == 0:
-                return "maj"
-            elif interval == 2 or interval == 4:
-                return "min"
-            elif interval == 5 or interval == 7:
-                return "maj"
-            elif interval == 9:
-                return "min"
-            elif interval == 11:
-                return "dim"
-            
-        return "maj"
-    except Exception:
-        return "maj"
+def _simplify_chord(chord: str, key: str, scale: str) -> str:
+    """Simplify a chord label to root + basic triad quality."""
+    if chord == "N.C." or not chord:
+        return "N.C."
+
+    # Strip slash chords (e.g., G/B -> G)
+    base = chord.split("/")[0] if "/" in chord else chord
+
+    if len(base) > 1 and base[1] in "#b":
+        root = base[:2]
+        quality = base[2:]
+    else:
+        root = base[0]
+        quality = base[1:]
+
+    quality_lower = quality.lower()
+
+    if "dim" in quality_lower:
+        return f"{root}dim"
+    elif "aug" in quality_lower:
+        return f"{root}aug"
+    elif "maj" in quality_lower:
+        # maj, maj7, maj9, etc. -> Major triad (just root)
+        return root
+    elif quality_lower.startswith("min") or quality_lower.startswith("m") or "min" in quality_lower:
+        # min, min7, m7, etc. -> Minor triad
+        return f"{root}min"
+    elif quality_lower in ("", "7", "9", "11", "13", "6", "sus2", "sus4", "add9"):
+        return root
+    else:
+        return root

@@ -1,100 +1,76 @@
-import { ChordSegment } from "@/types/chordAI";
+/**
+ * src/lib/chunkUtils.ts
+ *
+ * NDJSON streaming parser for progressive chord loading.
+ *
+ * The backend streams analysis results as newline-delimited JSON:
+ *   {"type": "progress", "message": "...", "percent": 50}
+ *   {"type": "metadata", "tempo": 120, "key": "C", ...}
+ *   {"type": "chords", "start": 0, "end": 30, "chords": [...], "simpleChords": [...]}
+ *   {"type": "chords", "start": 30, "end": 60, ...}
+ *   {"type": "error", "detail": "..."}
+ */
 
-export interface ChunkRange {
-  index: number;
-  startSec: number;
-  endSec: number;
-  usableStart: number;
-  usableEnd: number;
+export interface NdjsonProgress {
+  type: "progress";
+  message: string;
+  percent: number;
+  stage?: string;
 }
 
-/**
- * Calculates chunk ranges with overlap for segmenting audio files.
- * Ensures the final chunk does not trim its actual end predictions.
- * 
- * @param duration Total duration of the audio file in seconds.
- * @param chunkDuration Target duration of each chunk (default 30s).
- * @param overlap Trailing and leading overlap duration (default 2s).
- */
-export function getChunkRanges(duration: number, chunkDuration = 30, overlap = 2): ChunkRange[] {
-  if (duration <= 0) return [];
-  const numChunks = Math.ceil(duration / chunkDuration);
-  const chunks: ChunkRange[] = [];
-
-  for (let i = 0; i < numChunks; i++) {
-    const startSec = Math.max(0, i * chunkDuration - overlap);
-    const endSec = Math.min(duration, (i + 1) * chunkDuration + overlap);
-    
-    const usableStart = i === 0 ? 0 : i * chunkDuration;
-    // Trim trailing overlap ONLY if there is a next chunk to cover the remaining audio.
-    const usableEnd = (i + 1) * chunkDuration + overlap < duration 
-      ? (i + 1) * chunkDuration 
-      : duration;
-
-    chunks.push({
-      index: i,
-      startSec,
-      endSec,
-      usableStart,
-      usableEnd,
-    });
-  }
-
-  return chunks;
+export interface NdjsonMetadata {
+  type: "metadata";
+  tempo?: number;
+  meter?: number;
+  key?: string;
+  scale?: string;
+  instrumentalUrl?: string;
 }
 
-/**
- * Filters chord segments to keep only predictions in the usable range,
- * adjusts timestamps relative to the original song timeline, and tags fallbacks.
- */
-export function filterAndAdjustChords(
-  chords: ChordSegment[],
-  startSec: number,
-  usableStart: number,
-  usableEnd: number,
-  isFallback = false
-): ChordSegment[] {
-  const result: ChordSegment[] = [];
-
-  for (const chord of chords) {
-    const startOrig = chord.start + startSec;
-    const endOrig = chord.end + startSec;
-
-    // Clamp boundary chords to the usable range limits
-    const newStart = Math.max(usableStart, startOrig);
-    const newEnd = Math.min(usableEnd, endOrig);
-
-    if (newEnd > newStart) {
-      result.push({
-        ...chord,
-        start: newStart,
-        end: newEnd,
-        isFallback: chord.isFallback || isFallback,
-      });
-    }
-  }
-
-  return result;
+export interface NdjsonChords {
+  type: "chords";
+  start: number;
+  end: number;
+  chords: Array<{ start: number; end: number; chord: string; confidence: number }>;
+  simpleChords: Array<{ start: number; end: number; chord: string; confidence: number }>;
 }
 
+export interface NdjsonError {
+  type: "error";
+  detail: string;
+}
+
+export type NdjsonItem = NdjsonProgress | NdjsonMetadata | NdjsonChords | NdjsonError;
+
 /**
- * Parses newline-delimited JSON (NDJSON) string lines from a buffer.
- * Returns parsed items and the remaining incomplete line buffer.
+ * Parse a buffer of NDJSON text into structured items.
+ *
+ * Returns parsed items and any remaining unparsed text (incomplete line).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseNdjsonLines(buffer: string): { items: any[]; remaining: string } {
+export function parseNdjsonLines(buffer: string): {
+  items: NdjsonItem[];
+  remaining: string;
+} {
+  const items: NdjsonItem[] = [];
   const lines = buffer.split("\n");
-  const remaining = lines.pop() || "";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const items: any[] = [];
+
+  // Last element might be an incomplete line
+  const remaining = lines.pop() ?? "";
+
   for (const line of lines) {
-    if (line.trim()) {
-      try {
-        items.push(JSON.parse(line));
-      } catch (err) {
-        console.warn("[parseNdjsonLines] Failed to parse NDJSON line:", err);
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed.type === "string") {
+        items.push(parsed as NdjsonItem);
       }
+    } catch {
+      // Skip malformed lines
+      console.warn("[NDJSON] Skipping malformed line:", trimmed.slice(0, 100));
     }
   }
+
   return { items, remaining };
 }

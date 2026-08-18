@@ -1,112 +1,99 @@
+/**
+ * src/components/chord-ai/HorizontalChordTape.tsx
+ *
+ * Auto-scrolling horizontal tape showing the current chord in focus
+ * with past and future context.
+ */
+
+import { useMemo, useRef } from "react";
 import { ChordSegment } from "@/types/chordAI";
-import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
-export type HorizontalChordTapeProps = {
-  segments: ChordSegment[];
-  currentTime: number;
-  onSeek: (time: number) => void;
-};
+interface HorizontalChordTapeProps {
+  segments?: ChordSegment[];
+  chords?: ChordSegment[];
+  currentTime?: number;
+  onSeek?: (time: number) => void;
+  className?: string;
+}
 
-const HorizontalChordTape = ({ segments, currentTime, onSeek }: HorizontalChordTapeProps) => {
-  // Find current index
+const HorizontalChordTape = ({
+  segments,
+  chords: chordsProp,
+  currentTime = 0,
+  onSeek,
+  className,
+}: HorizontalChordTapeProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rawChords = segments ?? chordsProp ?? [];
+
+  // Find current chord index
   const activeIndex = useMemo(() => {
-    return segments.findIndex(s => currentTime >= s.start && currentTime <= (s.end || s.start + 0.1));
-  }, [segments, currentTime]);
+    if (!Array.isArray(rawChords) || rawChords.length === 0) return -1;
+    for (let i = 0; i < rawChords.length; i++) {
+      const c = rawChords[i];
+      if (c && currentTime >= c.start && currentTime < c.end) {
+        return i;
+      }
+    }
+    return -1;
+  }, [rawChords, currentTime]);
 
-  if (segments.length === 0) return null;
+  // Show context: 3 chords before and after
+  const contextRange = 3;
+  const visibleChords = useMemo(() => {
+    if (!Array.isArray(rawChords) || rawChords.length === 0) return [];
+    if (activeIndex < 0) {
+      return rawChords.slice(0, contextRange * 2 + 1).map((c, i) => ({
+        ...c,
+        isActive: false,
+        offset: i,
+      }));
+    }
+    const start = Math.max(0, activeIndex - contextRange);
+    const end = Math.min(rawChords.length, activeIndex + contextRange + 1);
+    return rawChords.slice(start, end).map((c, i) => ({
+      ...c,
+      isActive: start + i === activeIndex,
+      offset: start + i - activeIndex,
+    }));
+  }, [rawChords, activeIndex, contextRange]);
 
-  // Each item has a fixed width
-  const itemWidth = 180; 
-  // Offset depends on the original index of the active chord
-  const offset = activeIndex !== -1 ? -(activeIndex * itemWidth) : 0;
+  if (!Array.isArray(rawChords) || rawChords.length === 0) return null;
 
   return (
-    <div className="relative w-full overflow-hidden py-10 select-none">
-      {/* Visual background guide */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-32 border border-white/5 bg-white/[0.01] rounded-[2rem] z-0 hidden md:block" />
-
-      {/* The moving track */}
-      <div 
-        className="flex items-center transition-transform duration-300 ease-out will-change-transform"
-        style={{ 
-          transform: `translateX(calc(50% - ${itemWidth / 2}px + ${offset}px))`,
-        }}
+    <div className={cn("w-full overflow-hidden", className)}>
+      <div
+        ref={containerRef}
+        className="flex items-center justify-center gap-2 py-3"
       >
-        {segments.map((seg, idx) => {
-          const isActive = idx === activeIndex;
-          const isPrev = idx === activeIndex - 1;
-          const isNext = idx === activeIndex + 1;
-          const isFar = Math.abs(idx - activeIndex) > 1;
-          const isVeryFar = Math.abs(idx - activeIndex) > 3;
-
-          // Don't render items very far away for performance
-          if (isVeryFar) return <div key={idx} style={{ width: `${itemWidth}px` }} className="flex-none" />;
-          
-          const duration = (seg.end || seg.start + 0.1) - seg.start;
-          const progress = Math.min(100, Math.max(0, ((currentTime - seg.start) / Math.max(0.01, duration)) * 100));
+        {visibleChords.map((chord, i) => {
+          if (!chord) return null;
+          const isActive = !!chord.isActive;
+          const offset = Math.abs(Number(chord.offset ?? i));
+          const opacity = isActive ? 1 : Math.max(0.3, 1 - offset * 0.2);
+          const scale = isActive ? 1.15 : Math.max(0.8, 1 - offset * 0.05);
 
           return (
             <div
-              key={`${seg.chord}-${seg.start}-${idx}`}
-              onClick={() => onSeek(seg.start)}
-              style={{ width: `${itemWidth}px` }}
+              key={`tape-${chord.start ?? i}-${chord.chord ?? 'nc'}`}
               className={cn(
-                "flex-none flex flex-col items-center justify-center transition-all duration-300 cursor-pointer",
-                isActive ? "opacity-100 scale-100 z-10" : "opacity-20 scale-90",
-                isFar && "opacity-5"
+                "flex items-center justify-center rounded-lg px-4 py-2 transition-all duration-300 cursor-pointer select-none",
+                isActive
+                  ? "bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/30"
+                  : "bg-muted/50 text-muted-foreground font-semibold text-sm hover:bg-muted/70"
               )}
+              style={{
+                opacity,
+                transform: `scale(${scale})`,
+              }}
+              onClick={() => onSeek?.(chord.start ?? 0)}
             >
-              <div className="flex flex-col items-center">
-                <div className="h-6 flex items-center justify-center mb-4 transition-opacity duration-300">
-                  {isActive && (
-                    <span className="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">
-                      Now
-                    </span>
-                  )}
-                  {isPrev && (
-                    <span className="text-[8px] text-muted-foreground/30 font-bold uppercase tracking-wider">
-                      Prev
-                    </span>
-                  )}
-                  {isNext && (
-                    <span className="text-[8px] text-muted-foreground/30 font-bold uppercase tracking-wider">
-                      Next
-                    </span>
-                  )}
-                </div>
-                
-                <span 
-                  translate="no"
-                  className={cn(
-                    "text-5xl md:text-6xl font-sans tracking-tight tabular-nums transition-all duration-300 notranslate",
-                    isActive ? "text-white" : "text-muted-foreground"
-                  )}
-                >
-                  {seg.chord}
-                </span>
-
-                <div className={cn(
-                  "mt-6 flex flex-col items-center h-1",
-                  isActive ? "opacity-100" : "opacity-0"
-                )}>
-                  {/* Progress Line */}
-                  <div className="w-12 h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 transition-none"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
+              {chord.chord === "N.C." ? "—" : chord.chord}
             </div>
           );
         })}
       </div>
-
-      {/* Edge Fading */}
-      <div className="absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
     </div>
   );
 };

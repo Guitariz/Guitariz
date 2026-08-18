@@ -2,17 +2,17 @@
 ml/dsp_tempo_key.py
 
 Tempo and Key/Scale detection via classic, well-established DSP algorithms.
-Neither of these needs a trained model at all:
+Neither needs a trained model:
 
-- Tempo: librosa's onset-strength + autocorrelation/tempogram beat tracker
-  (same family of algorithm used internally by standard tracking packages, but librosa's implementation
-  is ISC-licensed and commercially unrestricted).
+  Tempo: librosa's onset-strength + autocorrelation beat tracker
+         (ISC-licensed, commercially unrestricted).
 
-- Key: Krumhansl-Schmuckler / Temperley key-finding algorithm — correlate the
-  song's aggregate chroma vector against the 24 major/minor key profiles
-  (published, public-domain cognitive-science profiles, not a trained model).
+  Key:   Krumhansl-Schmuckler / Temperley key-finding algorithm —
+         correlate the song's aggregate chroma vector against 24
+         major/minor key profiles (published, public-domain
+         cognitive-science profiles, not a trained model artifact).
 
-Both are fast (<1s for a 4-minute song) and add zero licensing risk.
+Both run in <1s for a 4-minute song and add zero licensing risk.
 """
 from __future__ import annotations
 
@@ -23,13 +23,18 @@ from .features import SR, HOP_LENGTH, load_audio, extract_cqt_chroma
 
 NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-# Krumhansl-Kessler key profiles (public domain, from cognitive psychology research,
-# not a trained/licensed model artifact).
+# Krumhansl-Kessler key profiles (public domain, from cognitive psychology
+# research — not a trained/licensed model artifact).
 KK_MAJOR = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
 KK_MINOR = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
 
 
 def detect_tempo_dsp(file_path: str) -> float:
+    """
+    Estimate BPM using onset-strength autocorrelation.
+
+    Returns rounded BPM as a float (e.g. 120.0).
+    """
     y, sr = load_audio(file_path)
     onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=HOP_LENGTH)
     tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr, hop_length=HOP_LENGTH)
@@ -38,6 +43,11 @@ def detect_tempo_dsp(file_path: str) -> float:
 
 
 def detect_key_dsp(file_path: str) -> str:
+    """
+    Estimate musical key using the Krumhansl-Schmuckler algorithm.
+
+    Returns a string like "C major" or "A minor".
+    """
     y, sr = load_audio(file_path)
     chroma = extract_cqt_chroma(y, sr)  # (n_frames, 12)
     agg = chroma.mean(axis=0)
@@ -49,8 +59,8 @@ def detect_key_dsp(file_path: str) -> str:
         major_profile = np.roll(KK_MAJOR, root_idx)
         minor_profile = np.roll(KK_MINOR, root_idx)
 
-        major_score = np.corrcoef(agg, major_profile)[0, 1]
-        minor_score = np.corrcoef(agg, minor_profile)[0, 1]
+        major_score = float(np.corrcoef(agg, major_profile)[0, 1])
+        minor_score = float(np.corrcoef(agg, minor_profile)[0, 1])
 
         if major_score > best_score:
             best_score = major_score
