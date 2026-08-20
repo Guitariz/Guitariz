@@ -1,15 +1,14 @@
 /**
  * PianoKeyboard.tsx
- * Interactive piano keyboard for Scale Explorer.
- * Highlights scale notes with interval-based color coding:
- *   Root → white/gold   |  3rd → purple  |  5th → cyan  |  other scale notes → default accent
- * Supports 2-octave focused view or expanded 88-key range.
- * Clicking a key plays the note via Web Audio.
+ * High-fidelity realistic virtual piano keyboard.
+ * Features ivory white keys, ebony black keys, red felt acoustic strip,
+ * active glowing note states, scale interval coloring, computer keyboard hints,
+ * and an interactive bouncing C4 onboarding guide.
  */
 
-import { useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { playNote } from "@/lib/chordAudio";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,25 +16,18 @@ import { playNote } from "@/lib/chordAudio";
 export type IntervalRole = "root" | "third" | "fifth" | "scale" | "none";
 
 export interface PianoNoteInfo {
-  /** Chromatic pitch class 0-11 matching NOTES array */
   pitchClass: number;
   role: IntervalRole;
 }
 
 export interface PianoKeyboardProps {
-  /** Note names active in the scale, e.g. ["C", "E", "G", "B", "D"] */
   scaleNotes?: string[];
-  /** Root note name, e.g. "C" */
   rootNote?: string;
-  /** Intervals of the scale (semitone offsets from root) */
   intervals?: number[];
-  /** Starting octave (default 3) */
   startOctave?: number;
-  /** Number of octaves to display (default 2) */
   numOctaves?: number;
-  /** Whether to show note labels on keys */
   showLabels?: boolean;
-  /** Whether to show the full 88-key range */
+  showKeymapHints?: boolean;
   fullRange?: boolean;
   className?: string;
   activeNotes?: number[];
@@ -47,8 +39,28 @@ export interface PianoKeyboardProps {
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const;
 const BLACK_PITCH_CLASSES = new Set([1, 3, 6, 8, 10]);
 
-// Interval index → role mapping (standard Western scale degree positions)
-// Interval idx 0 → root, idx 2 → 3rd (major/minor), idx 4 → 5th (perfect)
+// QWERTY Computer keyboard mapping (C4 to E5)
+const KEYBOARD_SHORTCUTS: Record<number, string> = {
+  60: "A", // C4
+  61: "W", // C#4
+  62: "S", // D4
+  63: "E", // D#4
+  64: "D", // E4
+  65: "F", // F4
+  66: "T", // F#4
+  67: "G", // G4
+  68: "Y", // G#4
+  69: "H", // A4
+  70: "U", // A#4
+  71: "J", // B4
+  72: "K", // C5
+  73: "O", // C#5
+  74: "L", // D5
+  75: "P", // D#5
+  76: ";", // E5
+  77: "'", // F5
+};
+
 const INTERVAL_IDX_TO_ROLE: Record<number, IntervalRole> = {
   0: "root",
   2: "third",
@@ -65,14 +77,13 @@ const midiToNoteName = (midi: number): string => {
 
 const midiToPitchClass = (midi: number): number => midi % 12;
 
-/** Play a note using the global AudioContext */
 const playMidiNote = (midi: number): void => {
   const frequency = 440 * Math.pow(2, (midi - 69) / 12);
-  playNote(frequency, 1.5, 0.4, "piano");
+  playNote(frequency, 1.8, 0.45, "piano");
 };
 
-/** Build a map from pitchClass → IntervalRole for the current scale */
 const buildRoleMap = (rootNote: string, intervals: number[]): Map<number, IntervalRole> => {
+  if (!intervals || intervals.length === 0) return new Map();
   const rootPc = NOTE_NAMES.indexOf(rootNote as typeof NOTE_NAMES[number]);
   if (rootPc === -1) return new Map();
 
@@ -80,7 +91,6 @@ const buildRoleMap = (rootNote: string, intervals: number[]): Map<number, Interv
   intervals.forEach((semitones, idx) => {
     const pc = (rootPc + semitones) % 12;
     const role = INTERVAL_IDX_TO_ROLE[idx] ?? "scale";
-    // Don't overwrite higher-priority roles
     if (!map.has(pc) || map.get(pc) === "scale") {
       map.set(pc, role);
     }
@@ -88,22 +98,22 @@ const buildRoleMap = (rootNote: string, intervals: number[]): Map<number, Interv
   return map;
 };
 
-// ─── Key Style Helpers ────────────────────────────────────────────────────────
+// ─── Key Style Configurations ─────────────────────────────────────────────────
 
 const WHITE_KEY_ROLE_STYLES: Record<IntervalRole, string> = {
-  root:  "bg-gradient-to-b from-amber-100 to-amber-200 border-amber-400 shadow-amber-400/40 shadow-lg",
-  third: "bg-gradient-to-b from-violet-200 to-violet-300 border-violet-500 shadow-violet-400/40 shadow-lg",
-  fifth: "bg-gradient-to-b from-cyan-100 to-cyan-200 border-cyan-400 shadow-cyan-400/40 shadow-lg",
-  scale: "bg-gradient-to-b from-emerald-100 to-emerald-250 border-emerald-400 shadow-emerald-400/30 shadow-lg text-emerald-950",
-  none:  "bg-[#121214] border-white/5 opacity-20 shadow-none hover:opacity-40",
+  root:  "bg-gradient-to-b from-amber-100 via-amber-200 to-amber-300 border-amber-400 text-amber-950 shadow-[0_0_15px_rgba(245,158,11,0.5)]",
+  third: "bg-gradient-to-b from-violet-100 via-violet-200 to-violet-300 border-violet-400 text-violet-950 shadow-[0_0_15px_rgba(139,92,246,0.5)]",
+  fifth: "bg-gradient-to-b from-cyan-100 via-cyan-200 to-cyan-300 border-cyan-400 text-cyan-950 shadow-[0_0_15px_rgba(6,182,212,0.5)]",
+  scale: "bg-gradient-to-b from-emerald-100 via-emerald-200 to-emerald-300 border-emerald-400 text-emerald-950 shadow-[0_0_15px_rgba(16,185,129,0.4)]",
+  none:  "bg-gradient-to-b from-[#ffffff] via-[#f7f7f9] to-[#e4e4e7] border-zinc-400/90 text-zinc-900 shadow-[0_5px_8px_rgba(0,0,0,0.3),inset_0_-4px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(255,255,255,1)] hover:from-[#fcfcfd] hover:to-[#dbdbe0]",
 };
 
 const BLACK_KEY_ROLE_STYLES: Record<IntervalRole, string> = {
-  root:  "bg-gradient-to-b from-amber-500 to-amber-700 border-amber-400/60 shadow-amber-500/50 shadow-lg",
-  third: "bg-gradient-to-b from-violet-500 to-violet-800 border-violet-400/60 shadow-violet-500/50 shadow-lg",
-  fifth: "bg-gradient-to-b from-cyan-500 to-cyan-700 border-cyan-400/60 shadow-cyan-500/50 shadow-lg",
-  scale: "bg-gradient-to-b from-emerald-500 to-emerald-750 border-emerald-400/60 shadow-emerald-500/40 shadow-lg text-white",
-  none:  "bg-[#08080a] border-transparent opacity-15 shadow-none hover:opacity-30",
+  root:  "bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.6)]",
+  third: "bg-gradient-to-b from-violet-500 via-violet-600 to-violet-700 border-violet-400 text-white shadow-[0_0_15px_rgba(139,92,246,0.6)]",
+  fifth: "bg-gradient-to-b from-cyan-500 via-cyan-600 to-cyan-700 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.6)]",
+  scale: "bg-gradient-to-b from-emerald-500 via-emerald-600 to-emerald-700 border-emerald-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]",
+  none:  "bg-gradient-to-b from-[#2d2d32] via-[#1a1a1d] to-[#09090c] border-black/90 text-zinc-100 shadow-[0_8px_14px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.2),inset_0_-3px_5px_rgba(0,0,0,0.8)] hover:from-[#3a3a40] hover:to-[#121216]",
 };
 
 const DOT_COLOR: Record<IntervalRole, string> = {
@@ -114,206 +124,251 @@ const DOT_COLOR: Record<IntervalRole, string> = {
   none:  "",
 };
 
-const LABEL_COLOR: Record<IntervalRole, string> = {
-  root:  "text-amber-900 font-bold",
-  third: "text-violet-900 font-bold",
-  fifth: "text-cyan-900 font-bold",
-  scale: "text-neutral-600 font-semibold",
-  none:  "hidden",
-};
-
-// ─── Sub-Components ──────────────────────────────────────────────────────────
+// ─── Sub-Components ───────────────────────────────────────────────────────────
 
 const WhiteKey = ({ 
-    midi, 
-    role, 
-    showLabels, 
-    width, 
-    height,
-    fullRange,
-    isActive,
-    onNoteClick
-  }: { 
-    midi: number; 
-    role: IntervalRole; 
-    showLabels: boolean; 
-    width: number; 
-    height: number;
-    fullRange?: boolean;
-    isActive?: boolean;
-    onNoteClick?: (midi: number) => void;
-  }) => {
-    const label = midiToNoteName(midi);
-    const labelFontSize = fullRange ? "text-[8px]" : "text-[9px]";
-    const dotSize = fullRange ? "w-2 h-2" : "w-2.5 h-2.5";
-    const dotTop = fullRange ? "top-1.5" : "top-2";
+  midi, 
+  role, 
+  showLabels, 
+  showKeymapHints,
+  width, 
+  height,
+  fullRange,
+  isActive,
+  showGuide,
+  onDismissGuide,
+  onNoteClick
+}: { 
+  midi: number; 
+  role: IntervalRole; 
+  showLabels: boolean; 
+  showKeymapHints?: boolean;
+  width: number; 
+  height: number;
+  fullRange?: boolean;
+  isActive?: boolean;
+  showGuide?: boolean;
+  onDismissGuide?: () => void;
+  onNoteClick?: (midi: number) => void;
+}) => {
+  const noteName = NOTE_NAMES[midiToPitchClass(midi)];
+  const octave = Math.floor(midi / 12) - 1;
+  const label = `${noteName}${octave}`;
+  const isCKey = noteName === "C";
+  const shortcutKey = KEYBOARD_SHORTCUTS[midi];
 
-    return (
-      <motion.button
-        animate={isActive ? { scaleY: 0.95 } : { scaleY: 1 }}
-        whileTap={{ scaleY: 0.95 }}
-        onClick={() => {
-          if (onNoteClick) onNoteClick(midi);
-          else playMidiNote(midi);
-        }}
-        className={cn(
-          "relative border border-b-2 rounded-b-xl transition-all duration-100 cursor-pointer origin-top",
-          "hover:brightness-105",
-          WHITE_KEY_ROLE_STYLES[role],
-          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-20 opacity-100" : "z-10"
-        )}
-        style={{ width, height, zIndex: 1 }}
-        aria-label={`Piano key ${label}`}
-        aria-pressed={role !== "none"}
-        title={`${label}${role !== "none" ? ` (${role})` : ""}`}
-      >
-        <AnimatePresence>
-          {role !== "none" && (
-            <motion.span
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              className={cn(
-                "absolute left-1/2 -translate-x-1/2 rounded-full",
-                dotTop,
-                dotSize,
-                DOT_COLOR[role]
-              )}
-            />
-          )}
-        </AnimatePresence>
-
-        {showLabels && role !== "none" && (
-          <span
-            className={cn(
-              "absolute bottom-2 left-1/2 -translate-x-1/2 leading-none",
-              labelFontSize,
-              isActive ? "text-primary-foreground font-black drop-shadow-md" : LABEL_COLOR[role]
-            )}
-          >
-            {NOTE_NAMES[midiToPitchClass(midi)]}
-            <span className={cn("opacity-50 ml-0.5", fullRange ? "text-[6px]" : "text-[7px]")}>
-              {Math.floor(midi / 12) - 1}
+  return (
+    <motion.button
+      animate={isActive ? { scaleY: 0.96, y: 3 } : { scaleY: 1, y: 0 }}
+      whileTap={{ scaleY: 0.96, y: 3 }}
+      onClick={() => {
+        if (showGuide && onDismissGuide) onDismissGuide();
+        if (onNoteClick) onNoteClick(midi);
+        else playMidiNote(midi);
+      }}
+      className={cn(
+        "relative rounded-b-xl border-x border-b-2 transition-all duration-75 cursor-pointer origin-top select-none shrink-0 group",
+        WHITE_KEY_ROLE_STYLES[role],
+        isActive && "!bg-gradient-to-b !from-amber-200 !via-primary !to-amber-400 !border-amber-400 !text-black !shadow-[0_0_25px_rgba(245,158,11,0.9),inset_0_2px_4px_rgba(255,255,255,0.6)] !z-30",
+        !isActive && "z-10"
+      )}
+      style={{ width, height }}
+      aria-label={`Piano key ${label}`}
+      title={`${label}${shortcutKey ? ` [Key: ${shortcutKey}]` : ""}${role !== "none" ? ` (${role})` : ""}`}
+    >
+      {/* Floating Animated Guide Tooltip above C4 (Middle C) */}
+      {midi === 60 && showGuide && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: [0, -6, 0] }}
+          transition={{ y: { repeat: Infinity, duration: 2, ease: "easeInOut" }, opacity: { duration: 0.3 } }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDismissGuide?.();
+          }}
+          className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-auto cursor-pointer whitespace-nowrap bg-black/95 text-white border border-primary/70 px-3.5 py-2 rounded-xl shadow-[0_0_25px_rgba(245,158,11,0.7)] backdrop-blur-xl flex items-center gap-2"
+          title="Click to dismiss guide"
+        >
+          <span className="text-sm">🎹</span>
+          <div className="flex flex-col text-left leading-tight">
+            <span className="text-[11px] font-black text-amber-300">
+              Press <kbd className="px-1.5 py-0.5 rounded bg-primary text-black font-mono font-black text-[10px] shadow">A</kbd> to play!
             </span>
+            <span className="text-[9px] text-muted-foreground">Type on your keyboard like a piano</span>
+          </div>
+          {/* Arrow pointing down */}
+          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-black/95 border-r border-b border-primary/70 rotate-45" />
+        </motion.div>
+      )}
+
+      {/* Interval Role Accent Dot */}
+      {role !== "none" && (
+        <span
+          className={cn(
+            "absolute top-3 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full shadow-sm",
+            DOT_COLOR[role]
+          )}
+        />
+      )}
+
+      {/* Keyboard Shortcut Key Hint (A, S, D, F...) */}
+      {showKeymapHints && shortcutKey && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 pointer-events-none">
+          <span className={cn(
+            "px-1 py-0.5 rounded text-[8px] font-mono font-black uppercase transition-opacity shadow-sm",
+            isActive
+              ? "bg-black text-white"
+              : "bg-black/10 text-black/60 group-hover:bg-black/20 group-hover:text-black"
+          )}>
+            {shortcutKey}
           </span>
-        )}
-      </motion.button>
-    );
-  };
+        </div>
+      )}
+
+      {/* Note Label at bottom of key */}
+      {showLabels && (
+        <div className="absolute bottom-2.5 left-0 right-0 text-center pointer-events-none">
+          <span className={cn(
+            "font-black tracking-tighter leading-none block",
+            fullRange ? "text-[8px]" : "text-[11px]",
+            isActive ? "text-black drop-shadow" : isCKey ? "text-primary font-black" : "text-zinc-700"
+          )}>
+            {noteName}
+            <span className="text-[8px] opacity-60 ml-0.5 font-bold">{octave}</span>
+          </span>
+        </div>
+      )}
+    </motion.button>
+  );
+};
 
 const BlackKey = ({ 
-    midi, 
-    role, 
-    showLabels, 
-    width, 
-    height, 
-    left,
-    fullRange,
-    isActive,
-    onNoteClick
-  }: { 
-    midi: number; 
-    role: IntervalRole; 
-    showLabels: boolean; 
-    width: number; 
-    height: number; 
-    left: number;
-    fullRange?: boolean;
-    isActive?: boolean;
-    onNoteClick?: (midi: number) => void;
-  }) => {
-    const label = midiToNoteName(midi);
-    const labelFontSize = fullRange ? "text-[7px]" : "text-[7px]";
-    const dotSize = fullRange ? "w-1.5 h-1.5" : "w-1.5 h-1.5";
-    const dotTop = fullRange ? "top-1" : "top-1.5";
+  midi, 
+  role, 
+  showLabels, 
+  showKeymapHints,
+  width, 
+  height, 
+  left,
+  fullRange,
+  isActive,
+  onNoteClick
+}: { 
+  midi: number; 
+  role: IntervalRole; 
+  showLabels: boolean; 
+  showKeymapHints?: boolean;
+  width: number; 
+  height: number; 
+  left: number;
+  fullRange?: boolean;
+  isActive?: boolean;
+  onNoteClick?: (midi: number) => void;
+}) => {
+  const noteName = NOTE_NAMES[midiToPitchClass(midi)];
+  const octave = Math.floor(midi / 12) - 1;
+  const label = `${noteName}${octave}`;
+  const shortcutKey = KEYBOARD_SHORTCUTS[midi];
 
-    return (
-      <motion.button
-        animate={isActive ? { scaleY: 0.95 } : { scaleY: 1 }}
-        whileTap={{ scaleY: 0.95 }}
-        onClick={() => {
-          if (onNoteClick) onNoteClick(midi);
-          else playMidiNote(midi);
-        }}
-        className={cn(
-          "absolute pointer-events-auto rounded-b-md border transition-all duration-100 cursor-pointer origin-top",
-          "hover:brightness-125",
-          BLACK_KEY_ROLE_STYLES[role],
-          isActive ? "!bg-primary !border-primary !shadow-[0_0_30px_hsla(var(--primary),0.6)] z-30" : "z-20"
-        )}
-        style={{
-          left,
-          width,
-          height,
-          zIndex: 2,
-        }}
-        aria-label={`Piano key ${label}`}
-        aria-pressed={role !== "none"}
-        title={`${label}${role !== "none" ? ` (${role})` : ""}`}
-      >
-        <AnimatePresence>
-          {role !== "none" && (
-            <motion.span
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              className={cn(
-                "absolute left-1/2 -translate-x-1/2 rounded-full",
-                dotTop,
-                dotSize,
-                DOT_COLOR[role]
-              )}
-            />
+  return (
+    <motion.button
+      animate={isActive ? { scaleY: 0.94, y: 2 } : { scaleY: 1, y: 0 }}
+      whileTap={{ scaleY: 0.94, y: 2 }}
+      onClick={() => {
+        if (onNoteClick) onNoteClick(midi);
+        else playMidiNote(midi);
+      }}
+      className={cn(
+        "absolute pointer-events-auto rounded-b-lg border border-black/80 transition-all duration-75 cursor-pointer origin-top select-none group",
+        BLACK_KEY_ROLE_STYLES[role],
+        isActive && "!bg-gradient-to-b !from-cyan-300 !via-primary !to-cyan-500 !border-cyan-200 !text-black !shadow-[0_0_25px_rgba(6,182,212,0.9),inset_0_2px_4px_rgba(255,255,255,0.6)] !z-40",
+        !isActive && "z-20"
+      )}
+      style={{
+        left,
+        width,
+        height,
+      }}
+      aria-label={`Piano key ${label}`}
+      title={`${label}${shortcutKey ? ` [Key: ${shortcutKey}]` : ""}${role !== "none" ? ` (${role})` : ""}`}
+    >
+      {/* Interval Role Accent Dot */}
+      {role !== "none" && (
+        <span
+          className={cn(
+            "absolute top-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full shadow-sm",
+            DOT_COLOR[role]
           )}
-        </AnimatePresence>
+        />
+      )}
 
-        {showLabels && role !== "none" && (
+      {/* Keyboard Shortcut Key Hint (W, E, T, Y...) */}
+      {showKeymapHints && shortcutKey && (
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className={cn(
-            "absolute bottom-1 left-1/2 -translate-x-1/2 font-bold text-white/90 leading-none",
-            labelFontSize
+            "px-1 py-0.5 rounded text-[8px] font-mono font-bold uppercase transition-opacity shadow-sm",
+            isActive
+              ? "bg-black text-white"
+              : "bg-white/10 text-white/70 group-hover:bg-white/20 group-hover:text-white"
           )}>
-            {NOTE_NAMES[midiToPitchClass(midi)]}
+            {shortcutKey}
           </span>
-        )}
-      </motion.button>
-    );
-  };
+        </div>
+      )}
 
-// ─── Component ────────────────────────────────────────────────────────────────
+      {/* Note Label at bottom of key */}
+      {showLabels && (
+        <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none">
+          <span className={cn(
+            "font-black tracking-tight leading-none block",
+            fullRange ? "text-[7px]" : "text-[9px]",
+            isActive ? "text-black font-black" : "text-zinc-300/80"
+          )}>
+            {noteName}
+          </span>
+        </div>
+      )}
+    </motion.button>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export const PianoKeyboard = ({
-  scaleNotes = [],
   rootNote = "C",
   intervals = [],
   startOctave = 3,
   numOctaves = 2,
   showLabels = true,
+  showKeymapHints = true,
   fullRange = false,
   className,
   activeNotes = [],
   onNoteClick
 }: PianoKeyboardProps) => {
-  const WHITE_KEY_WIDTH = fullRange ? 24.5 : 44;
-  const BLACK_KEY_WIDTH = fullRange ? 16 : 26;
-  const KEY_HEIGHT = fullRange ? 140 : 160;
+  const [showGuide, setShowGuide] = useState(() => {
+    // Show guide by default on desktop, dismissible
+    return true;
+  });
 
-  // Build role map: pitchClass → IntervalRole
+  const WHITE_KEY_WIDTH = fullRange ? 26 : 46;
+  const BLACK_KEY_WIDTH = fullRange ? 18 : 28;
+  const KEY_HEIGHT = fullRange ? 150 : 175;
+  const BLACK_KEY_HEIGHT = KEY_HEIGHT * 0.62;
+
   const roleMap = useMemo(
     () => buildRoleMap(rootNote, intervals),
     [rootNote, intervals]
   );
 
-  // Generate all keys in the range
   const allKeys = useMemo(() => {
     const keys: { midi: number; isBlack: boolean }[] = [];
     
     if (fullRange) {
-      // 88-key range: A0 (MIDI 21) to C8 (MIDI 108)
       for (let midi = 21; midi <= 108; midi++) {
         keys.push({ midi, isBlack: BLACK_PITCH_CLASSES.has(midi % 12) });
       }
     } else {
-      // Octave-based range
       for (let oct = startOctave; oct < startOctave + numOctaves; oct++) {
         for (let note = 0; note < 12; note++) {
           const midi = (oct + 1) * 12 + note;
@@ -327,7 +382,6 @@ export const PianoKeyboard = ({
   const whiteKeys = useMemo(() => allKeys.filter((k) => !k.isBlack), [allKeys]);
   const blackKeys = useMemo(() => allKeys.filter((k) => k.isBlack), [allKeys]);
 
-  // Position map: white key midi → its index among white keys
   const whiteIdxByMidi = useMemo(() => {
     const m = new Map<number, number>();
     whiteKeys.forEach((k, i) => m.set(k.midi, i));
@@ -345,71 +399,87 @@ export const PianoKeyboard = ({
   const totalWidth = whiteKeys.length * WHITE_KEY_WIDTH;
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Center on C4 (Middle C) in full range mode initially or when visibility changes
   useEffect(() => {
     if (fullRange && scrollRef.current) {
-      const c4Midi = 60;
-      const whiteIdx = whiteIdxByMidi.get(c4Midi);
-      if (whiteIdx !== undefined) {
-        const c4Pos = whiteIdx * WHITE_KEY_WIDTH;
-        const containerWidth = scrollRef.current.clientWidth;
-        // Center C4
-        scrollRef.current.scrollLeft = c4Pos - containerWidth / 2 + WHITE_KEY_WIDTH / 2;
-      }
+      const c4WhiteIndex = whiteIdxByMidi.get(60) ?? 23;
+      const scrollPos = c4WhiteIndex * WHITE_KEY_WIDTH - scrollRef.current.clientWidth / 2 + WHITE_KEY_WIDTH / 2;
+      scrollRef.current.scrollLeft = Math.max(0, scrollPos);
     }
   }, [fullRange, whiteIdxByMidi, WHITE_KEY_WIDTH]);
 
+  // If any note is actively played via keyboard, dismiss guide automatically
+  useEffect(() => {
+    if (activeNotes.length > 0 && showGuide) {
+      setShowGuide(false);
+    }
+  }, [activeNotes, showGuide]);
+
   return (
-    <div 
+    <div
       ref={scrollRef}
       className={cn(
-        "relative select-none pb-2 custom-scrollbar-visible overflow-x-auto w-full", 
+        "relative rounded-2xl bg-[#121014] p-3 md:p-4 pt-10 border border-zinc-800 shadow-[0_20px_50px_rgba(0,0,0,0.9)] max-w-full overflow-x-auto custom-scrollbar select-none",
         className
       )}
     >
-      <div style={{ width: totalWidth }} className="relative mx-auto flex-shrink-0">
-        {/* White Keys */}
-        <div className="flex bg-[#050505] rounded-xl overflow-hidden shadow-2xl border border-white/5 relative" style={{ height: KEY_HEIGHT }}>
-          {whiteKeys.map((key) => (
-              <WhiteKey
-                key={key.midi}
-                midi={key.midi}
-                role={getRole(key.midi)}
-                showLabels={showLabels}
-                width={WHITE_KEY_WIDTH}
-                height={KEY_HEIGHT}
-                fullRange={fullRange}
-                isActive={activeNotes.includes(key.midi)}
-                onNoteClick={onNoteClick}
-              />
+      {/* Top Red Velvet / Acoustic Felt Strip */}
+      <div 
+        className="h-2.5 w-full rounded-t-sm mb-1 shadow-inner border-b border-red-950"
+        style={{
+          background: "linear-gradient(180deg, #991b1b 0%, #7f1d1d 50%, #450a0a 100%)",
+          boxShadow: "inset 0 1px 2px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5)"
+        }}
+      />
+
+      {/* Keys Bed Area */}
+      <div
+        className="relative flex rounded-b-xl overflow-visible shadow-2xl bg-black"
+        style={{ width: totalWidth, height: KEY_HEIGHT }}
+      >
+        {/* White Keys Row */}
+        <div className="flex relative z-10">
+          {whiteKeys.map((k) => (
+            <WhiteKey
+              key={k.midi}
+              midi={k.midi}
+              role={getRole(k.midi)}
+              showLabels={showLabels}
+              showKeymapHints={showKeymapHints}
+              width={WHITE_KEY_WIDTH}
+              height={KEY_HEIGHT}
+              fullRange={fullRange}
+              isActive={activeNotes.includes(k.midi)}
+              showGuide={showGuide && k.midi === 60}
+              onDismissGuide={() => setShowGuide(false)}
+              onNoteClick={onNoteClick}
+            />
           ))}
         </div>
 
-        {/* Black Keys */}
-        <div className="absolute top-0 left-0 pointer-events-none" style={{ height: KEY_HEIGHT * 0.62 }}>
-          {blackKeys.map((key) => {
-            const prevWhiteMidi = key.midi - 1;
-            const whiteIdx = whiteIdxByMidi.get(prevWhiteMidi);
-            if (whiteIdx === undefined) return null;
+        {/* Black Keys Layer (Absolute Positioned above White Keys) */}
+        {blackKeys.map((k) => {
+          const prevWhiteMidi = k.midi - 1;
+          const whiteIndex = whiteIdxByMidi.get(prevWhiteMidi);
+          if (whiteIndex === undefined) return null;
 
-            const left = whiteIdx * WHITE_KEY_WIDTH + WHITE_KEY_WIDTH * 0.68;
+          const left = (whiteIndex + 1) * WHITE_KEY_WIDTH - BLACK_KEY_WIDTH / 2;
 
-            return (
-                <BlackKey
-                  key={key.midi}
-                  midi={key.midi}
-                  role={getRole(key.midi)}
-                  showLabels={showLabels}
-                  width={BLACK_KEY_WIDTH}
-                  height={KEY_HEIGHT * 0.6}
-                  left={left}
-                  fullRange={fullRange}
-                  isActive={activeNotes.includes(key.midi)}
-                  onNoteClick={onNoteClick}
-                />
-            );
-          })}
-        </div>
+          return (
+            <BlackKey
+              key={k.midi}
+              midi={k.midi}
+              role={getRole(k.midi)}
+              showLabels={showLabels}
+              showKeymapHints={showKeymapHints}
+              width={BLACK_KEY_WIDTH}
+              height={BLACK_KEY_HEIGHT}
+              left={left}
+              fullRange={fullRange}
+              isActive={activeNotes.includes(k.midi)}
+              onNoteClick={onNoteClick}
+            />
+          );
+        })}
       </div>
     </div>
   );

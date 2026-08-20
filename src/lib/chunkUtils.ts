@@ -1,15 +1,10 @@
 /**
  * src/lib/chunkUtils.ts
  *
- * NDJSON streaming parser for progressive chord loading.
- *
- * The backend streams analysis results as newline-delimited JSON:
- *   {"type": "progress", "message": "...", "percent": 50}
- *   {"type": "metadata", "tempo": 120, "key": "C", ...}
- *   {"type": "chords", "start": 0, "end": 30, "chords": [...], "simpleChords": [...]}
- *   {"type": "chords", "start": 30, "end": 60, ...}
- *   {"type": "error", "detail": "..."}
+ * Math and parsing utilities for progressive streaming and chunked audio analysis.
  */
+
+import { ChordSegment } from '@/types/chordAI';
 
 export interface NdjsonProgress {
   type: "progress";
@@ -40,7 +35,85 @@ export interface NdjsonError {
   detail: string;
 }
 
-export type NdjsonItem = NdjsonProgress | NdjsonMetadata | NdjsonChords | NdjsonError;
+export type NdjsonItem = NdjsonProgress | NdjsonMetadata | NdjsonChords | NdjsonError | Record<string, unknown>;
+
+export interface ChunkRange {
+  index: number;
+  startSec: number;
+  endSec: number;
+  usableStart: number;
+  usableEnd: number;
+}
+
+/**
+ * Calculate boundary ranges with overlap for chunked audio processing.
+ */
+export function getChunkRanges(duration: number, chunkSize = 30, overlap = 2): ChunkRange[] {
+  if (duration <= 0) return [];
+
+  const chunks: ChunkRange[] = [];
+  let chunkIndex = 0;
+  let currentStart = 0;
+
+  while (currentStart < duration) {
+    const usableStart = currentStart;
+    const usableEnd = Math.min(currentStart + chunkSize, duration);
+
+    // Apply overlap margin
+    const startSec = Math.max(0, usableStart - (chunkIndex > 0 ? overlap : 0));
+    const endSec = Math.min(duration, usableEnd + (usableEnd < duration ? overlap : 0));
+
+    chunks.push({
+      index: chunkIndex,
+      startSec,
+      endSec,
+      usableStart,
+      usableEnd,
+    });
+
+    currentStart += chunkSize;
+    chunkIndex++;
+  }
+
+  return chunks;
+}
+
+/**
+ * Filter and adjust chords from chunk-relative time to absolute timeline with boundary clamping.
+ */
+export function filterAndAdjustChords(
+  chords: ChordSegment[],
+  startSec: number,
+  usableStart: number,
+  usableEnd: number
+): ChordSegment[] {
+  const result: ChordSegment[] = [];
+
+  for (const c of chords) {
+    const absStart = startSec + c.start;
+    const absEnd = startSec + c.end;
+
+    // Check if segment overlaps with usable window
+    if (absEnd <= usableStart || absStart >= usableEnd) {
+      continue;
+    }
+
+    // Clamp boundaries to usable window
+    const clampedStart = Math.max(usableStart, absStart);
+    const clampedEnd = Math.min(usableEnd, absEnd);
+
+    if (clampedEnd > clampedStart) {
+      result.push({
+        ...c,
+        start: clampedStart,
+        end: clampedEnd,
+        isFallback: c.isFallback ?? false,
+      });
+    }
+  }
+
+  return result;
+}
 
 /**
  * Parse a buffer of NDJSON text into structured items.
@@ -63,12 +136,11 @@ export function parseNdjsonLines(buffer: string): {
 
     try {
       const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed.type === "string") {
+      if (parsed && typeof parsed === "object") {
         items.push(parsed as NdjsonItem);
       }
     } catch {
       // Skip malformed lines
-      console.warn("[NDJSON] Skipping malformed line:", trimmed.slice(0, 100));
     }
   }
 

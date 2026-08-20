@@ -186,7 +186,7 @@ const FretboardPage = () => {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="glass-card rounded-[2rem] border border-border bg-card/80 shadow-2xl overflow-hidden min-h-[600px]">
+              <div className="glass-card rounded-[2rem] border border-border/80 bg-card/60 shadow-2xl overflow-hidden min-h-[600px] p-4 md:p-6">
                 <Fretboard initialChordVoicing={selectedChord?.voicingFrets} />
               </div>
             </motion.div>

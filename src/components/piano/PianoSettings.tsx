@@ -1,11 +1,11 @@
 /**
  * Piano keyboard settings panel
- * Configure keyboard layout and preferences
+ * Clean, uncluttered layout and keymapping reference
  */
 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Keyboard, Piano, Settings2, Wind } from 'lucide-react';
+import { Trash2, Keyboard, Piano, SlidersHorizontal } from 'lucide-react';
 import { KeyboardPreset } from '@/types/pianoTypes';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -13,107 +13,108 @@ import { Switch } from '@/components/ui/switch';
 interface PianoSettingsProps {
   keyboardPreset: KeyboardPreset;
   onKeyboardPresetChange: (preset: KeyboardPreset) => void;
-  sustained: boolean;
-  onSustainChange: () => void;
+  showKeymapHints: boolean;
+  onToggleKeymapHints: (val: boolean) => void;
   onClear: () => void;
-  octaveShift: number;
 }
 
 export const PianoSettings = ({
   keyboardPreset,
   onKeyboardPresetChange,
-  sustained,
-  onSustainChange,
+  showKeymapHints,
+  onToggleKeymapHints,
   onClear,
-  octaveShift,
 }: PianoSettingsProps) => {
   return (
-    <div className="space-y-8 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Piano className="w-5 h-5 text-primary" />
+    <div className="space-y-6 h-full flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Piano className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-white tracking-tight">Piano Controls</h3>
+              <p className="text-xs text-muted-foreground">Customize computer keyboard mapping & visuals</p>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold text-white tracking-tight">Piano Settings</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClear}
+            className="h-8 gap-2 rounded-lg border-white/10 bg-white/5 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20 text-xs"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span className="font-bold">Clear Notes</span>
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onClear}
-          className="h-8 gap-2 rounded-lg border-white/10 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Clear</span>
-        </Button>
+
+        <div className="space-y-4">
+          {/* Keyboard Layout Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="keyboard-preset" className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Keyboard className="w-3.5 h-3.5" />
+              Keyboard Layout
+            </Label>
+            <Select
+              value={keyboardPreset}
+              onValueChange={(value) => onKeyboardPresetChange(value as KeyboardPreset)}
+            >
+              <SelectTrigger id="keyboard-preset" className="bg-white/5 border-white/10 hover:border-white/20 h-10 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="qwerty" className="text-xs">QWERTY (Standard)</SelectItem>
+                <SelectItem value="azerty" className="text-xs">AZERTY</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Toggle Keymap Shortcuts on Keys */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+            <div>
+              <p className="text-sm font-medium text-white">Show Keymap Hints on Keys</p>
+              <p className="text-xs text-muted-foreground">Display computer keys (A, W, S, D...) on the piano</p>
+            </div>
+            <Switch checked={showKeymapHints} onCheckedChange={onToggleKeymapHints} />
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-6 flex-1">
-        {/* Sustain Toggle */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/5 shadow-inner">
-          <div className="space-y-1">
-            <Label className="text-xs font-bold text-white flex items-center gap-2">
-              <Wind className="w-3 h-3 text-primary" />
-              Pedal Sustain
-            </Label>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Latching Mode</p>
-          </div>
-          <Switch
-            checked={sustained}
-            onCheckedChange={onSustainChange}
-            className="data-[state=checked]:bg-primary"
-          />
+      {/* Clean Compact Reference Guide */}
+      <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-2.5">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+          <span>Quick Key Reference</span>
         </div>
 
-        {/* Status Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 w-fit">
-          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Global Octave:</span>
-          <span className="text-[10px] font-mono font-bold text-primary">
-            {octaveShift > 0 ? `+${octaveShift}` : octaveShift}
-          </span>
-        </div>
-
-        {/* Keyboard Layout Preset */}
-        <div className="space-y-3">
-          <Label htmlFor="keyboard-preset" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-            <Keyboard className="w-3 h-3" />
-            Keyboard Layout
-          </Label>
-          <Select
-            value={keyboardPreset}
-            onValueChange={(value) => onKeyboardPresetChange(value as KeyboardPreset)}
-          >
-            <SelectTrigger id="keyboard-preset" className="bg-white/5 border-white/10 hover:border-white/20 transition-colors h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="qwerty">QWERTY (Standard)</SelectItem>
-              <SelectItem value="azerty">AZERTY</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-[11px] text-muted-foreground leading-relaxed italic">
-            Choose layout for computer key mapping.
-          </p>
-        </div>
-
-        {/* Key bindings info */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest underline decoration-primary/30 underline-offset-4">Reference Guide</span>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
+            <span className="text-muted-foreground text-[11px]">White Keys:</span>
+            <span className="font-mono font-bold text-white text-[10px] bg-white/10 px-1.5 py-0.5 rounded">
+              {keyboardPreset === 'azerty' ? 'Q S D F G H J K' : 'A S D F G H J K'}
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-1.5">
-            {[
-              { label: 'White keys', value: 'A S D F G H J K' },
-              { label: 'Black keys', value: 'W E T Y U' },
-              { label: 'Octave Shift', value: 'Z / X' },
-              { label: 'Sustain', value: 'Space' },
-            ].map((binding) => (
-              <div key={binding.label} className="flex justify-between items-center group p-2 rounded-lg hover:bg-white/[0.03] transition-colors border border-transparent hover:border-white/5">
-                <span className="text-[11px] font-medium text-white/50">{binding.label}</span>
-                <span className="font-mono text-[10px] bg-white/10 px-2 py-0.5 rounded text-primary group-hover:bg-primary group-hover:text-black transition-colors">{binding.value}</span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
+            <span className="text-muted-foreground text-[11px]">Black Keys:</span>
+            <span className="font-mono font-bold text-white text-[10px] bg-white/10 px-1.5 py-0.5 rounded">
+              {keyboardPreset === 'azerty' ? 'Z E T Y U O P' : 'W E T Y U O P'}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
+            <span className="text-muted-foreground text-[11px]">Octave Down / Up:</span>
+            <span className="font-mono font-bold text-primary text-[10px] bg-primary/10 px-1.5 py-0.5 rounded">
+              Z / X
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5">
+            <span className="text-muted-foreground text-[11px]">Sustain Pedal:</span>
+            <span className="font-mono font-bold text-amber-300 text-[10px] bg-amber-400/10 px-1.5 py-0.5 rounded">
+              Spacebar
+            </span>
           </div>
         </div>
       </div>
