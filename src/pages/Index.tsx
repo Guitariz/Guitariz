@@ -78,20 +78,7 @@ const Index = () => {
           "description": staticContent.home.description,
           "applicationCategory": "MusicApplication",
           "operatingSystem": "Any",
-          "url": "https://guitariz.studio",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": {
-              "@type": "EntryPoint",
-              "urlTemplate": "https://guitariz.studio/search?q={search_term_string}"
-            },
-            "query-input": "required name=search_term_string"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "128"
-          }
+          "url": "https://guitariz.studio"
         },
         {
           "@type": "WebSite",

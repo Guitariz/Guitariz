@@ -21,14 +21,7 @@ const TheoryPage = () => {
       "operatingSystem": "Web",
       "description": "Interactive music theory tools featuring the Circle of Fifths guided learning experience.",
       "url": "https://guitariz.studio/theory",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "bestRating": "5",
-        "worstRating": "1",
-        "reviewCount": "184"
-      }
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
   });
 

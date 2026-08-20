@@ -28,14 +28,7 @@ const BpmDetectorPage = () => {
           "operatingSystem": "Web",
           "url": "https://guitariz.studio/bpm-detector",
           "description": "Free online BPM detector and tap tempo finder for songs and audio files.",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "112"
-          }
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         },
         {
           "@type": "HowTo",

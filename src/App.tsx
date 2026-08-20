@@ -17,6 +17,7 @@ import GAPageView from "@/analytics/GAPageView";
 const Index = lazy(() => import("./pages/Index"));
 const FretboardPage = lazy(() => import("./pages/FretboardPage"));
 const ChordsPage = lazy(() => import("./pages/ChordsPage"));
+const ChordDetailPage = lazy(() => import("./pages/ChordDetailPage"));
 const ScalesPage = lazy(() => import("./pages/ScalesPage"));
 const MetronomePage = lazy(() => import("./pages/MetronomePage"));
 const ChordAIPage = lazy(() => import("./pages/ChordAIPage"));
@@ -173,6 +174,18 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <ChordsPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/chords/:root/:variant"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <ChordDetailPage />
                       </main>
                     </PageWrapper>
                   </Suspense>

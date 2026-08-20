@@ -79,14 +79,7 @@ const ChordAIPage = () => {
           "description": "Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.",
           "applicationCategory": "MusicApplication",
           "operatingSystem": "Web",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "84"
-          }
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         },
         {
           "@type": "HowTo",

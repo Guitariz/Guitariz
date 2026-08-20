@@ -41,14 +41,7 @@ const ChordGeneratorPage = () => {
           "operatingSystem": "Web",
           "url": "https://guitariz.studio/chord-progression-generator",
           "description": "Free chord progression generator for guitarists, songwriters, and producers.",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "89"
-          }
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         }
       ]
     }

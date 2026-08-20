@@ -1,8 +1,10 @@
 import { memo, useState, useCallback, useMemo } from "react";
-import { Volume2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Volume2, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import ChordDiagram from "./ChordDiagram";
 import { ChordVariant } from "@/types/chordTypes";
 import { playChord } from "@/lib/chordAudio";
+import { getChordUrl } from "@/utils/chordSlug";
 
 interface ChordVariantCardProps {
   variant: ChordVariant;
@@ -102,9 +104,16 @@ const ChordVariantCard = memo(({ variant, rootNote, onSelect }: ChordVariantCard
     >
       <div className="flex justify-between items-start mb-6">
         <div className="space-y-1">
-          <h3 className="text-2xl font-black text-white tracking-tighter group-hover:text-primary transition-colors">
-            {chordDisplayName}
-          </h3>
+          <Link
+            to={getChordUrl(rootNote, variant.name)}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-block hover:underline"
+            title={`View full details for ${chordDisplayName}`}
+          >
+            <h3 className="text-2xl font-black text-white tracking-tighter group-hover:text-primary transition-colors">
+              {chordDisplayName}
+            </h3>
+          </Link>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold opacity-60">
             {variant.intervals}
           </p>
@@ -122,6 +131,15 @@ const ChordVariantCard = memo(({ variant, rootNote, onSelect }: ChordVariantCard
           >
             <Volume2 className="h-3.5 w-3.5" />
           </button>
+          <Link
+            to={getChordUrl(rootNote, variant.name)}
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-primary hover:bg-white/10 transition-all"
+            title={`Open ${chordDisplayName} chord page`}
+            aria-label={`Open ${chordDisplayName} chord page`}
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
 

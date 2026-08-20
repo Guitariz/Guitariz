@@ -26,14 +26,7 @@ const KeyDetectorPage = () => {
           "operatingSystem": "Web",
           "url": "https://guitariz.studio/key-detector",
           "description": "Free online audio key finder and scale mode detector.",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "98"
-          }
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         },
         {
           "@type": "HowTo",

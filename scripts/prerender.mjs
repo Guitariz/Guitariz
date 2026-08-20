@@ -3,7 +3,7 @@ import path from 'path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
 
-const TODAY = '2026-07-15';
+const TODAY = new Date().toISOString().split('T')[0];
 
 // Load static content JSON
 const staticContent = JSON.parse(
@@ -30,15 +30,7 @@ const routes = [
             'GuitarizStudio'
           ],
           'description': 'Professional music theory and AI analysis tools for musicians.',
-          'inLanguage': 'en-US',
-          'potentialAction': {
-            '@type': 'SearchAction',
-            'target': {
-              '@type': 'EntryPoint',
-              'urlTemplate': 'https://guitariz.studio/search?q={search_term_string}'
-            },
-            'query-input': 'required name=search_term_string'
-          }
+          'inLanguage': 'en-US'
         },
         {
           '@type': 'SoftwareApplication',
@@ -48,14 +40,7 @@ const routes = [
           'description': 'Professional music theory and AI analysis tools for musicians.',
           'applicationCategory': 'MusicApplication',
           'operatingSystem': 'Web',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '128'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'Organization',
@@ -93,14 +78,7 @@ const routes = [
           'description': 'Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.',
           'applicationCategory': 'MusicApplication',
           'operatingSystem': 'Web',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.8',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '84'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -131,14 +109,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'High-quality AI stem extraction for karaoke and remixing.',
           'url': 'https://guitariz.studio/vocal-splitter',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '56'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -169,14 +140,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Free online BPM detector and tap tempo finder for songs and audio files.',
           'url': 'https://guitariz.studio/bpm-detector',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '112'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         }
       ]
     })
@@ -197,14 +161,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Free online audio key finder and scale mode detector.',
           'url': 'https://guitariz.studio/key-detector',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '98'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         }
       ]
     })
@@ -225,14 +182,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'High-quality free online AI vocal remover and stem extraction tool.',
           'url': 'https://guitariz.studio/vocal-remover',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '145'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         }
       ]
     })
@@ -335,14 +285,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Separate songs into 6 stems: vocals, drums, bass, guitar, piano, and other.',
           'url': 'https://guitariz.studio/stem-separator',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.8',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '72'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -374,14 +317,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Interactive instrument sandbox for guitar and piano.',
           'url': 'https://guitariz.studio/fretboard',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '215'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -412,14 +348,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Comprehensive guitar chord library with interactive diagrams.',
           'url': 'https://guitariz.studio/chords',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.9',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '128'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -449,14 +378,7 @@ const routes = [
       'operatingSystem': 'Web',
       'description': 'Interactive guitar scale explorer for learning scale patterns.',
       'url': 'https://guitariz.studio/scales',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-      'aggregateRating': {
-        '@type': 'AggregateRating',
-        'ratingValue': '4.8',
-        'bestRating': '5',
-        'worstRating': '1',
-        'reviewCount': '192'
-      }
+      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
     })
   },
   {
@@ -512,14 +434,7 @@ const routes = [
       'operatingSystem': 'Web',
       'description': 'Interactive music theory tools featuring the Circle of Fifths.',
       'url': 'https://guitariz.studio/theory',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-      'aggregateRating': {
-        '@type': 'AggregateRating',
-        'ratingValue': '4.9',
-        'bestRating': '5',
-        'worstRating': '1',
-        'reviewCount': '156'
-      }
+      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
     })
   },
   {
@@ -538,14 +453,7 @@ const routes = [
           'operatingSystem': 'Web',
           'description': 'Loop chord progressions with piano and pad backing for practice and composition.',
           'url': 'https://guitariz.studio/jam',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' },
-          'aggregateRating': {
-            '@type': 'AggregateRating',
-            'ratingValue': '4.8',
-            'bestRating': '5',
-            'worstRating': '1',
-            'reviewCount': '43'
-          }
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
         {
           '@type': 'HowTo',
@@ -817,18 +725,120 @@ for (const post of blogPosts) {
   });
 }
 
+// --- PROGRAMMATIC CHORD PAGES GENERATION ---
+const ROOT_SLUG_MAP = {
+  "C": "c", "C#/Db": "c-sharp", "C#": "c-sharp", "Db": "c-sharp",
+  "D": "d", "D#/Eb": "d-sharp", "D#": "d-sharp", "Eb": "d-sharp",
+  "E": "e", "F": "f", "F#/Gb": "f-sharp", "F#": "f-sharp", "Gb": "f-sharp",
+  "G": "g", "G#/Ab": "g-sharp", "G#": "g-sharp", "Ab": "g-sharp",
+  "A": "a", "A#/Bb": "a-sharp", "A#": "a-sharp", "Bb": "a-sharp", "B": "b",
+};
+const VARIANT_SLUG_MAP = {
+  "Major": "major", "Minor": "minor", "7": "7", "maj7": "maj7", "m7": "m7",
+  "sus4": "sus4", "sus2": "sus2", "add9": "add9", "dim": "dim", "aug": "aug", "6": "6", "m6": "m6"
+};
+
+try {
+  const rawChordTs = fs.readFileSync(path.resolve(process.cwd(), 'src/data/chordData.ts'), 'utf8');
+  const cleanChordTs = rawChordTs
+    .replace(/import [^\n]+/g, '')
+    .replace(/type [^\n]+/g, '')
+    .replace(/let [^\n]+/g, '')
+    .replace(/function buildChordIndex[^\n]+(\n[^\n]+)+?\n\}/g, '')
+    .replace(/function getAbbreviatedChordName[^\n]+(\n[^\n]+)+?\n\}/g, '')
+    .replace(/export function findChordByName[^\n]+(\n[^\n]+)+?\n\}/g, '')
+    .replace(/export const chordLibraryData: ChordLibraryData = /, 'return ');
+  
+  const chordData = new Function(cleanChordTs)();
+
+  for (const rootObj of chordData.roots) {
+    const rootSlug = ROOT_SLUG_MAP[rootObj.root] || rootObj.root.toLowerCase();
+    const cleanRootDisplay = rootObj.root.includes('/') ? rootObj.root.split('/')[0] : rootObj.root;
+
+    for (const variant of rootObj.variants) {
+      const variantSlug = VARIANT_SLUG_MAP[variant.name] || variant.name.toLowerCase();
+      const displayName = `${cleanRootDisplay}${variant.name === 'Major' ? '' : variant.name === 'Minor' ? 'm' : variant.name}`;
+      const fullName = `${rootObj.root} ${variant.name}`;
+      const chordUrl = `/chords/${rootSlug}/${variantSlug}`;
+      const canonical = `https://guitariz.studio${chordUrl}`;
+
+      const voicingsHtml = variant.voicings.map((v, idx) => `
+        <div style="margin-top: 16px; padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+          <h3 style="font-size: 1rem; color: #fff; margin-bottom: 8px;">Shape ${idx + 1} (${v.position === 0 ? 'Open Position' : 'Fret ' + v.position} - ${v.difficulty || 'Standard'})</h3>
+          <p style="font-family: monospace; font-size: 0.9rem; color: #a1a1aa;">Frets [Low E to High e]: [${v.frets.map(f => f === -1 ? 'x' : f).join(', ')}]</p>
+        </div>
+      `).join('');
+
+      routes.push({
+        url: chordUrl,
+        title: `${fullName} Guitar Chord (${displayName}) | Voicings, Tabs & Theory | Guitariz`,
+        description: `Learn how to play the ${fullName} (${displayName}) guitar chord. Free interactive chord charts, finger positions, tablature, interval formula (${variant.intervals}), and audio previews.`,
+        canonical,
+        customHtml: `
+          <div style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
+            <p style="font-size: 1.1rem; color: #f4f4f5; margin-bottom: 16px;">${variant.theoryText}</p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
+              <span style="padding: 4px 12px; border-radius: 9999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.85rem;">Formula: ${variant.intervals}</span>
+              <span style="padding: 4px 12px; border-radius: 9999px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-family: monospace; font-size: 0.85rem;">Voicings: ${variant.voicings.length}</span>
+            </div>
+            <h2 style="font-size: 1.3rem; font-weight: 600; color: #fff; margin-top: 24px;">Guitar Voicings & Tablature</h2>
+            ${voicingsHtml}
+          </div>
+        `,
+        jsonLd: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'MusicComposition',
+              '@id': `${canonical}#chord`,
+              'name': `${fullName} Guitar Chord`,
+              'musicalKey': rootObj.root,
+              'description': variant.theoryText,
+              'url': canonical
+            },
+            {
+              '@type': 'FAQPage',
+              'mainEntity': [
+                {
+                  '@type': 'Question',
+                  'name': `What is the formula for the ${fullName} chord?`,
+                  'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': `The ${fullName} chord is built using the interval formula: ${variant.intervals}. ${variant.theoryText}`
+                  }
+                },
+                {
+                  '@type': 'Question',
+                  'name': `How to play ${displayName} on guitar?`,
+                  'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': `Guitariz Studio provides ${variant.voicings.length} interactive voicing shapes with tablature and audio playback for ${displayName}.`
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      });
+    }
+  }
+  console.log(`Loaded and queued programmatic chord pages! Total routes now: ${routes.length}`);
+} catch (err) {
+  console.error('Error generating programmatic chord routes:', err);
+}
+
 // Generate sitemap.xml dynamically!
 let sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 for (const r of routes) {
   const isMain = r.url === '/';
-  const priority = isMain ? '1.0' : (r.url.startsWith('/blog/') ? '0.6' : (r.url === '/blog' ? '0.8' : '0.8'));
-  const freq = isMain ? 'weekly' : (r.url.startsWith('/blog/') ? 'monthly' : 'weekly');
+  const priority = isMain ? '1.0' : (r.url.startsWith('/chords/') ? '0.7' : (r.url.startsWith('/blog/') ? '0.6' : '0.8'));
+  const freq = isMain ? 'weekly' : (r.url.startsWith('/chords/') ? 'monthly' : (r.url.startsWith('/blog/') ? 'monthly' : 'weekly'));
   sitemapXml += `  <url>\n    <loc>https://guitariz.studio${r.url === '/' ? '/' : r.url}</loc>\n    <lastmod>${TODAY}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${priority}</priority>\n  </url>\n`;
 }
 sitemapXml += `</urlset>\n`;
 fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml);
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml);
-console.log('Generated fresh sitemap.xml dynamically!');
+console.log('Generated fresh sitemap.xml dynamically with all tools, blog posts, and chord landing pages!');
 
 const srcIndexPath = path.resolve(distDir, 'index.html');
 

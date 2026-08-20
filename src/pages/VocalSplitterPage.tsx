@@ -42,14 +42,7 @@ const VocalSplitterPage = () => {
           "operatingSystem": "Web",
           "description": "High-quality free online AI vocal remover and stem extraction tool.",
           "url": currentUrl,
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "bestRating": "5",
-            "worstRating": "1",
-            "reviewCount": "145"
-          }
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         },
         {
           "@type": "HowTo",
