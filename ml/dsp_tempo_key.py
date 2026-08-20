@@ -31,15 +31,38 @@ KK_MINOR = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69,
 
 def detect_tempo_dsp(file_path: str) -> float:
     """
-    Estimate BPM using onset-strength autocorrelation.
+    Estimate BPM using onset-strength autocorrelation with median filtering
+    and log-normal tempo prior to prevent octave doubling on slow ballads (e.g. 70 BPM).
 
-    Returns rounded BPM as a float (e.g. 120.0).
+    Returns rounded BPM as a float (e.g. 70.0).
     """
     y, sr = load_audio(file_path)
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=HOP_LENGTH)
-    tempo, _ = librosa.beat.beat_track(onset_envelope=onset_env, sr=sr, hop_length=HOP_LENGTH)
-    bpm = float(np.atleast_1d(tempo)[0])
-    return round(bpm, 2)
+    onset_env = librosa.onset.onset_strength(
+        y=y, sr=sr, hop_length=HOP_LENGTH,
+        aggregate=np.median,
+        fmax=8000
+    )
+    try:
+        import scipy.stats
+        prior = scipy.stats.lognorm(s=0.65, scale=115)
+        tempo = librosa.feature.tempo(
+            onset_envelope=onset_env,
+            sr=sr,
+            hop_length=HOP_LENGTH,
+            prior=prior,
+            aggregate=None
+        )
+        bpm = float(np.atleast_1d(tempo)[0])
+    except Exception:
+        tempo, _ = librosa.beat.beat_track(
+            onset_envelope=onset_env,
+            sr=sr,
+            hop_length=HOP_LENGTH,
+            start_bpm=115.0
+        )
+        bpm = float(np.atleast_1d(tempo)[0])
+
+    return round(bpm, 1)
 
 
 def detect_key_dsp(file_path: str) -> str:

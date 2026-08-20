@@ -1,14 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Activity, Music, Gauge, Play, Pause, RefreshCw, Wand2, ArrowRight, FileAudio } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
+import { Upload, Activity, Music, Gauge, RefreshCw, FileAudio } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
-import { SEOContent, Breadcrumb } from "@/components/SEOContent";
+import { Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { useChordAnalysis } from "@/hooks/useChordAnalysis";
-import { Link } from "react-router-dom";
+import { estimateTempo } from "@/lib/tempoDetection";
+
+function getTempoCategory(bpm: number): string {
+  if (bpm < 60) return "Largo / Very Slow";
+  if (bpm < 76) return "Adagio / Slow Groove";
+  if (bpm < 108) return "Andante / Walking Pace";
+  if (bpm < 120) return "Moderato / Medium";
+  if (bpm < 156) return "Allegro / Fast";
+  if (bpm < 176) return "Vivace / Lively & Fast";
+  return "Presto / Very Fast";
+}
 
 const BpmDetectorPage = () => {
   usePageMetadata({
@@ -53,17 +60,34 @@ const BpmDetectorPage = () => {
   });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const { toast } = useToast();
 
-  const { loadFile, play, pause, audioBuffer, duration, isPlaying, fileInfo } = useAudioPlayer();
+  const { loadFile, audioBuffer } = useAudioPlayer();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [detectedBpm, setDetectedBpm] = useState<number | null>(null);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
 
-  const { result, loading: analysisLoading } = useChordAnalysis(
-    audioBuffer,
-    selectedFile,
-    true,
-    false
-  );
+  // Pure Client-Side Local DSP Tempo Detection (Zero Backend Delay, Instant & Accurate)
+  useEffect(() => {
+    if (!audioBuffer) {
+      setDetectedBpm(null);
+      setAnalyzing(false);
+      return;
+    }
+
+    setAnalyzing(true);
+    const timer = setTimeout(() => {
+      try {
+        const bpm = estimateTempo(audioBuffer);
+        setDetectedBpm(bpm);
+      } catch (err) {
+        console.error("Local tempo estimation failed", err);
+      } finally {
+        setAnalyzing(false);
+      }
+    }, 40);
+
+    return () => clearTimeout(timer);
+  }, [audioBuffer]);
 
   // Tap Tempo State
   const [tapTimes, setTapTimes] = useState<number[]>([]);
@@ -94,8 +118,6 @@ const BpmDetectorPage = () => {
     setTappedBpm(null);
   };
 
-  const detectedBpm = result?.tempo ? Math.round(result.tempo) : null;
-
   return (
     <div className="min-h-screen bg-background relative overflow-hidden selection:bg-white/10">
       <main className="container mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-16 relative z-10">
@@ -110,19 +132,19 @@ const BpmDetectorPage = () => {
           <div className="space-y-4 mb-10 text-center md:text-left">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-border bg-card/50 text-muted-foreground text-[10px] font-bold tracking-[0.2em] uppercase">
               <Gauge className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Free Online Audio Tool</span>
+              <span>Instant Local Web Audio Tool</span>
             </div>
 
             <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
               BPM Detector <span className="text-muted-foreground font-thin italic">& Tap Tempo</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
-              Detect the exact beats per minute (BPM) of any song or MP3 file online in seconds, or tap along manually to measure tempo.
+              Detect the exact beats per minute (BPM) of any song or MP3 file online in seconds, or tap along manually to measure tempo. 100% private, client-side, and instant.
             </p>
             <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
               <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">How to find the BPM of a song online free?</h2>
               <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                Guitariz Online BPM Detector measures the exact beats per minute (tempo) of any song or MP3 file automatically using beat-tracking algorithms. You can also tap along on your keyboard to instantly find the tempo of any track.
+                Guitariz Online BPM Detector measures the exact beats per minute (tempo) of any song or MP3 file automatically using multi-band spectral flux beat-tracking algorithms. Runs directly in your browser with zero file upload wait times.
               </p>
             </div>
           </div>
@@ -133,14 +155,14 @@ const BpmDetectorPage = () => {
               <div>
                 <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">
                   <Activity className="w-4 h-4 text-primary" />
-                  <span>Audio File BPM Analyzer</span>
+                  <span>Instant Audio File BPM Analyzer</span>
                 </div>
 
                 <div className="text-center py-6">
-                  {analysisLoading ? (
+                  {analyzing ? (
                     <div className="space-y-3">
                       <RefreshCw className="w-10 h-10 text-primary animate-spin mx-auto" />
-                      <p className="text-sm font-bold text-muted-foreground">Analyzing audio beats...</p>
+                      <p className="text-sm font-bold text-muted-foreground">Calculating tempo from audio beats...</p>
                     </div>
                   ) : detectedBpm ? (
                     <div className="space-y-2 animate-in zoom-in-95 duration-500">
@@ -150,13 +172,18 @@ const BpmDetectorPage = () => {
                       <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
                         Beats Per Minute (BPM)
                       </p>
+                      <div className="pt-2">
+                        <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                          {getTempoCategory(detectedBpm)}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="text-5xl font-black tracking-tighter text-muted-foreground/30">
                         ---
                       </div>
-                      <p className="text-xs text-muted-foreground">Upload audio file to analyze BPM</p>
+                      <p className="text-xs text-muted-foreground">Upload audio file for instant BPM analysis</p>
                     </div>
                   )}
                 </div>
@@ -239,6 +266,11 @@ const BpmDetectorPage = () => {
                       <p className="text-xs font-bold text-purple-400 uppercase tracking-widest">
                         Tapped Tempo (BPM)
                       </p>
+                      <div className="pt-2">
+                        <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                          {getTempoCategory(tappedBpm)}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -253,30 +285,12 @@ const BpmDetectorPage = () => {
 
               <Button
                 onClick={handleTap}
-                className="w-full h-16 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-base font-black tracking-wider uppercase shadow-xl active:scale-95 transition-all"
+                className="w-full h-14 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-black uppercase tracking-widest shadow-xl transition-all active:scale-[0.98]"
               >
                 TAP HERE FOR TEMPO
               </Button>
             </div>
           </div>
-
-          <SEOContent
-            pageName="bpm-detector"
-            faqs={[
-              {
-                question: "How accurate is the online BPM detector?",
-                answer: "Our BPM detector analyzes beat onset timestamps in your audio file to calculate tempo (Beats Per Minute) with high precision."
-              },
-              {
-                question: "How does the Tap Tempo tool work?",
-                answer: "Tap the button repeatedly along with the beat of any song. The tool calculates intervals between taps to estimate your tempo in real-time."
-              },
-              {
-                question: "What audio formats are supported?",
-                answer: "We support MP3, WAV, FLAC, AAC, OGG, and M4A audio files."
-              }
-            ]}
-          />
 
           <RelatedTools currentPath="/bpm-detector" />
         </div>
