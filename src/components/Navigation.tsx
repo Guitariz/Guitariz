@@ -13,7 +13,7 @@ const Navigation = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const healthStatus = useBackendHealth();
+  const { status: healthStatus } = useBackendHealth();
 
   useEffect(() => {
     // Check if already installed
@@ -131,11 +131,16 @@ const Navigation = () => {
               aria-label="Guitariz Studio Home"
             >
               <div className="relative">
-                <img
-                  src="/logo.png"
-                  alt="Guitariz Logo"
-                  className="w-8 h-8 object-contain relative z-10"
-                />
+                <picture>
+                  <source srcSet="/logo.webp" type="image/webp" />
+                  <img
+                    src="/logo.png"
+                    alt="Guitariz Logo"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 object-contain relative z-10"
+                  />
+                </picture>
                 <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="flex flex-col text-left">
@@ -147,12 +152,12 @@ const Navigation = () => {
             {/* Backend Health Badge */}
             <div className={cn(
               "hidden sm:flex items-center gap-2 px-2 py-1 rounded-md border text-[8px] font-bold uppercase tracking-widest transition-all",
-              healthStatus === "online" ? "bg-green-500/10 border-green-500/20 text-green-400" :
-                healthStatus === "offline" ? "bg-red-500/10 border-red-500/20 text-red-400" :
-                  "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse"
+              healthStatus === "healthy" ? "bg-green-500/10 border-green-500/20 text-green-400" :
+                healthStatus === "sleeping" || healthStatus === "error" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+                  "bg-white/5 border-white/10 text-white/50 animate-pulse"
             )}>
-              <Activity className={cn("w-2.5 h-2.5", healthStatus === "online" && "animate-pulse")} />
-              <span>AI Engine {healthStatus}</span>
+              <Activity className={cn("w-2.5 h-2.5", healthStatus === "healthy" && "animate-pulse")} />
+              <span>AI Engine {healthStatus === "healthy" ? "Online" : healthStatus === "sleeping" ? "Waking Up" : healthStatus}</span>
             </div>
           </div>
 

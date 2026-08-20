@@ -17,7 +17,7 @@
   <meta property="og:description"
     content="The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas." />
   <meta property="og:url" content="https://guitariz.studio/" />
-  <meta property="og:image" content="https://guitariz.studio/logo.png" />
+  <meta property="og:image" content="https://guitariz.studio/logo.webp" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Guitariz Studio" />
 
@@ -27,7 +27,7 @@
   <meta name="twitter:title" content="Guitariz Studio - Free AI Chord Recognition, Stem Splitter & Guitar Scales" />
   <meta name="twitter:description"
     content="The best free browser-based music studio. Detect chords from MP3 & YouTube with Chord AI, split stems, and explore guitar scales across Western modes & Indian Ragas." />
-  <meta name="twitter:image" content="https://guitariz.studio/logo.png" />
+  <meta name="twitter:image" content="https://guitariz.studio/logo.webp" />
 
   <meta name="theme-color" content="#060606" />
   <link rel="canonical" href="https://guitariz.studio/" />
@@ -59,7 +59,7 @@
         "url": "https://guitariz.studio/",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://guitariz.studio/logo.png",
+          "url": "https://guitariz.studio/logo.webp",
           "width": 512,
           "height": 512
         }
@@ -102,16 +102,18 @@
 
 
 <body>
-  <!-- Ultimate PWA Failsafe: Detects corrupt cache and auto-recovers -->
+  <!-- Safe PWA Failsafe: Softened timeout with session loop guard -->
   <script>
     window.addEventListener('load', function() {
       setTimeout(function() {
         var root = document.getElementById('root');
         if (root && root.innerHTML.trim() === '') {
-          if ('serviceWorker' in navigator) {
+          var hasRecovered = sessionStorage.getItem('pwa_recovery_attempt');
+          if (!hasRecovered && 'serviceWorker' in navigator) {
+            sessionStorage.setItem('pwa_recovery_attempt', '1');
             navigator.serviceWorker.getRegistrations().then(function(registrations) {
               if (registrations.length > 0) {
-                for(var i = 0; i < registrations.length; i++) {
+                for (var i = 0; i < registrations.length; i++) {
                   registrations[i].unregister();
                 }
                 window.location.reload();
@@ -119,7 +121,7 @@
             });
           }
         }
-      }, 3000);
+      }, 10000);
     });
   </script>
   <div id="root"></div>

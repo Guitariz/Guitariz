@@ -24,7 +24,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "logo.svg", "logo.png", "robots.txt"],
+      includeAssets: ["favicon.ico", "logo.svg", "logo.png", "logo.webp", "logo2.webp", "robots.txt"],
       devOptions: {
         enabled: true,
       },
@@ -82,22 +82,58 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,wav}"],
+        globPatterns: ["**/*.{js,css,html,ico,png,webp,svg,woff2,wav}"],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "google-fonts-cache",
+              cacheName: "google-fonts-stylesheets",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365,
               },
               cacheableResponse: {
                 statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-webfonts",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "images-cache",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:js|css)$/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "static-resources-cache",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 7,
               },
             },
           },
@@ -107,7 +143,7 @@ export default defineConfig({
     {
       name: "cors-proxy",
       configureServer(server) {
-        server.middlewares.use("/api/proxy", async (req, res, next) => {
+        server.middlewares.use("/api/proxy", async (req, res) => {
           try {
             const url = new URL(req.url!, `http://${req.headers.host}`);
             const targetUrl = url.searchParams.get("url");
@@ -139,7 +175,6 @@ export default defineConfig({
             // Prepare body
             let body: Buffer | undefined = undefined;
             if (req.method !== "GET" && req.method !== "HEAD") {
-              // Collect body data
               const buffers = [];
               for await (const chunk of req) {
                 buffers.push(chunk);
@@ -157,7 +192,6 @@ export default defineConfig({
             res.statusCode = response.status;
             res.setHeader("Access-Control-Allow-Origin", "*");
             response.headers.forEach((value, key) => {
-              // Avoid duplicate cors headers or encoding issues
               if (key.toLowerCase() !== "content-encoding" && key.toLowerCase() !== "content-length" && !key.startsWith("access-control-")) {
                 res.setHeader(key, value);
               }
@@ -188,8 +222,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ["react", "react-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-tooltip", "@radix-ui/react-tabs"],
+          react: ["react", "react-dom", "react-router-dom"],
+          ui: [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-select",
+            "@radix-ui/react-switch",
+          ],
+          three: ["three", "@react-three/fiber", "@react-three/drei"],
           audio: ["@/lib/chordAudio.ts", "@/lib/chordDetection.ts"],
           vocal: ["@/pages/VocalSplitterPage.tsx"],
         },

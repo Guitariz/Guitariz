@@ -13,7 +13,10 @@ const Footer = () => {
                     {/* Brand Column */}
                     <div className="space-y-4 md:col-span-1">
                         <Link to="/" className="flex items-center gap-3">
-                            <img src="/logo.png" alt="Guitariz Studio" className="w-8 h-8 object-contain" />
+                            <picture>
+                                <source srcSet="/logo.webp" type="image/webp" />
+                                <img src="/logo.png" alt="Guitariz Studio" width={32} height={32} className="w-8 h-8 object-contain" />
+                            </picture>
                             <span className="font-bold text-lg text-white tracking-tight">Guitariz Studio</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed">
