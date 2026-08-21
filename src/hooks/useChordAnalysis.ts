@@ -18,7 +18,7 @@ import { analyzeTrack, refineKeyFromChords } from "@/lib/analyzeAudio";
 import { analyzeRemote } from "@/lib/api/analyzeClient";
 import { getCachedAnalysis, setCachedAnalysis, isExpired, removeCachedAnalysis } from "@/lib/analysisCache";
 import { computeAudioCacheKey, getCachedAudio, setCachedAudio, cacheUrlResponse, removeCachedAudio } from "@/lib/audioCache";
-import { AnalysisResult } from "@/types/chordAI";
+import { AnalysisResult, ChordSegment } from "@/types/chordAI";
 import { parseNdjsonLines } from "@/lib/chunkUtils";
 import { AnalysisMode } from "@/stores/chordAIStore";
 
@@ -30,6 +30,7 @@ export type UseChordAnalysisState = {
   uploadProgress?: number;
   progressMessage?: string | null;
   isFromCache?: boolean;
+  isFallback?: boolean;
   reanalyze: () => Promise<void>;
 };
 
@@ -49,6 +50,7 @@ export const useChordAnalysis = (
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
   const [isFromCache, setIsFromCache] = useState<boolean>(false);
+  const [isFallback, setIsFallback] = useState<boolean>(false);
   const [reanalyzeCount, setReanalyzeCount] = useState<number>(0);
   const currentXhrRef = useRef<XMLHttpRequest | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -240,8 +242,8 @@ export const useChordAnalysis = (
                   setProgressMessage(item.message);
                   setUploadProgress(item.percent);
                 } else if (item.type === "metadata") {
-                  setResult(prev => {
-                    const base = prev || {
+                  setResult((prev): AnalysisResult => {
+                    const base: AnalysisResult = prev || {
                       tempo: item.tempo ?? localResult.tempo,
                       key: item.key ?? localResult.key,
                       scale: item.scale ?? localResult.scale,
@@ -251,11 +253,11 @@ export const useChordAnalysis = (
                     };
                     return {
                       ...base,
-                      tempo: item.tempo ?? base.tempo,
-                      key: item.key ?? base.key,
-                      scale: item.scale ?? base.scale,
-                      meter: item.meter ?? base.meter,
-                      instrumentalUrl: item.instrumentalUrl,
+                      tempo: typeof item.tempo === "number" ? item.tempo : base.tempo,
+                      key: typeof item.key === "string" ? item.key : base.key,
+                      scale: typeof item.scale === "string" ? item.scale : base.scale,
+                      meter: typeof item.meter === "number" ? item.meter : base.meter,
+                      instrumentalUrl: item.instrumentalUrl ?? base.instrumentalUrl,
                     };
                   });
                   if (item.instrumentalUrl) {
@@ -263,8 +265,8 @@ export const useChordAnalysis = (
                   }
                 } else if (item.type === "chords") {
                   setProgressMessage(null);
-                  setResult(prev => {
-                    const base = prev || {
+                  setResult((prev): AnalysisResult => {
+                    const base: AnalysisResult = prev || {
                       tempo: localResult.tempo,
                       key: localResult.key,
                       scale: localResult.scale,
@@ -280,10 +282,10 @@ export const useChordAnalysis = (
                       c => c.end <= item.start || c.start >= item.end
                     );
 
-                    const newChords = [...filteredChords, ...item.chords].sort((a, b) => a.start - b.start);
-                    const newSimpleChords = [...filteredSimpleChords, ...item.simpleChords].sort((a, b) => a.start - b.start);
+                    const newChords: ChordSegment[] = [...filteredChords, ...item.chords].sort((a, b) => a.start - b.start);
+                    const newSimpleChords: ChordSegment[] = [...filteredSimpleChords, ...item.simpleChords].sort((a, b) => a.start - b.start);
 
-                    const mergedResult = { ...base, chords: newChords, simpleChords: newSimpleChords };
+                    const mergedResult: AnalysisResult = { ...base, chords: newChords, simpleChords: newSimpleChords };
 
                     if (resolvedKey) {
                       setCachedAnalysis(resolvedKey, { result: mergedResult }).catch(e => {
@@ -342,6 +344,7 @@ export const useChordAnalysis = (
               const local = await analyzeTrack(audioBuffer);
               if (thisRequestId === requestIdRef.current) {
                 setResult(local);
+                setIsFallback(true);
                 setLoading(false);
                 setUploadProgress(undefined);
                 setProgressMessage(null);
@@ -384,6 +387,7 @@ export const useChordAnalysis = (
                 remote.scale = refined.scale;
               }
               setResult(remote);
+              setIsFallback(false);
               setUploadProgress(undefined);
               setProgressMessage(null);
               currentXhrRef.current = null;
@@ -420,7 +424,10 @@ export const useChordAnalysis = (
             currentXhrRef.current = null;
             if (audioBuffer && thisRequestId === requestIdRef.current) {
               const local = await analyzeTrack(audioBuffer);
-              if (thisRequestId === requestIdRef.current) setResult(local);
+              if (thisRequestId === requestIdRef.current) {
+                setResult(local);
+                setIsFallback(true);
+              }
               if (resolvedKey) {
                 try { await setCachedAnalysis(resolvedKey, { result: local }); } catch { /* ignore */ }
               }
@@ -428,7 +435,10 @@ export const useChordAnalysis = (
           }
         } else if (audioBuffer) {
           const local = await analyzeTrack(audioBuffer);
-          if (thisRequestId === requestIdRef.current) setResult(local);
+          if (thisRequestId === requestIdRef.current) {
+            setResult(local);
+            setIsFallback(true);
+          }
           if (resolvedKey) {
             try { await setCachedAnalysis(resolvedKey, { result: local }); } catch { /* ignore */ }
           }
@@ -467,7 +477,7 @@ export const useChordAnalysis = (
     };
   }, [file, useRemote, separateVocals, cacheKey, cachedResult, analysisMode, audioBuffer, reanalyzeCount, computeKey]);
 
-  return { result, loading, error, instrumentalUrl, uploadProgress, progressMessage, isFromCache, reanalyze };
+  return { result, loading, error, instrumentalUrl, uploadProgress, progressMessage, isFromCache, isFallback, reanalyze };
 };
 
 export default useChordAnalysis;

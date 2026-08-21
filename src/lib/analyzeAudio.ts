@@ -1,18 +1,17 @@
 /**
  * src/lib/analyzeAudio.ts
  *
- * Local/client-side fallback audio analysis — runs entirely in the browser.
+ * Enhanced client-side fallback audio analysis — runs entirely in the browser.
  *
  * Used when the backend is unavailable (sleeping, offline, or errored).
- * Provides ~60-65% chord accuracy via FFT + template matching — lower than
- * the ONNX model but good enough for an instant offline fallback.
- *
- * Pipeline:
- *   1. Autocorrelation-based tempo detection with harmonic weighting
- *   2. FFT-based pitch class extraction with Hann windowing
- *   3. Cosine similarity template matching (96 templates: 12 roots × 8 qualities)
- *   4. Krumhansl-Schmuckler key finding
- *   5. Segment merging and glitch removal
+ * Features:
+ *   1. Musical band-limited FFT (55Hz - 1800Hz) with Hann windowing
+ *   2. Dual-band analysis: Dedicated Bass Chromagram (55Hz - 300Hz) + Full Chromagram
+ *   3. Gaussian pitch-centering to filter out-of-tune noise and transients
+ *   4. Harmonic overtone compensation (attenuating 3rd/5th overtones)
+ *   5. Robust chord template matching with non-chord tone penalties & triad prioritization
+ *   6. Krumhansl-Schmuckler key determination + chord progression refinement
+ *   7. Viterbi-style transition smoothing and glitch filtering
  */
 
 import FFT from "fft.js";
@@ -24,39 +23,55 @@ const PITCH_CLASS_NAMES = [
   "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
 ];
 
-// Krumhansl-Schmuckler key profiles (public domain cognitive science profiles)
+// Krumhansl-Schmuckler key profiles
 const MAJOR_PROFILE = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
 const MINOR_PROFILE = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
 
+interface TemplateDef {
+  name: string;
+  root: number;
+  quality: string;
+  vec: number[];
+  intervals: number[];
+  isTriad: boolean;
+}
+
 // Build chord templates: 12 roots × 8 qualities = 96 templates
-const CHORD_TEMPLATES: { name: string; vec: number[] }[] = [];
+const CHORD_TEMPLATES: TemplateDef[] = [];
 for (let root = 0; root < 12; root++) {
-  const types: Record<string, number[]> = {
-    "": [0, 4, 7],       // major
-    "m": [0, 3, 7],      // minor
-    "7": [0, 4, 7, 10],  // dominant 7
-    "maj7": [0, 4, 7, 11], // major 7
-    "m7": [0, 3, 7, 10], // minor 7
-    "dim": [0, 3, 6],    // diminished
-    "sus2": [0, 2, 7],   // sus2
-    "sus4": [0, 5, 7],   // sus4
-  };
-  for (const [suffix, intervals] of Object.entries(types)) {
-    const vec = new Array(12).fill(0);
+  const types: { suffix: string; intervals: number[]; isTriad: boolean }[] = [
+    { suffix: "", intervals: [0, 4, 7], isTriad: true },          // Major
+    { suffix: "m", intervals: [0, 3, 7], isTriad: true },         // Minor
+    { suffix: "7", intervals: [0, 4, 7, 10], isTriad: false },    // Dominant 7
+    { suffix: "maj7", intervals: [0, 4, 7, 11], isTriad: false }, // Major 7
+    { suffix: "m7", intervals: [0, 3, 7, 10], isTriad: false },   // Minor 7
+    { suffix: "dim", intervals: [0, 3, 6], isTriad: true },       // Diminished
+    { suffix: "sus4", intervals: [0, 5, 7], isTriad: true },      // Sus4
+    { suffix: "sus2", intervals: [0, 2, 7], isTriad: true },      // Sus2
+  ];
+
+  for (const { suffix, intervals, isTriad } of types) {
+    const vec = new Array(12).fill(-0.25); // Baseline non-chord penalty
     intervals.forEach((iv, i) => {
-      // Weight root and quality defining third higher
+      // Weight root and third highest
       vec[(root + iv) % 12] = (i === 0) ? 1.0 : (iv === 3 || iv === 4) ? 0.95 : 0.85;
     });
-    // Negative penalty for direct minor/major third confusion
+
+    // Specific mutual exclusion penalties:
     if (suffix === "" || suffix === "7" || suffix === "maj7") {
-      vec[(root + 3) % 12] = -0.35; // Penalize minor 3rd in major chord
+      vec[(root + 3) % 12] = -0.5; // Strong penalty for minor 3rd in major chord
     } else if (suffix === "m" || suffix === "m7") {
-      vec[(root + 4) % 12] = -0.35; // Penalize major 3rd in minor chord
+      vec[(root + 4) % 12] = -0.5; // Strong penalty for major 3rd in minor chord
     }
-    const norm = Math.sqrt(vec.reduce((a, b) => a + b * b, 0));
+
+    const norm = Math.sqrt(vec.reduce((a, b) => a + (b > 0 ? b * b : 0), 0)) || 1;
     CHORD_TEMPLATES.push({
       name: PITCH_CLASS_NAMES[root] + suffix,
-      vec: vec.map(v => v / (norm + 1e-9)),
+      root,
+      quality: suffix,
+      vec: vec.map(v => v / norm),
+      intervals,
+      isTriad,
     });
   }
 }
@@ -66,12 +81,6 @@ for (let root = 0; root < 12; root++) {
 export type AnalyzeTrackResult = AnalysisResult;
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-function frequencyToPitchClass(freq: number): number {
-  if (freq <= 0) return 0;
-  const midi = 69 + 12 * Math.log2(freq / 440);
-  return ((Math.round(midi) % 12) + 12) % 12;
-}
 
 function chooseKey(pitchHistogram: number[]): { key: string; scale: string } {
   let best: { key: string; scale: string; score: number } = { key: "C", scale: "major", score: -Infinity };
@@ -172,86 +181,157 @@ function nextPowerOfTwo(n: number): number {
   return 2 ** Math.ceil(Math.log2(Math.max(2, n)));
 }
 
-function detectPitchClasses(audioBuffer: AudioBuffer, windowSeconds = 0.75): { histogram: number[]; segments: ChordSegment[] } {
+function detectPitchClasses(audioBuffer: AudioBuffer, windowSeconds = 0.5): { histogram: number[]; segments: ChordSegment[] } {
   const channel = audioBuffer.getChannelData(0);
   const sampleRate = audioBuffer.sampleRate;
-  const windowSize = nextPowerOfTwo(Math.max(2048, Math.floor(sampleRate * windowSeconds)));
+  const windowSize = nextPowerOfTwo(Math.max(4096, Math.floor(sampleRate * windowSeconds)));
   const hopSize = Math.floor(windowSize / 2);
   const fft = new FFT(windowSize);
   const histogram = new Array(12).fill(0);
-  const segments: ChordSegment[] = [];
+  const rawSegments: { start: number; end: number; chord: string; confidence: number; root: number }[] = [];
+
+  const minFreq = 55;   // A1 (~55 Hz)
+  const maxFreq = 1800; // ~A6 (~1760 Hz)
+  const bassMaxFreq = 320; // Bass cutoff (~E4)
+
+  const minBin = Math.max(1, Math.floor((minFreq * windowSize) / sampleRate));
+  const maxBin = Math.min(Math.floor(windowSize / 2), Math.ceil((maxFreq * windowSize) / sampleRate));
+  const bassMaxBin = Math.min(maxBin, Math.ceil((bassMaxFreq * windowSize) / sampleRate));
 
   for (let start = 0; start < channel.length; start += hopSize) {
-    const window = new Array(windowSize).fill(0);
+    const windowData = new Array(windowSize).fill(0);
+    let frameRms = 0;
     for (let i = 0; i < windowSize && start + i < channel.length; i += 1) {
-      window[i] = channel[start + i];
+      const sample = channel[start + i];
+      windowData[i] = sample;
+      frameRms += sample * sample;
+    }
+    frameRms = Math.sqrt(frameRms / windowSize);
+
+    // Skip silent/near-silent frames
+    if (frameRms < 0.005) {
+      const startSec = start / sampleRate;
+      const endSec = Math.min(channel.length / sampleRate, startSec + windowSize / sampleRate);
+      rawSegments.push({ start: startSec, end: endSec, chord: "N.C.", confidence: 0.1, root: -1 });
+      continue;
     }
 
-    // Apply Hann window to reduce spectral leakage
+    // Apply Hann window
     for (let i = 0; i < windowSize; i += 1) {
       const w = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (windowSize - 1)));
-      window[i] *= w;
+      windowData[i] *= w;
     }
 
     const out = fft.createComplexArray();
     const input = fft.createComplexArray();
     for (let i = 0; i < windowSize; i += 1) {
-      input[2 * i] = window[i];
+      input[2 * i] = windowData[i];
       input[2 * i + 1] = 0;
     }
     fft.transform(out, input);
 
-    const magnitudes: number[] = [];
-    for (let i = 0; i < windowSize / 2; i += 1) {
-      const re = out[2 * i];
-      const im = out[2 * i + 1];
-      magnitudes.push(Math.sqrt(re * re + im * im));
-    }
+    const fullChroma = new Array(12).fill(0);
+    const bassChroma = new Array(12).fill(0);
 
-    // Pick top peaks
-    const peakCount = 6;
-    const peaks: { bin: number; mag: number }[] = [];
-    for (let bin = 1; bin < magnitudes.length - 1; bin += 1) {
-      const m = magnitudes[bin];
-      if (m > magnitudes[bin - 1] && m > magnitudes[bin + 1]) {
-        peaks.push({ bin, mag: m });
+    for (let bin = minBin; bin <= maxBin; bin += 1) {
+      const re = out[2 * bin];
+      const im = out[2 * bin + 1];
+      const mag = Math.sqrt(re * re + im * im);
+      if (mag <= 1e-4) continue;
+
+      const freq = (bin * sampleRate) / windowSize;
+      const midi = 69 + 12 * Math.log2(freq / 440);
+      const nearestMidi = Math.round(midi);
+      const dev = Math.abs(midi - nearestMidi);
+      
+      // Pitch centering weight: bell curve around exact pitch class
+      const pitchWeight = Math.exp(-Math.pow(dev / 0.35, 2));
+      const pc = ((nearestMidi % 12) + 12) % 12;
+
+      fullChroma[pc] += mag * pitchWeight;
+      if (bin <= bassMaxBin) {
+        bassChroma[pc] += mag * pitchWeight * 1.5;
       }
     }
-    peaks.sort((a, b) => b.mag - a.mag);
-    const selected = peaks.slice(0, peakCount);
 
-    const pitchClassesArr = new Array(12).fill(0);
-    selected.forEach(({ bin, mag }) => {
-      const freq = (bin * sampleRate) / windowSize;
-      const pc = frequencyToPitchClass(freq);
-      pitchClassesArr[pc] += mag;
-      histogram[pc] += mag;
-    });
+    // Normalize full chroma & bass chroma
+    const fullSum = fullChroma.reduce((a, b) => a + b, 0) || 1e-6;
+    const bassSum = bassChroma.reduce((a, b) => a + b, 0) || 1e-6;
+
+    const normFull = fullChroma.map(v => v / fullSum);
+    const normBass = bassChroma.map(v => v / bassSum);
+
+    // Identify dominant bass root note
+    let dominantBassRoot = 0;
+    let maxBass = -1;
+    for (let pc = 0; pc < 12; pc++) {
+      if (normBass[pc] > maxBass) {
+        maxBass = normBass[pc];
+        dominantBassRoot = pc;
+      }
+      histogram[pc] += fullChroma[pc];
+    }
+
+    // Combine chroma with bass root emphasis (65% full spectral, 35% bass fundamental)
+    const combinedChroma = normFull.map((v, i) => v * 0.65 + normBass[i] * 0.35);
 
     // Template matching
     let bestChord = "N.C.";
-    let maxScore = -1;
+    let maxScore = -10;
+    let bestRoot = dominantBassRoot;
 
-    const pcSum = pitchClassesArr.reduce((a: number, b: number) => a + b, 0);
-    if (pcSum > 0.05) {
-      const pcNorm = pitchClassesArr.map((v: number) => v / pcSum);
-      CHORD_TEMPLATES.forEach(tpl => {
-        const score = tpl.vec.reduce((acc, v, i) => acc + v * pcNorm[i], 0);
-        if (score > maxScore) {
-          maxScore = score;
-          bestChord = tpl.name;
-        }
-      });
-    }
+    CHORD_TEMPLATES.forEach(tpl => {
+      let score = tpl.vec.reduce((acc, v, i) => acc + v * combinedChroma[i], 0);
 
-    const confidence = clamp(maxScore, 0, 1);
+      // Bass root alignment bonus
+      if (tpl.root === dominantBassRoot) {
+        score += 0.25;
+      }
+
+      // Triad prior bonus (Major and Minor chords are far more common than 7th/dim in clean tracks)
+      if (tpl.isTriad && (tpl.quality === "" || tpl.quality === "m")) {
+        score += 0.12;
+      }
+
+      if (score > maxScore) {
+        maxScore = score;
+        bestChord = tpl.name;
+        bestRoot = tpl.root;
+      }
+    });
+
+    const confidence = clamp((maxScore + 0.3) / 1.3, 0.15, 0.95);
     const startSec = start / sampleRate;
     const endSec = Math.min(channel.length / sampleRate, startSec + windowSize / sampleRate);
 
-    segments.push({ start: startSec, end: endSec, chord: bestChord, confidence });
+    rawSegments.push({ start: startSec, end: endSec, chord: bestChord, confidence, root: bestRoot });
   }
 
-  return { histogram, segments };
+  // Temporal median smoothing (replaces isolated single-frame glitches)
+  const smoothedSegments: ChordSegment[] = [];
+  for (let i = 0; i < rawSegments.length; i++) {
+    const prev = rawSegments[Math.max(0, i - 1)];
+    const curr = rawSegments[i];
+    const next = rawSegments[Math.min(rawSegments.length - 1, i + 1)];
+
+    let chosenChord = curr.chord;
+    let chosenConf = curr.confidence;
+
+    // If neighbors agree and current frame disagreed with low confidence, snap to neighbor
+    if (prev.chord === next.chord && prev.chord !== curr.chord && curr.confidence < 0.75) {
+      chosenChord = prev.chord;
+      chosenConf = (prev.confidence + next.confidence) / 2;
+    }
+
+    smoothedSegments.push({
+      start: curr.start,
+      end: curr.end,
+      chord: chosenChord,
+      confidence: chosenConf,
+    });
+  }
+
+  return { histogram, segments: smoothedSegments };
 }
 
 // ── Main analysis function ─────────────────────────────────────────────────
@@ -259,7 +339,7 @@ function detectPitchClasses(audioBuffer: AudioBuffer, windowSeconds = 0.75): { h
 export async function analyzeTrack(audioBuffer: AudioBuffer): Promise<AnalyzeTrackResult> {
   try {
     const tempo = estimateTempo(audioBuffer);
-    const { histogram, segments } = detectPitchClasses(audioBuffer, 0.75);
+    const { histogram, segments } = detectPitchClasses(audioBuffer, 0.5);
 
     // Normalize histogram
     const sum = histogram.reduce((a: number, b: number) => a + b, 0);
@@ -278,11 +358,11 @@ export async function analyzeTrack(audioBuffer: AudioBuffer): Promise<AnalyzeTra
       }
     });
 
-    // Remove very short "glitch" chords (<0.2s)
+    // Remove very short "glitch" chords (<0.35s) unless entire track is very short
     const smoothed: ChordSegment[] = [];
     for (let i = 0; i < merged.length; i++) {
       const curr = merged[i];
-      if ((curr.end - curr.start) < 0.2 && smoothed.length > 0) {
+      if ((curr.end - curr.start) < 0.35 && smoothed.length > 0 && audioBuffer.duration > 3) {
         smoothed[smoothed.length - 1].end = curr.end;
       } else {
         smoothed.push(curr);

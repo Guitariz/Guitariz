@@ -35,7 +35,7 @@ export interface NdjsonError {
   detail: string;
 }
 
-export type NdjsonItem = NdjsonProgress | NdjsonMetadata | NdjsonChords | NdjsonError | Record<string, unknown>;
+export type NdjsonItem = NdjsonProgress | NdjsonMetadata | NdjsonChords | NdjsonError;
 
 export interface ChunkRange {
   index: number;

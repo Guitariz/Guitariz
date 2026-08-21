@@ -210,7 +210,7 @@ const ChordAIPage = () => {
     };
   }, [disconnect]);
 
-  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress, progressMessage, isFromCache, reanalyze } = useChordAnalysis(
+  const { result, loading: analysisLoading, instrumentalUrl, error: analysisError, uploadProgress, progressMessage, isFromCache, isFallback, reanalyze } = useChordAnalysis(
     audioBuffer,
     selectedFile,
     true,
@@ -865,6 +865,27 @@ const ChordAIPage = () => {
                         >
                           <Upload className="w-3.5 h-3.5 mr-2" />
                           {isSharedView ? "Add Audio" : "Restore Audio"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {isFallback && result && (
+                      <div className="px-5 py-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200 animate-in fade-in duration-300">
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                          <span>
+                            <strong>Fast Browser Engine:</strong> Analyzed locally via in-browser DSP. For maximum accuracy with the neural backend, re-analyze.
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => reanalyze()}
+                          disabled={analysisLoading}
+                          className="h-8 text-xs border-amber-500/30 text-amber-300 hover:bg-amber-500/20 whitespace-nowrap"
+                        >
+                          <RotateCcw className="w-3 h-3 mr-1.5" />
+                          Re-analyze with AI
                         </Button>
                       </div>
                     )}
