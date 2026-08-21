@@ -1,17 +1,7 @@
-/**
- * WebAudio utility for playing chord sounds
- * Generates realistic guitar tones for chord playback
- * 
- * Guitar tuning (standard):
- * String 1 (High E): 329.63 Hz (E4)
- * String 2 (B):      246.94 Hz (B3)
- * String 3 (G):      196.00 Hz (G3)
- * String 4 (D):      146.83 Hz (D3)
- * String 5 (A):      110.00 Hz (A2)
- * String 6 (Low E):   82.41 Hz (E2)
- */
+import { parseChordName, getChordMidi, getUkuleleFrets } from "@/lib/chordTones";
+import { findChordByName, chordLibraryData } from "@/data/chordData";
 
-export type InstrumentType = 'guitar' | 'piano';
+export type InstrumentType = 'guitar' | 'piano' | 'ukulele';
 
 let audioContext: AudioContext | null = null;
 let pianoSamplesReady = false;
@@ -45,8 +35,13 @@ const REMOTE_PIANO_SAMPLE_SET = [
 ];
 
 // Initialize audio context on first user interaction
-const initAudioContext = (): AudioContext => {
-  if (audioContext) return audioContext;
+export const initAudioContext = (): AudioContext => {
+  if (audioContext) {
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+    return audioContext;
+  }
 
   if (typeof window === 'undefined') {
     throw new Error('Audio context requires browser environment');
@@ -54,7 +49,6 @@ const initAudioContext = (): AudioContext => {
 
   audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
 
-  // Resume audio context if suspended (required by some browsers)
   if (audioContext.state === 'suspended') {
     audioContext.resume();
   }
@@ -66,6 +60,10 @@ const log2 = (value: number) => Math.log(value) / Math.log(2);
 
 const midiFromFrequency = (frequency: number) => {
   return 69 + 12 * log2(frequency / 440);
+};
+
+export const frequencyFromMidi = (midi: number): number => {
+  return 440 * Math.pow(2, (midi - 69) / 12);
 };
 
 const loadSampleSet = async (
@@ -89,7 +87,7 @@ const loadSampleSet = async (
   );
 };
 
-const ensurePianoSamples = async () => {
+export const ensurePianoSamples = async () => {
   if (pianoSamplesReady || pianoSampleLoadStarted) return;
   pianoSampleLoadStarted = true;
 
@@ -111,8 +109,10 @@ const ensurePianoSamples = async () => {
 };
 
 // Standard guitar tuning frequencies (Hz) - Ordered from String 6 (Low E) to String 1 (High E)
-// This matches standard chord data arrays where index 0 is the Low E string.
 const GUITAR_TUNING = [82.41, 110.00, 146.83, 196.00, 246.94, 329.63];
+
+// Standard ukulele tuning frequencies (Hz) - Ordered G4 (re-entrant), C4, E4, A4
+const UKULELE_TUNING = [392.00, 261.63, 329.63, 440.00];
 
 const createPluckedString = (
   ctx: AudioContext,
@@ -124,7 +124,7 @@ const createPluckedString = (
 ) => {
   const now = startTime;
 
-  // Pluck: use even shorter noise for cleaner transients
+  // Pluck: use short noise burst for clean transients
   const burstLength = 0.01;
   const sampleRate = ctx.sampleRate;
   const burstBuffer = ctx.createBuffer(1, Math.floor(sampleRate * burstLength), sampleRate);
@@ -146,7 +146,6 @@ const createPluckedString = (
 
   const damp = ctx.createBiquadFilter();
   damp.type = 'lowpass';
-  // Lower cutoff for a warmer, less "sharp" sound
   damp.frequency.setValueAtTime(Math.min(8000, frequency * 6), now);
   damp.Q.setValueAtTime(0.5, now);
 
@@ -170,7 +169,6 @@ const createPluckedString = (
 
   noise.start(now);
 };
-
 
 const createPianoTone = (
   ctx: AudioContext,
@@ -200,7 +198,6 @@ const createPianoTone = (
   partial3rd.frequency.setValueAtTime(frequency * 3, now);
   partial3rd.detune.setValueAtTime(-1, now);
 
-  // Higher partials use triangle for a bit more harmonic complexity/percussion
   partial4th.type = 'triangle';
   partial4th.frequency.setValueAtTime(frequency * 4, now);
   partial4th.detune.setValueAtTime(4, now);
@@ -213,21 +210,19 @@ const createPianoTone = (
   const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
   const data = noiseBuffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) {
-    // Sharp noise burst for the hammer hit
     data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.003));
   }
   hammerNoise.buffer = noiseBuffer;
 
   const lowpass = ctx.createBiquadFilter();
   lowpass.type = 'lowpass';
-  // Dynamic filter: starts bright, darkens as note decays
   lowpass.frequency.setValueAtTime(Math.min(10000, frequency * 10), now);
   lowpass.frequency.exponentialRampToValueAtTime(Math.min(2000, frequency * 2), now + duration * 0.8);
   lowpass.Q.setValueAtTime(0.5, now);
 
   const highpass = ctx.createBiquadFilter();
   highpass.type = 'highpass';
-  highpass.frequency.setValueAtTime(60, now); // Remove sub-bass muck
+  highpass.frequency.setValueAtTime(60, now);
 
   const gainMain = ctx.createGain();
   const gain2nd = ctx.createGain();
@@ -258,12 +253,23 @@ const createPianoTone = (
   compressor.threshold.setValueAtTime(-15, now);
   compressor.ratio.setValueAtTime(4, now);
 
-  partialMain.connect(gainMain).connect(lowpass);
-  partial2nd.connect(gain2nd).connect(lowpass);
-  partial3rd.connect(gain3rd).connect(lowpass);
-  partial4th.connect(gain4th).connect(lowpass);
-  partial5th.connect(gain5th).connect(lowpass);
-  hammerNoise.connect(gainNoise).connect(lowpass);
+  partialMain.connect(gainMain);
+  gainMain.connect(lowpass);
+
+  partial2nd.connect(gain2nd);
+  gain2nd.connect(lowpass);
+
+  partial3rd.connect(gain3rd);
+  gain3rd.connect(lowpass);
+
+  partial4th.connect(gain4th);
+  gain4th.connect(lowpass);
+
+  partial5th.connect(gain5th);
+  gain5th.connect(lowpass);
+
+  hammerNoise.connect(gainNoise);
+  gainNoise.connect(lowpass);
 
   lowpass.connect(highpass);
   highpass.connect(masterGain);
@@ -348,58 +354,148 @@ const playSampledPiano = (
   return true;
 };
 
+/**
+ * Plays a series of piano notes with an authentic staggered arpeggio effect.
+ */
+export const playPianoArpeggio = (
+  midiNotes: number[],
+  volume: number = 0.35,
+  arpeggioDelay: number = 0.055,
+  duration: number = 2.8
+): void => {
+  if (!midiNotes || midiNotes.length === 0) return;
+  const ctx = initAudioContext();
+  const now = ctx.currentTime;
+  void ensurePianoSamples();
+
+  const noteVol = Math.min(volume / Math.sqrt(midiNotes.length) * 1.5, 0.45);
+
+  midiNotes.forEach((midi, idx) => {
+    const freq = frequencyFromMidi(midi);
+    const playTime = now + idx * arpeggioDelay;
+    const pan = midiNotes.length > 1 ? (idx / (midiNotes.length - 1)) * 0.6 - 0.3 : 0;
+
+    const usedSample = playSampledPiano(ctx, freq, duration, noteVol, pan, playTime);
+    if (!usedSample) {
+      createPianoTone(ctx, freq, duration, noteVol, pan, playTime);
+    }
+  });
+};
+
+/**
+ * Plays a chord based on fret positions across strings using piano tone.
+ * - For guitar: Strums guitar string voicing with piano tone (fast strum, ~32ms delay).
+ * - For ukulele: Strums ukulele voicing with piano tone (~25ms delay).
+ * - For piano: Plays notes with arpeggiated timing (~55ms delay).
+ */
 export const playChord = (
   frets: number[],
-  volume: number = 0.3,
-  instrument: InstrumentType = 'piano',
+  volume: number = 0.35,
+  instrument: InstrumentType = 'guitar',
   direction: 'down' | 'up' = 'down'
 ): void => {
   const ctx = initAudioContext();
   const now = ctx.currentTime;
-  const strumDelay = 0.035; // Slightly slower, more deliberate strum
+  void ensurePianoSamples();
 
-  if (instrument === 'piano') {
-    void ensurePianoSamples();
-  }
+  const isUkulele = instrument === 'ukulele' || frets.length === 4;
+  const strumDelay = instrument === 'piano' ? 0.055 : (isUkulele ? 0.025 : 0.032);
+  const clampedDuration = 2.8;
+  const tuning = isUkulele ? UKULELE_TUNING : GUITAR_TUNING;
 
-  // Iterate strings (index 0 is Low E)
-  frets.forEach((fret, stringIndex) => {
-    if (fret === -1) return;
+  const activeFrets = frets
+    .map((fret, stringIndex) => ({ fret, stringIndex }))
+    .filter((item) => item.fret !== -1);
 
-    const stringFreq = GUITAR_TUNING[stringIndex];
+  activeFrets.forEach(({ fret, stringIndex }, idx) => {
+    const stringFreq = tuning[stringIndex] || GUITAR_TUNING[stringIndex] || 110;
     const noteFreq = stringFreq * Math.pow(2, fret / 12);
-    // Spread stereo slightly per string (-0.4 ... 0.4)
-    const pan = (stringIndex / 5) * 0.8 - 0.4;
-
-    // Low strings play first in a standard downstrum (index 0 first)
-    // High strings play first in an upstrum (index 5 first)
+    const pan = (idx / Math.max(activeFrets.length - 1, 1)) * 0.6 - 0.3;
     const timeOffset = direction === 'down'
-      ? stringIndex * strumDelay
-      : (5 - stringIndex) * strumDelay;
-
+      ? idx * strumDelay
+      : (activeFrets.length - 1 - idx) * strumDelay;
     const playTime = now + timeOffset;
+    const noteVolume = Math.min(volume * 0.75, 0.45);
 
-    if (instrument === 'piano') {
-      const clampedDuration = 2.8;
-      // Scale volume: lower notes are louder naturally on piano, but we balance for polyphony
-      const noteVolume = Math.min(volume * 0.75, 0.45);
-
-      const usedSample = playSampledPiano(
-        ctx,
-        noteFreq,
-        clampedDuration,
-        noteVolume,
-        pan,
-        playTime
-      );
-
-      if (!usedSample) {
-        createPianoTone(ctx, noteFreq, clampedDuration, noteVolume, pan, playTime);
-      }
-    } else {
-      createPluckedString(ctx, noteFreq, 2.6, volume, pan, playTime);
+    const usedSample = playSampledPiano(ctx, noteFreq, clampedDuration, noteVolume, pan, playTime);
+    if (!usedSample) {
+      createPianoTone(ctx, noteFreq, clampedDuration, noteVolume, pan, playTime);
     }
   });
+};
+
+/**
+ * High-level chord player by chord name using rich piano tone.
+ * - Guitar: Plays guitar voicing frets with piano tone in a fast strum.
+ * - Piano: Plays chord tones with piano tone in an arpeggiated roll.
+ * - Ukulele: Plays ukulele frets with piano tone in a fast strum.
+ */
+export const playChordByName = (
+  chordName: string,
+  instrument: InstrumentType = 'piano',
+  options?: {
+    volume?: number;
+    direction?: 'down' | 'up';
+    arpeggioDelay?: number;
+  }
+): void => {
+  if (!chordName || chordName === 'N.C.' || chordName === '—') return;
+  const volume = options?.volume ?? 0.35;
+  const direction = options?.direction ?? 'down';
+  const arpeggioDelay = options?.arpeggioDelay ?? 0.055;
+
+  // 1. Piano: Authentic arpeggio roll (Root bass, 3rd, 5th, 7th, octave) with piano tone
+  if (instrument === 'piano') {
+    const parsed = parseChordName(chordName);
+    if (parsed) {
+      const bassMidi = 12 * 4 + parsed.rootPc;
+      const midTones = getChordMidi(chordName, 4);
+      const topMidi = midTones.length <= 3 ? [12 * 6 + parsed.rootPc] : [];
+      const notes = [bassMidi, ...midTones, ...topMidi];
+      
+      const finalNotes = direction === 'down' ? notes : [...notes].reverse();
+      playPianoArpeggio(finalNotes, volume, arpeggioDelay);
+      return;
+    }
+  }
+
+  // 2. Guitar: Strum guitar chord shape with piano tone
+  if (instrument === 'guitar') {
+    const normalized = chordName
+      .replace(/:maj/g, "")
+      .replace(/min7/g, "m7")
+      .replace(/min/g, "m")
+      .replace(/:/g, "")
+      .trim();
+
+    const found = findChordByName(normalized, chordLibraryData.roots);
+    if (found && found.variant.voicings.length > 0) {
+      playChord(found.variant.voicings[0].frets, volume, 'guitar', direction);
+      return;
+    }
+
+    // Fallback: arpeggiate MIDI notes with piano tone
+    const midi = getChordMidi(chordName, 4);
+    if (midi.length > 0) {
+      playPianoArpeggio(midi, volume, 0.032);
+      return;
+    }
+  }
+
+  // 3. Ukulele: Strum ukulele chord shape with piano tone
+  if (instrument === 'ukulele') {
+    const uke = getUkuleleFrets(chordName);
+    if (uke && uke.frets.some((f) => f >= 0)) {
+      playChord(uke.frets, volume, 'ukulele', direction);
+      return;
+    }
+  }
+
+  // Generic fallback
+  const parsed = parseChordName(chordName);
+  if (parsed) {
+    playPianoArpeggio(getChordMidi(chordName, 4), volume, arpeggioDelay);
+  }
 };
 
 export const playNote = (
@@ -410,14 +506,11 @@ export const playNote = (
 ): void => {
   const ctx = initAudioContext();
   const now = ctx.currentTime;
-  const panPosition = Math.random() * 0.2 - 0.1; // subtle width
+  const panPosition = Math.random() * 0.2 - 0.1;
 
   if (instrument === 'piano') {
-    // Trigger async load of samples (non-blocking)
     void ensurePianoSamples();
-
     const clampedDuration = Math.min(Math.max(duration, 0.6), 3.5);
-
     const usedSample = playSampledPiano(
       ctx,
       frequency,
@@ -435,3 +528,4 @@ export const playNote = (
 
   createPluckedString(ctx, frequency, duration, volume, panPosition, now);
 };
+

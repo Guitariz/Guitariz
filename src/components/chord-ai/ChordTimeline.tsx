@@ -15,6 +15,7 @@ interface ChordTimelineProps {
   currentTime?: number;
   duration?: number;
   onSeek?: (time: number) => void;
+  onPlayChord?: (chord: string) => void;
   transposeSemitones?: number;
   className?: string;
 }
@@ -50,6 +51,7 @@ const ChordTimeline = ({
   currentTime = 0,
   duration = 0,
   onSeek,
+  onPlayChord,
   transposeSemitones = 0,
   className,
 }: ChordTimelineProps) => {
@@ -122,7 +124,12 @@ const ChordTimeline = ({
                 borderLeftColor: confidenceColor(chord.confidence ?? 0.5),
                 borderLeftWidth: "3px",
               }}
-              onClick={() => onSeek?.(chord.start ?? 0)}
+              onClick={() => {
+                onSeek?.(chord.start ?? 0);
+                if (chord.chord && chord.chord !== "N.C.") {
+                  onPlayChord?.(chord.chord);
+                }
+              }}
               title={`${chord.chord} (${Math.round((chord.confidence ?? 0) * 100)}% confidence)\n${(chord.start ?? 0).toFixed(1)}s - ${(chord.end ?? 0).toFixed(1)}s`}
             >
               <span className="truncate">

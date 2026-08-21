@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
 import ChordTimeline from "@/components/chord-ai/ChordTimeline";
@@ -19,12 +19,13 @@ import UkuleleDiagram from "@/components/chord/UkuleleDiagram";
 import PianoChordDiagram from "@/components/chord/PianoChordDiagram";
 import { getUkuleleFrets } from "@/lib/chordTones";
 import { findChordByName, chordLibraryData } from "@/data/chordData";
+import { playChordByName } from "@/lib/chordAudio";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAnalysisHistory } from "@/hooks/useAnalysisHistory";
 import { useChordAIStore } from "@/stores/chordAIStore";
 import { Link } from "react-router-dom";
-import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle, ArrowUpDown, RotateCcw } from "lucide-react";
+import { Bot, Upload, Pause, Play, Activity, Settings2, Sparkles, Wand2, Download, History, Trash2, Share2, Youtube, ArrowRight, FileAudio, AlertTriangle, ArrowUpDown, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import YouTubePlayer from "@/components/chord-ai/YouTubePlayer";
 import { cn } from "@/lib/utils";
 import { ChordAISkeleton } from "@/components/ui/SkeletonLoader";
@@ -556,6 +557,16 @@ const ChordAIPage = () => {
     if (!currentChord) return null;
     return getUkuleleFrets(currentChord.chord);
   }, [currentChord]);
+
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+
+  const handlePlayChordPreview = useCallback((chordName?: string) => {
+    const targetChord = chordName || currentChord?.chord;
+    if (!targetChord || targetChord === "N.C." || targetChord === "—") return;
+    setIsPlayingPreview(true);
+    playChordByName(targetChord, instrument);
+    setTimeout(() => setIsPlayingPreview(false), 800);
+  }, [currentChord, instrument]);
 
   const onYoutubeTimeUpdate = (time: number) => {
     seek(time);
@@ -1127,6 +1138,7 @@ const ChordAIPage = () => {
                                 segments={highConfidenceChords}
                                 currentTime={currentTime}
                                 onSeek={seek}
+                                onPlayChord={handlePlayChordPreview}
                               />
                             </div>
                           </div>
@@ -1140,6 +1152,7 @@ const ChordAIPage = () => {
                               segments={currentChords}
                               currentTime={currentTime}
                               onSeek={seek}
+                              onPlayChord={handlePlayChordPreview}
                             />
                           </div>
                         </div>
@@ -1166,9 +1179,44 @@ const ChordAIPage = () => {
 
                 <div className="pt-2 space-y-6">
                   <div className="space-y-4">
-                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Active Chord</div>
+                      {currentChord && currentChord.chord !== "N.C." && (
+                        <button
+                          onClick={() => handlePlayChordPreview()}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border",
+                            isPlayingPreview
+                              ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-105"
+                              : "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:border-primary/30"
+                          )}
+                          title={`Listen to ${currentChord.chord} (${instrument === 'piano' ? 'arpeggio' : 'strum'})`}
+                        >
+                          <Volume2 className={cn("w-3.5 h-3.5", isPlayingPreview && "animate-pulse")} />
+                          <span>{isPlayingPreview ? "Playing..." : "Hear Chord"}</span>
+                        </button>
+                      )}
+                    </div>
+
                     <div className="flex items-end justify-between gap-4">
-                      <div className="text-7xl font-light tracking-tighter text-foreground tabular-nums min-h-[1.2rem] transition-all duration-300 notranslate" translate="no">
+                      <div
+                        onClick={() => currentChord && handlePlayChordPreview()}
+                        role={currentChord ? "button" : undefined}
+                        tabIndex={currentChord ? 0 : undefined}
+                        onKeyDown={(e) => {
+                          if ((e.key === "Enter" || e.key === " ") && currentChord) {
+                            e.preventDefault();
+                            handlePlayChordPreview();
+                          }
+                        }}
+                        title={currentChord ? `Click to listen to ${currentChord.chord} (${instrument === 'piano' ? 'piano arpeggio' : 'guitar strum'})` : undefined}
+                        className={cn(
+                          "text-7xl font-light tracking-tighter text-foreground tabular-nums min-h-[1.2rem] transition-all duration-300 notranslate select-none",
+                          currentChord && currentChord.chord !== "N.C." && "cursor-pointer hover:text-primary hover:scale-[1.02] active:scale-95",
+                          isPlayingPreview && "text-primary scale-105 drop-shadow-[0_0_12px_rgba(var(--primary),0.35)]"
+                        )}
+                        translate="no"
+                      >
                         {currentChord ? currentChord.chord : (isPlaying ? "..." : "--")}
                       </div>
                       {currentChord && (
@@ -1183,7 +1231,18 @@ const ChordAIPage = () => {
                     <div className="bg-card/30 rounded-3xl border border-border p-4 flex flex-col items-center gap-3 animate-in fade-in zoom-in-95 duration-500 overflow-hidden">
                       {/* Instrument tabs */}
                       <div className="flex items-center justify-between w-full">
-                        <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/50">Chord Shape</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground/50">Chord Shape</span>
+                          {currentChord && currentChord.chord !== "N.C." && (
+                            <button
+                              onClick={() => handlePlayChordPreview()}
+                              className="p-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all hover:scale-105 active:scale-95"
+                              title={`Play ${currentChord.chord} on ${instrument}`}
+                            >
+                              <Volume2 className={cn("w-3 h-3", isPlayingPreview && "animate-pulse")} />
+                            </button>
+                          )}
+                        </div>
                         <div className="flex items-center gap-0.5 p-0.5 bg-black/40 rounded-lg border border-white/5">
                           {(['guitar', 'ukulele', 'piano'] as const).map((inst) => (
                             <button
@@ -1191,6 +1250,9 @@ const ChordAIPage = () => {
                               onClick={() => {
                                 setInstrument(inst);
                                 try { localStorage.setItem('chord-ai-instrument', inst); } catch (_e) { /* ignore */ }
+                                if (currentChord && currentChord.chord !== "N.C.") {
+                                  playChordByName(currentChord.chord, inst);
+                                }
                               }}
                               className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
                                 instrument === inst
@@ -1234,8 +1296,8 @@ const ChordAIPage = () => {
                             title={horizontalDiagram ? 'Switch to chord box view' : 'Switch to neck view (face-to-face)'}
                             className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                               horizontalDiagram
-                                ? 'bg-primary/20 border-primary/30 text-primary'
-                                : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white'
+                                  ? 'bg-primary/20 border-primary/30 text-primary'
+                                  : 'bg-white/5 border-white/10 text-muted-foreground hover:text-white'
                             }`}
                           >
                             <ArrowUpDown className="w-3 h-3 rotate-90" />
@@ -1245,7 +1307,11 @@ const ChordAIPage = () => {
                       )}
 
                       {/* Diagram */}
-                      <div className="scale-90 origin-center">
+                      <div
+                        onClick={() => handlePlayChordPreview()}
+                        className="scale-90 origin-center cursor-pointer transition-all hover:scale-95 active:scale-90"
+                        title={`Click diagram to hear ${currentChord.chord} (${instrument})`}
+                      >
                         {instrument === 'guitar' && activeChordVoicing && (
                           <ChordDiagram
                             frets={activeChordVoicing.frets}

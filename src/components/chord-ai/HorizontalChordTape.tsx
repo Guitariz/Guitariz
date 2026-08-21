@@ -17,6 +17,7 @@ interface HorizontalChordTapeProps {
   chords?: ChordSegment[];
   currentTime?: number;
   onSeek?: (time: number) => void;
+  onPlayChord?: (chord: string) => void;
   className?: string;
 }
 
@@ -47,6 +48,7 @@ const HorizontalChordTape = ({
   chords: chordsProp,
   currentTime = 0,
   onSeek,
+  onPlayChord,
   className,
 }: HorizontalChordTapeProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -112,7 +114,12 @@ const HorizontalChordTape = ({
                 opacity,
                 transform: `scale(${scale})`,
               }}
-              onClick={() => onSeek?.(chord.start ?? 0)}
+              onClick={() => {
+                onSeek?.(chord.start ?? 0);
+                if (chord.chord && chord.chord !== "N.C.") {
+                  onPlayChord?.(chord.chord);
+                }
+              }}
             >
               {chord.chord === "N.C." ? "—" : chord.chord}
             </div>
