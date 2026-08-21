@@ -98,18 +98,18 @@ const Navigation = () => {
   };
 
   const navItems = [
+    { icon: Bot, label: "Chord AI", path: "/chord-ai" },
+    { icon: Wand2, label: "Vocal Splitter", path: "/vocal-splitter" },
     { icon: Guitar, label: "Fretboard", path: "/fretboard" },
     { icon: Layers, label: "Chords", path: "/chords" },
     { icon: Disc, label: "Scales", path: "/scales" },
-    { icon: Music, label: "Metronome", path: "/metronome" },
-    { icon: Wand2, label: "Vocal Splitter", path: "/vocal-splitter" },
-    { icon: Trophy, label: "Ear Training", path: "/ear-training" },
-    { icon: GaugeCircle, label: "Tuner", path: "/tuner" },
     { icon: BookOpen, label: "Theory", path: "/theory" },
-    { icon: Bot, label: "Chord AI", path: "/chord-ai" },
+    { icon: BookOpen, label: "Blog", path: "/blog" },
+    { icon: GaugeCircle, label: "Tuner", path: "/tuner" },
+    { icon: Music, label: "Metronome", path: "/metronome" },
+    { icon: Trophy, label: "Ear Training", path: "/ear-training" },
     { icon: Activity, label: "BPM Detector", path: "/bpm-detector" },
     { icon: Disc, label: "Key Detector", path: "/key-detector" },
-    { icon: Wand2, label: "Vocal Remover", path: "/vocal-remover" },
   ];
 
   const location = useLocation();

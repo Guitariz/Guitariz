@@ -62,9 +62,11 @@ const PrivacyPolicyPage = () => {
               We use third-party advertising companies, specifically <strong>Google AdSense</strong>, to serve ads when you visit our website. 
             </p>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
-              <li>Google, as a third-party vendor, uses cookies to serve ads on our site.</li>
-              <li>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and other sites on the internet.</li>
-              <li>Users may opt-out of personalized advertising by visiting Google's Ad Settings, or by using the consent dialog interface presented upon entering our site. For detailed information on our cookie usage, please read our dedicated <Link to="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link>.</li>
+              <li>Third party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites on the internet.</li>
+              <li>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our site and/or other sites on the internet.</li>
+              <li>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google Ads Settings</a> or through <a href="https://www.aboutads.info/choices/" target="_blank" rel="noreferrer" className="text-primary hover:underline">www.aboutads.info</a>.</li>
+              <li>To learn more about how Google collects and processes data when you use partner sites, please review <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noreferrer" className="text-primary hover:underline">How Google uses information from sites or apps that use our services</a>.</li>
+              <li>For detailed information on our cookie usage and management options, please read our dedicated <Link to="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link>.</li>
             </ul>
           </section>
 

@@ -124,7 +124,120 @@
       }, 10000);
     });
   </script>
-  <div id="root"></div>
+  <div id="root">
+    <!-- Static Pre-rendered Content for Search Engines & AdSense Compliance Crawlers (Replaced upon React hydration) -->
+    <div style="max-width: 900px; margin: 0 auto; padding: 40px 20px; font-family: system-ui, -apple-system, sans-serif; color: #e4e4e7; background: #060606; line-height: 1.6;">
+      <header style="margin-bottom: 32px; border-bottom: 1px solid #27272a; padding-bottom: 24px;">
+        <h1 style="font-size: 2.2rem; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Guitariz Studio - Free AI Music Laboratory & Guitar Theory Suite</h1>
+        <p style="font-size: 1.1rem; color: #a1a1aa;">High-precision AI chord recognition, neural stem separation, interactive guitar fretboard, scale explorer, and comprehensive music theory guides.</p>
+        <nav style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;">
+          <a href="/chord-ai" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Chord AI</a> |
+          <a href="/stem-separator" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Stem Separator</a> |
+          <a href="/vocal-splitter" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Vocal Splitter</a> |
+          <a href="/fretboard" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Fretboard</a> |
+          <a href="/chords" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Chord Library</a> |
+          <a href="/scales" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Scale Explorer</a> |
+          <a href="/theory" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Music Theory</a> |
+          <a href="/blog" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Blog & Guides</a> |
+          <a href="/tuner" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Online Tuner</a> |
+          <a href="/bpm-detector" style="color: #38bdf8; text-decoration: none; font-weight: 600;">BPM Detector</a> |
+          <a href="/key-detector" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Key Detector</a> |
+          <a href="/ear-training" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Ear Training</a> |
+          <a href="/about" style="color: #38bdf8; text-decoration: none; font-weight: 600;">About Us</a> |
+          <a href="/contact" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Contact</a>
+        </nav>
+      </header>
+
+      <main>
+        <section style="margin-bottom: 36px;">
+          <h2 style="font-size: 1.6rem; color: #ffffff; border-left: 4px solid #8b5cf6; padding-left: 12px; margin-bottom: 12px;">What is Guitariz Studio?</h2>
+          <p>Guitariz Studio is an open-source, browser-based audio workstation and music education platform built by <strong>Abhinav Vaidya</strong>. Designed for guitarists, songwriters, producers, music educators, and audio engineers, Guitariz provides professional-grade digital signal processing (DSP) and artificial intelligence tools completely free of charge, with no subscriptions, account walls, or artificial usage caps.</p>
+          <p>Every tool runs with a hybrid processing architecture: client-side Web Audio API algorithms execute privately inside your browser for zero-latency feedback, while compute-intensive tasks (such as deep learning source separation) are processed via secure, stateless backend pipelines.</p>
+        </section>
+
+        <section style="margin-bottom: 36px;">
+          <h2 style="font-size: 1.6rem; color: #ffffff; border-left: 4px solid #8b5cf6; padding-left: 12px; margin-bottom: 12px;">Core Studio Features & Tools</h2>
+          
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; color: #e4e4e7;"><a href="/chord-ai" style="color: #38bdf8; text-decoration: none;">1. Chord AI & Harmonic Recognition</a></h3>
+            <p>Our intelligent chord recognition engine transcribes audio recordings into detailed chord charts and synchronized interactive fretboard fingerings. The engine utilizes Harmonic-Percussive Source Separation (HPSS) to filter out transient drum noise, extracts 12-dimensional chromagram features, and applies Viterbi-based Hidden Markov Models (HMM) in log-space to ensure musically coherent transitions between major, minor, dominant 7th, and extended chord voicings.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; color: #e4e4e7;"><a href="/stem-separator" style="color: #38bdf8; text-decoration: none;">2. AI Stem Separator & Vocal Remover</a></h3>
+            <p>Powered by Meta AI's state-of-the-art <strong>Demucs v4 (HTDemucs)</strong> deep neural network, our audio separator allows musicians and producers to isolate up to 6 distinct audio tracks: vocals, drums, bass, electric guitar, piano, and other accompaniment. Generate crystal-clear acapellas, backing tracks for karaoke, or isolate instrument stems for detailed musical transcription.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; color: #e4e4e7;"><a href="/scales" style="color: #38bdf8; text-decoration: none;">3. Scale Explorer & Indian Classical Raga Bridge</a></h3>
+            <p>Visualize over 100 scales and modes across a full 24-fret interactive guitar fretboard and 88-key piano keyboard. In addition to standard Western modes (Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, Locrian) and pentatonic/blues scales, Guitariz uniquely features Indian Classical Raga theory (including Bhairav, Yaman, Bilawal, Kafi, Asavari, Bhairavi, Darbari, and Malkauns) mapped directly onto standard guitar fretboard coordinates.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; color: #e4e4e7;"><a href="/theory" style="color: #38bdf8; text-decoration: none;">4. Circle of Fifths & Music Theory Wheel</a></h3>
+            <p>An interactive Circle of Fifths wheel designed for songwriting, harmonic analysis, and rapid key transposition. Instantly view the 7 diatonic chords for any key signature, identify relative minor/major pairs, and construct balanced chord progressions based on functional harmony principles.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; color: #e4e4e7;"><a href="/bpm-detector" style="color: #38bdf8; text-decoration: none;">5. BPM & Key Detection Suite</a></h3>
+            <p>Analyze rhythmic tempo (Beats Per Minute) and tonal key signatures directly from local MP3, WAV, and audio files. Features automated spectral onset envelope detection, half-time/double-time toggles, an interactive Tap Tempo calculator, and Krumhansl-Kessler chromagram correlation for Camelot-wheel harmonic DJ mixing.</p>
+          </div>
+        </section>
+
+        <section style="margin-bottom: 36px;">
+          <h2 style="font-size: 1.6rem; color: #ffffff; border-left: 4px solid #8b5cf6; padding-left: 12px; margin-bottom: 12px;">Music Theory Guides & Educational Articles</h2>
+          <p>Read our in-depth tutorials, technical guides, and practical routines written for practicing musicians and producers:</p>
+          <ul style="padding-left: 20px; line-height: 1.8;">
+            <li><strong><a href="/blog/how-to-transcribe-songs-by-ear" style="color: #38bdf8;">How to Transcribe Songs and Chords by Ear (The Musician's Guide)</a></strong> — Learn the 5-step framework used by professional session musicians to decode basslines, chord qualities, and harmonic structures by ear.</li>
+            <li><strong><a href="/blog/guitar-modes-explained" style="color: #38bdf8;">Guitar Modes Explained: The Intuitive Guide to All 7 Modes</a></strong> — Understand Ionian, Dorian, Phrygian, Lydian, Mixolydian, Aeolian, and Locrian from brightest to darkest with fretboard formulas.</li>
+            <li><strong><a href="/blog/how-to-train-your-ear-for-music" style="color: #38bdf8;">How to Train Your Ear for Music: Step-by-Step Ear Training Guide</a></strong> — Master relative pitch, interval recognition, and chord quality identification with a 10-minute daily practice routine.</li>
+            <li><strong><a href="/blog/free-online-guitar-tuner-guide" style="color: #38bdf8;">Free Online Guitar Tuner: How to Tune Your Guitar in 30 Seconds</a></strong> — A complete guide to standard EADGBE tuning frequencies, pitch calibration, and cent-precision tuning.</li>
+            <li><strong><a href="/blog/how-to-detect-bpm-of-any-song" style="color: #38bdf8;">How to Detect the BPM of Any Song Online (Free & Instant)</a></strong> — Understand tempo detection algorithms, rhythmic transients, and time-stretching workflow in modern DAWs.</li>
+            <li><strong><a href="/blog/best-free-vocal-remover-tools" style="color: #38bdf8;">Best Free Vocal Remover Tools Compared (2026)</a></strong> — A comprehensive benchmark of neural audio separation tools, evaluating Demucs v4, LALAL.AI, Moises, and Spleeter.</li>
+            <li><strong><a href="/blog/how-to-find-the-key-of-a-song" style="color: #38bdf8;">How to Find the Key of Any Song (By Ear or with AI)</a></strong> — How to identify the tonal home base of any track using melody analysis, diatonic chords, and chromagram detection.</li>
+            <li><strong><a href="/blog/circle-of-fifths-explained" style="color: #38bdf8;">Circle of Fifths Explained: The Ultimate Guide for Guitarists</a></strong> — Master key signatures, accidental formulas, relative minors, and harmonic songwriting with the Circle of Fifths.</li>
+          </ul>
+        </section>
+
+        <section style="margin-bottom: 36px;">
+          <h2 style="font-size: 1.6rem; color: #ffffff; border-left: 4px solid #8b5cf6; padding-left: 12px; margin-bottom: 12px;">Frequently Asked Questions (FAQ)</h2>
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 4px;">Is Guitariz Studio completely free to use?</h4>
+            <p style="color: #a1a1aa; margin-top: 0;">Yes. All core tools—including AI Chord Recognition, Stem Separation, Scale Explorer, Fretboard, Tuner, Metronome, and Music Theory labs—are 100% free with no subscription or mandatory registration required.</p>
+          </div>
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 1.1rem; color: #ffffff; margin-bottom: 4px;">Are my uploaded audio files kept private and secure?</h4>
+            <p style="color: #a1a1aa; margin-top: 0;">Yes. We prioritize user privacy. Client-side tools (like the tuner, fretboard, and metronome) process audio strictly in your local browser. Audio uploaded for stem separation or chord AI is processed securely and is never stored permanently on our servers.</p>
+          </div>
+        </section>
+      </main>
+
+      <footer style="border-top: 1px solid #27272a; padding-top: 24px; margin-top: 40px; font-size: 0.875rem; color: #71717a;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px;">
+          <div>
+            <p style="margin: 0; color: #e4e4e7; font-weight: 600;">Guitariz Studio &copy; 2026</p>
+            <p style="margin: 4px 0 0 0;">Open-source music tools by Abhinav Vaidya. Built for musicians worldwide.</p>
+          </div>
+          <div>
+            <p style="margin: 0; color: #e4e4e7; font-weight: 600;">Policies & Information</p>
+            <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 10px;">
+              <a href="/about" style="color: #a1a1aa; text-decoration: none;">About Us</a> |
+              <a href="/contact" style="color: #a1a1aa; text-decoration: none;">Contact Us</a> |
+              <a href="/privacy" style="color: #a1a1aa; text-decoration: none;">Privacy Policy</a> |
+              <a href="/terms" style="color: #a1a1aa; text-decoration: none;">Terms of Service</a> |
+              <a href="/cookie-policy" style="color: #a1a1aa; text-decoration: none;">Cookie Policy</a> |
+              <a href="/gear" style="color: #a1a1aa; text-decoration: none;">Recommended Gear</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+  <noscript>
+    <div style="padding: 20px; background: #18181b; color: #f4f4f5; text-align: center;">
+      <p>Guitariz Studio requires JavaScript to run interactive real-time audio analysis and 3D fretboard models. Please enable JavaScript in your browser settings to experience the full interactive studio suite.</p>
+    </div>
+  </noscript>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
