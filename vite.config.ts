@@ -82,6 +82,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: [
+          "/monetag-sw.js",
+          "https://5gvci.com/act/files/service-worker.min.js?r=sw"
+        ],
         globPatterns: ["**/*.{js,css,html,ico,png,webp,svg,woff2,wav}"],
         cleanupOutdatedCaches: true,
         skipWaiting: true,
