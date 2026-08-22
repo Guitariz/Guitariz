@@ -590,14 +590,21 @@ def _simplify_chord_precise(chord: str, key: str, scale: str) -> str:
 # Stage 5 — Viterbi-like post-processing + merge
 # ---------------------------------------------------------------------------
 
-def _smooth_precise(segments: list[dict], min_dur: float = 0.5) -> list[dict]:
+def _smooth_precise(
+    segments: list[dict],
+    min_dur: float = 0.5,
+    hard_min_dur: float = 0.12,
+    confidence_threshold: float = 0.55,
+) -> list[dict]:
     """
     Merge consecutive identical chords, then eliminate segments shorter than
-    min_dur by absorbing them into neighbours.
+    hard_min_dur unconditionally (near-certain artifacts), and segments
+    shorter than min_dur but only if their confidence is below
+    confidence_threshold (a confident short segment — e.g. a genuine chord
+    change mid-bar in a fast riff — is kept rather than merged away).
     """
     if not segments:
         return []
-
     merged: list[dict] = []
     cur = segments[0].copy()
     for seg in segments[1:]:
@@ -608,11 +615,14 @@ def _smooth_precise(segments: list[dict], min_dur: float = 0.5) -> list[dict]:
             merged.append(cur)
             cur = seg.copy()
     merged.append(cur)
-
-    # Absorb short segments
+    # Absorb short/low-confidence segments
+    hard_min_dur = min(hard_min_dur, min_dur)
     final: list[dict] = []
     for i, seg in enumerate(merged):
-        if seg["end"] - seg["start"] < min_dur:
+        dur = seg["end"] - seg["start"]
+        must_merge = dur < hard_min_dur
+        may_merge = (not must_merge) and dur < min_dur and seg.get("confidence", 0.0) < confidence_threshold
+        if must_merge or may_merge:
             if final:
                 final[-1]["end"] = seg["end"]
             elif i + 1 < len(merged):
@@ -621,7 +631,6 @@ def _smooth_precise(segments: list[dict], min_dur: float = 0.5) -> list[dict]:
                 final.append(seg)
         else:
             final.append(seg)
-
     return final
 
 

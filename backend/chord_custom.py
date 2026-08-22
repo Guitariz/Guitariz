@@ -142,6 +142,10 @@ def _detect_chords_onnx(file_path: Path) -> list[tuple[float, float, str, float]
         frame_rate=frame_rate,
         min_duration_ms=300.0,
         self_transition_prob=0.95,
+        min_self_transition_prob=0.72,
+        change_sensitivity=1.15,
+        hard_min_duration_ms=110.0,
+        min_duration_confidence_threshold=0.55,
     )
 
     # Format output
@@ -209,6 +213,10 @@ def detect_chords_custom(
         frame_rate=frame_rate,
         min_duration_ms=300.0,
         self_transition_prob=0.95,
+        min_self_transition_prob=0.72,
+        change_sensitivity=1.15,
+        hard_min_duration_ms=110.0,
+        min_duration_confidence_threshold=0.55,
     )
 
     # Compute confidence from raw similarity scores

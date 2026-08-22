@@ -261,6 +261,7 @@ def analyze_file(
         detected_key=f"{key} {scale}",
         min_duration_ms=400.0,
         self_transition_prob=0.96,
+        tempo_bpm=tempo,
     )
 
     chords: list[dict] = []

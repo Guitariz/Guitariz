@@ -116,6 +116,7 @@ def detect_chords_template(
     detected_key: str | None = None,
     min_duration_ms: float = 400.0,
     self_transition_prob: float = 0.96,
+    tempo_bpm: float | None = None,
 ) -> list[tuple[float, float, str, float]]:
     """
     DSP chord recognition pipeline for Balanced Mode.
@@ -221,6 +222,12 @@ def detect_chords_template(
         frame_rate=frame_rate,
         min_duration_ms=min_duration_ms,
         self_transition_prob=self_transition_prob,
+        min_self_transition_prob=0.76,
+        change_sensitivity=1.0,
+        hard_min_duration_ms=120.0,
+        min_duration_confidence_threshold=0.55,
+        tempo_bpm=tempo_bpm,
+        beat_subdivision=1.0,
     )
 
     # 8. Format results with confidence scores
