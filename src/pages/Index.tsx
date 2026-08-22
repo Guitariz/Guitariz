@@ -67,7 +67,7 @@ const Index = () => {
     keywords: "chord ai, chord ai free, free chord ai alternative, detect chords from mp3, ai guitar chord detector, stem splitter ai, vocal splitter, vocal remover, guitar scales, indian ragas guitar, music theory, free music tools",
     canonicalUrl: "https://guitariz.studio",
     ogUrl: "https://guitariz.studio",
-    ogImage: "https://guitariz.studio/logo.png",
+    ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
     jsonLd: {
       "@context": "https://schema.org",
@@ -85,14 +85,22 @@ const Index = () => {
           "@id": "https://guitariz.studio/#website",
           "name": "Guitariz Studio",
           "alternateName": ["Guitariz", "GuitarizStudio"],
-          "url": "https://guitariz.studio/"
+          "url": "https://guitariz.studio/",
+          "publisher": {
+            "@id": "https://guitariz.studio/#organization"
+          }
         },
         {
           "@type": "Organization",
-          "@id": "https://guitariz.studio/#org",
+          "@id": "https://guitariz.studio/#organization",
           "name": "Guitariz Studio",
-          "url": "https://guitariz.studio",
-          "logo": "https://guitariz.studio/logo.png",
+          "url": "https://guitariz.studio/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://guitariz.studio/logo2.png",
+            "width": 512,
+            "height": 512
+          },
           "founder": {
             "@type": "Person",
             "name": "Abhinav Vaidya",

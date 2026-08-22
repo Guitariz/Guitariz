@@ -59,7 +59,25 @@ export default defineConfig({
         start_url: "/",
         icons: [
           {
-            src: "logo2.png",
+            src: "favicon-48x48.png",
+            sizes: "48x48",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "favicon-96x96.png",
+            sizes: "96x96",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "favicon-144x144.png",
+            sizes: "144x144",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "favicon-192x192.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
@@ -68,32 +86,20 @@ export default defineConfig({
             src: "logo2.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "logo2.png",
-            sizes: "1080x1080",
-            type: "image/png",
-            purpose: "any",
-          },
-          {
-            src: "logo2.png",
-            sizes: "1080x1080",
-            type: "image/png",
-            purpose: "maskable",
+            purpose: "any maskable",
           },
         ],
         screenshots: [
           {
             src: "logo2.png",
-            sizes: "1080x1080",
+            sizes: "512x512",
             type: "image/png",
             form_factor: "wide",
             label: "Guitariz Studio",
           },
           {
             src: "logo2.png",
-            sizes: "1080x1080",
+            sizes: "512x512",
             type: "image/png",
             form_factor: "narrow",
             label: "Guitariz Studio",

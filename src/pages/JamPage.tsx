@@ -9,7 +9,7 @@ const JamPage = () => {
         title: "Jam Studio - Chord Progression Player | Guitariz",
         description: "Practice soloing over looping chord progressions. Set BPM, pick chords, and improvise with scale suggestions on guitar and piano.",
         canonicalUrl: "https://guitariz.studio/jam",
-        ogImage: "https://guitariz.studio/logo.png",
+        ogImage: "https://guitariz.studio/logo2.png",
         ogType: "website",
         jsonLd: {
             "@context": "https://schema.org",

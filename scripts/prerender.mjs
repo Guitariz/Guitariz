@@ -30,7 +30,10 @@ const routes = [
             'GuitarizStudio'
           ],
           'description': 'Professional music theory and AI analysis tools for musicians.',
-          'inLanguage': 'en-US'
+          'inLanguage': 'en-US',
+          'publisher': {
+            '@id': 'https://guitariz.studio/#organization'
+          }
         },
         {
           '@type': 'SoftwareApplication',
@@ -44,10 +47,15 @@ const routes = [
         },
         {
           '@type': 'Organization',
-          '@id': 'https://guitariz.studio/#org',
+          '@id': 'https://guitariz.studio/#organization',
           'name': 'Guitariz Studio',
           'url': 'https://guitariz.studio/',
-          'logo': 'https://guitariz.studio/logo2.png',
+          'logo': {
+            '@type': 'ImageObject',
+            'url': 'https://guitariz.studio/logo2.png',
+            'width': 512,
+            'height': 512
+          },
           'founder': {
             '@type': 'Person',
             'name': 'Abhinav Vaidya',
@@ -714,9 +722,14 @@ for (const post of blogPosts) {
           'image': post.coverImage,
           'publisher': {
             '@type': 'Organization',
-            '@id': 'https://guitariz.studio/#org',
+            '@id': 'https://guitariz.studio/#organization',
             'name': 'Guitariz Studio',
-            'logo': 'https://guitariz.studio/logo2.png'
+            'logo': {
+              '@type': 'ImageObject',
+              'url': 'https://guitariz.studio/logo2.png',
+              'width': 512,
+              'height': 512
+            }
           },
           'mainEntityOfPage': `https://guitariz.studio/blog/${post.slug}`
         }
