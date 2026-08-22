@@ -9,6 +9,7 @@ import Fretboard3DWrapper from "@/components/fretboard/Fretboard3DWrapper";
 import type { FretNote } from "@/components/fretboard/Fretboard3D";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { chordLibraryData } from "@/data/chordData";
+import { slugToRoot, slugToVariant } from "@/utils/chordSlug";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 
@@ -50,10 +51,20 @@ const FretboardPage = () => {
   const selectedChord = useMemo(() => {
     if (!root || !variant) return null;
 
-    const rootData = chordLibraryData.roots.find(r => r.root === root);
+    const matchedRoot = slugToRoot(root) || root;
+    const matchedVariant = slugToVariant(variant) || variant;
+
+    const rootData = chordLibraryData.roots.find(
+      (r) =>
+        r.root.toLowerCase() === matchedRoot.toLowerCase() ||
+        r.root.toLowerCase() === root.toLowerCase() ||
+        r.root.toLowerCase().replace(/#/g, "-sharp") === root.toLowerCase()
+    );
     if (!rootData) return null;
 
-    const chordVariant = rootData.variants.find(v => v.name === variant);
+    const chordVariant = rootData.variants.find(
+      (v) => v.name.toLowerCase() === matchedVariant.toLowerCase()
+    );
     if (!chordVariant || !chordVariant.voicings.length) return null;
 
     const index = voicingIndex ? parseInt(voicingIndex, 10) : 0;

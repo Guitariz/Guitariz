@@ -851,7 +851,7 @@ const baseHtml = fs.readFileSync(srcIndexPath, 'utf8');
 
 function buildRouteBodyHtml(r) {
   if (r.htmlContent) {
-    return `<article class="static-blog-content" style="display:none;">${r.htmlContent}</article>`;
+    return `<article class="static-blog-content">${r.htmlContent}</article>`;
   }
 
   let stepsHtml = '';
@@ -915,7 +915,7 @@ for (const r of routes) {
   let html = baseHtml;
   
   const bodyContent = buildRouteBodyHtml(r);
-  html = html.replace('<div id="root"></div>', `<div id="root">${bodyContent}</div>`);
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>(?=\s*<noscript>)/, `<div id="root">${bodyContent}</div>`);
 
   // Replace title
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${r.title}</title>`);

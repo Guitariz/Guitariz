@@ -24,11 +24,23 @@ const ChordDetailPage = () => {
     const matchedRootStr = slugToRoot(rawRoot) || rawRoot;
     const matchedVariantStr = slugToVariant(rawVariant) || rawVariant;
 
-    const rData = chordLibraryData.roots.find(
-      (r) =>
-        r.root.toLowerCase() === matchedRootStr.toLowerCase() ||
-        r.root.split("/").some((part) => part.toLowerCase() === matchedRootStr.toLowerCase())
-    );
+    const rData = chordLibraryData.roots.find((r) => {
+      const rRoot = r.root.toLowerCase();
+      const mStr = matchedRootStr.toLowerCase();
+      const raw = rawRoot.toLowerCase().replace(/\s+/g, "-");
+
+      const rParts = r.root.toLowerCase().split("/");
+      const mParts = matchedRootStr.toLowerCase().split("/");
+
+      return (
+        rRoot === mStr ||
+        rParts.includes(mStr) ||
+        mParts.includes(rRoot) ||
+        rParts.some((p) => mParts.includes(p)) ||
+        r.root.toLowerCase().replace(/#/g, "-sharp") === raw ||
+        rParts.some((p) => p.replace(/#/g, "-sharp") === raw)
+      );
+    });
 
     const vData = rData?.variants.find(
       (v) => v.name.toLowerCase() === matchedVariantStr.toLowerCase()

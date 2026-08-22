@@ -27,32 +27,61 @@ const ROOT_SLUG_MAP: Record<string, string> = {
 
 const SLUG_TO_ROOT_MAP: Record<string, string> = {
   "c": "C",
-  "c-sharp": "C#/Db",
-  "csharp": "C#/Db",
-  "db": "C#/Db",
-  "d-flat": "C#/Db",
-  "c#": "C#/Db",
+  "c-sharp": "C#",
+  "csharp": "C#",
+  "c sharp": "C#",
+  "db": "C#",
+  "d-flat": "C#",
+  "dflat": "C#",
+  "d flat": "C#",
+  "c#": "C#",
+  "c#/db": "C#",
+
   "d": "D",
-  "d-sharp": "D#/Eb",
-  "dsharp": "D#/Eb",
-  "eb": "D#/Eb",
-  "d#": "D#/Eb",
+  "d-sharp": "D#",
+  "dsharp": "D#",
+  "d sharp": "D#",
+  "eb": "D#",
+  "e-flat": "D#",
+  "eflat": "D#",
+  "e flat": "D#",
+  "d#": "D#",
+  "d#/eb": "D#",
+
   "e": "E",
   "f": "F",
-  "f-sharp": "F#/Gb",
-  "fsharp": "F#/Gb",
-  "gb": "F#/Gb",
-  "f#": "F#/Gb",
+  "f-sharp": "F#",
+  "fsharp": "F#",
+  "f sharp": "F#",
+  "gb": "F#",
+  "g-flat": "F#",
+  "gflat": "F#",
+  "g flat": "F#",
+  "f#": "F#",
+  "f#/gb": "F#",
+
   "g": "G",
-  "g-sharp": "G#/Ab",
-  "gsharp": "G#/Ab",
-  "ab": "G#/Ab",
-  "g#": "G#/Ab",
+  "g-sharp": "G#",
+  "gsharp": "G#",
+  "g sharp": "G#",
+  "ab": "G#",
+  "a-flat": "G#",
+  "aflat": "G#",
+  "a flat": "G#",
+  "g#": "G#",
+  "g#/ab": "G#",
+
   "a": "A",
-  "a-sharp": "A#/Bb",
-  "asharp": "A#/Bb",
-  "bb": "A#/Bb",
-  "a#": "A#/Bb",
+  "a-sharp": "A#",
+  "asharp": "A#",
+  "a sharp": "A#",
+  "bb": "A#",
+  "b-flat": "A#",
+  "bflat": "A#",
+  "b flat": "A#",
+  "a#": "A#",
+  "a#/bb": "A#",
+
   "b": "B",
 };
 
@@ -98,8 +127,9 @@ export function rootToSlug(root: string): string {
 }
 
 export function slugToRoot(slug: string): string | null {
-  const normalized = decodeURIComponent(slug).toLowerCase().trim();
-  return SLUG_TO_ROOT_MAP[normalized] || null;
+  const decoded = decodeURIComponent(slug).toLowerCase().trim();
+  const hyphenated = decoded.replace(/\s+/g, "-");
+  return SLUG_TO_ROOT_MAP[hyphenated] || SLUG_TO_ROOT_MAP[decoded] || null;
 }
 
 export function variantToSlug(variant: string): string {

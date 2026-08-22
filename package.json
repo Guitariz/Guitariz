@@ -31,9 +31,9 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/inject-monetag-sw.mjs",
+    "build": "vite build && node scripts/inject-monetag-sw.mjs && node scripts/prerender.mjs",
     "build:dev": "vite build --mode development",
-    "build:prerender": "vite build && node scripts/prerender.mjs",
+    "build:prerender": "vite build && node scripts/inject-monetag-sw.mjs && node scripts/prerender.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "prerender": "npm run build:prerender",
