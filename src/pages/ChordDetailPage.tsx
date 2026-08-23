@@ -6,10 +6,11 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import ChordDiagram from "@/components/chord/ChordDiagram";
 import { playChord } from "@/lib/chordAudio";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
-import RelatedTools from "@/components/RelatedTools";
+import RelatedToolsWidget from "@/components/RelatedToolsWidget";
+import { getDiatonicNeighbors } from "@/utils/diatonicChords";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Volume2, Guitar, Layers, BookOpen, Music2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Volume2, Guitar, Layers, BookOpen, Music2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 
 const ChordDetailPage = () => {
   const { root: rawRoot, variant: rawVariant } = useParams<{ root?: string; variant?: string }>();
@@ -97,6 +98,19 @@ const ChordDetailPage = () => {
       }
     }
   });
+
+  // Diatonic neighbor chords for this chord's key
+  const diatonicNeighbors = useMemo(() => {
+    if (!resolvedRoot || !resolvedVariant) return [];
+    return getDiatonicNeighbors(resolvedRoot, resolvedVariant);
+  }, [resolvedRoot, resolvedVariant]);
+
+  // Determine if the current chord's parent scale context is Minor or Major
+  const isMinorKeyContext = useMemo(() => {
+    if (!resolvedVariant) return false;
+    const v = resolvedVariant.toLowerCase().trim();
+    return v.includes("minor") || (v.startsWith("m") && !v.startsWith("maj"));
+  }, [resolvedVariant]);
 
   if (!rootData || !variantData || !currentVoicing) {
     return (
@@ -337,6 +351,56 @@ const ChordDetailPage = () => {
 
         {/* Related Chords Navigation (Internal Link Engine) */}
         <div className="space-y-10 mb-16">
+          {/* Diatonic Neighbors Section */}
+          {diatonicNeighbors.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary" /> Related Chords (Diatonic Key Family)
+                </h3>
+                <span className="text-xs text-muted-foreground font-mono">
+                  Key of {resolvedRoot} {isMinorKeyContext ? "Minor" : "Major"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {diatonicNeighbors.map((chord, i) => {
+                  const cardContent = (
+                    <>
+                      <div className="text-[10px] font-mono text-primary font-bold uppercase tracking-wider mb-1">
+                        {chord.degree}
+                      </div>
+                      <p className="text-base font-bold text-white group-hover:text-primary transition-colors">
+                        {chord.displayName}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{chord.role}</p>
+                    </>
+                  );
+
+                  return chord.exists ? (
+                    <Link
+                      key={i}
+                      to={chord.url}
+                      className={`p-4 rounded-2xl border transition-all text-center group ${
+                        chord.isCurrent
+                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                          : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-primary/30"
+                      }`}
+                    >
+                      {cardContent}
+                    </Link>
+                  ) : (
+                    <div
+                      key={i}
+                      className="p-4 rounded-2xl border border-white/5 bg-white/[0.01] text-center opacity-60"
+                    >
+                      {cardContent}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Same Root, Different Qualities */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -393,7 +457,7 @@ const ChordDetailPage = () => {
         <SEOContent pageName={`chord-${rawRoot}-${rawVariant}`} faqs={faqs} />
 
         <div className="mt-16">
-          <RelatedTools currentPath="/chords" />
+          <RelatedToolsWidget currentTool="chords" />
         </div>
       </main>
     </div>

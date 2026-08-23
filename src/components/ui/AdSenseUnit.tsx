@@ -5,6 +5,7 @@ interface AdSenseUnitProps {
   slot: string;
   format?: string;
   responsive?: string;
+  minHeight?: number | string;
   style?: React.CSSProperties;
   className?: string;
 }
@@ -14,6 +15,7 @@ export const AdSenseUnit = ({
   slot,
   format = "auto",
   responsive = "true",
+  minHeight = "100px",
   style = { display: "block" },
   className = "",
 }: AdSenseUnitProps) => {
@@ -26,11 +28,16 @@ export const AdSenseUnit = ({
     }
   }, []);
 
+  const minHeightStyle = typeof minHeight === "number" ? `${minHeight}px` : minHeight;
+
   return (
-    <div className={`adsense-wrapper overflow-hidden my-4 flex justify-center items-center ${className}`} style={{ minHeight: "100px" }}>
+    <div
+      className={`adsense-wrapper overflow-hidden my-4 flex justify-center items-center ${className}`}
+      style={{ minHeight: minHeightStyle, contain: "layout" }}
+    >
       <ins
         className="adsbygoogle"
-        style={style}
+        style={{ minWidth: "250px", width: "100%", ...style }}
         data-ad-client={client}
         data-ad-slot={slot}
         data-ad-format={format}
