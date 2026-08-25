@@ -590,16 +590,17 @@ const ChordAIPage = () => {
               </div>
 
               <div className="space-y-2">
-                <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground">
-                  Chord AI <span className="text-muted-foreground font-thin italic">Free</span>
+                <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-foreground flex flex-wrap items-baseline gap-x-2.5">
+                  <span>Chord AI :</span>
+                  <span className="text-2xl md:text-3xl font-light italic text-muted-foreground">Free Chord Finder</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
-                  Decode harmonic progressions and scales from raw audio using our production-grade engine.
+                  Free online AI chord finder: extract guitar chords, key signatures, and harmonic progressions from MP3s or YouTube audio.
                 </p>
                 <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
-                  <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">What is Guitariz Chord AI?</h2>
+                  <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">AI Chord Finder & Audio Transcriber</h2>
                   <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-                    Guitariz Chord AI is a 100% free online chord recognition tool that automatically extracts guitar chords, key signatures, and tempo (BPM) from any MP3, WAV, or YouTube audio track without subscription paywalls or login requirements.
+                    Guitariz Chord AI is an intelligent online chord finder that automatically detects guitar and piano chords, keys, and tempo (BPM) from any MP3, WAV, or YouTube track without paywalls or login requirements.
                   </p>
                 </div>
               </div>

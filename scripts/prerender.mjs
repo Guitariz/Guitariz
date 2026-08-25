@@ -218,8 +218,8 @@ const routes = [
   },
   {
     url: '/chordify-alternative',
-    title: 'Best Free Chordify Alternative (100% Free) | Guitariz',
-    description: 'Looking for a free Chordify alternative? Guitariz offers unlimited AI chord recognition, audio uploads, interactive fretboard sync, and MIDI export 100% free.',
+    title: 'Chordify Alternative: Guitariz vs Chordify (2026) | Guitariz',
+    description: 'Compare Guitariz Studio and Chordify side-by-side. See how chord recognition, MP3 audio uploads, stem separation, and pricing differ in 2026.',
     canonical: 'https://guitariz.studio/chordify-alternative',
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
@@ -227,8 +227,8 @@ const routes = [
         {
           '@type': 'WebPage',
           '@id': 'https://guitariz.studio/chordify-alternative#webpage',
-          'name': 'Best Free Chordify Alternative - Guitariz Studio',
-          'description': 'Comprehensive comparison between Guitariz Studio and Chordify for AI chord recognition.'
+          'name': 'Chordify Alternative: Guitariz vs Chordify Compared (2026)',
+          'description': 'Detailed side-by-side feature and pricing comparison between Guitariz Studio and Chordify for AI chord recognition.'
         },
         {
           '@type': 'FAQPage',
@@ -548,8 +548,24 @@ const routes = [
     customHtml: `
       <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
         <h2>Privacy Policy</h2>
-        <p>We respect your privacy and protect your data. Audio uploads for Chord AI and Stem Separation are processed in memory and deleted immediately. We disclose the use of Google AdSense advertising cookies and Amazon Associates affiliate links. We do not sell or store personal identity data.</p>
-        <p>For more details, visit our website or contact support at support@guitariz.studio.</p>
+        <p>Last updated: August 24, 2026</p>
+        <p>Welcome to Guitariz Studio (https://guitariz.studio). We are committed to protecting your privacy and transparently handling user files, analytical tracking, and advertising cookies.</p>
+        <h3>1. Audio Uploads & Processing</h3>
+        <p>Raw audio files uploaded for Chord AI, Stem Separation, and Key/BPM Detection are processed via temporary server-side files and are permanently deleted immediately after processing finishes. When you generate separated stems, the download files are held in temporary scratch storage for up to 1 hour to allow user download, after which they are permanently deleted by an automated cleanup process. We do not store or train on your audio files in permanent cloud databases.</p>
+        <h3>2. Third-Party Advertising (Google AdSense & Monetag)</h3>
+        <p>We partner with Google AdSense and Monetag to serve contextual and personalized advertisements across our website to support our free tools. Third-party vendors use cookies and device identifiers to serve ads based on prior visits. Users may opt out of personalized advertising via Google Ads Settings or aboutads.info.</p>
+        <h3>3. Affiliate Disclosure (Amazon Associates)</h3>
+        <p>Guitariz Studio participates in the Amazon Services LLC Associates Program (and Amazon.in Associates Program). We earn from qualifying purchases made via affiliate links on our Recommended Gear pages.</p>
+        <h3>4. Analytics & Performance Monitoring</h3>
+        <p>We use Google Analytics 4 (GA4), PostHog, Ahrefs Web Analytics, and Vercel Analytics/Speed Insights to collect aggregated, anonymous usage and performance metrics. Session recordings and keystroke logging are strictly disabled.</p>
+        <h3>5. Contact Form (Web3Forms)</h3>
+        <p>When you submit an inquiry through our Contact Form, your message details are securely transmitted via the Web3Forms API to deliver the message to our support inbox (support@guitariz.studio). This data is used solely to respond to your inquiry and is never sold or used for marketing.</p>
+        <h3>6. YouTube Embedded Player</h3>
+        <p>Embedded YouTube video features (such as Chord AI YouTube practice) use the YouTube IFrame API and are subject to Google's Privacy Policy.</p>
+        <h3>7. GDPR & CCPA Compliance</h3>
+        <p>We do not maintain user accounts or persistent personal data databases. The only personal information we process is what you voluntarily submit via our Contact Form, which is used solely to respond to your inquiry.</p>
+        <h3>8. Contact Us</h3>
+        <p>For questions regarding our privacy practices, contact us at <strong>support@guitariz.studio</strong>.</p>
       </section>
     `,
     jsonLd: JSON.stringify({
@@ -566,8 +582,18 @@ const routes = [
     customHtml: `
       <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
         <h2>Terms of Service</h2>
-        <p>By using Guitariz Studio, you agree to our terms. Our tools are free to use. You are responsible for ensuring you have rights to process any audio you upload. We provide the service as-is and exclude liabilities.</p>
-        <p>For legal inquiries, contact support@guitariz.studio.</p>
+        <p>Last updated: August 24, 2026</p>
+        <p>By accessing and using Guitariz Studio (https://guitariz.studio), you agree to comply with and be bound by these Terms of Service.</p>
+        <h3>1. Permitted Use</h3>
+        <p>Guitariz Studio provides free AI-assisted chord recognition, audio source separation, and interactive music theory utilities for personal, educational, and creative use. You must not scrape data or launch automated abuse against our backend infrastructure.</p>
+        <h3>2. Audio Content & Intellectual Property</h3>
+        <p>You retain full ownership of the audio files you upload. You are solely responsible for having the necessary rights or licenses to process your audio. Uploaded input files are processed statelessly and temporary separated stems are automatically purged after 1 hour.</p>
+        <h3>3. Open Source Compliance</h3>
+        <p>Our tools utilize open-source signal processing libraries and deep learning models (Librosa, Meta's Demucs). The frontend application is open source on GitHub.</p>
+        <h3>4. Disclaimers & Limitation of Liability</h3>
+        <p>The service is provided on an "as is" and "as available" basis without warranties of any kind. Guitariz Studio is not liable for direct, indirect, or consequential damages resulting from the use of this service or generated audio files.</p>
+        <h3>5. Governing Law & Contact</h3>
+        <p>These terms are governed by the laws of India. For legal inquiries, contact <strong>support@guitariz.studio</strong>.</p>
       </section>
     `,
     jsonLd: JSON.stringify({
@@ -605,8 +631,13 @@ const routes = [
     canonical: 'https://guitariz.studio/contact',
     customHtml: `
       <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
-        <p>If you have any questions, feedback, or support inquiries, please contact us at <strong>support@guitariz.studio</strong>.</p>
-        <p>Our code is open-source and hosted on GitHub at <a href="https://github.com/Guitariz/Guitariz" style="color: #3b82f6;">Guitariz Repository</a>.</p>
+        <h2>Contact Guitariz Studio</h2>
+        <p>Have a question, feedback, bug report, or partnership inquiry? We typically respond within 24–48 hours.</p>
+        <h3>Direct Communication</h3>
+        <p><strong>Support Email:</strong> support@guitariz.studio</p>
+        <p><strong>Interactive Form:</strong> Use the contact form on this page to securely send messages via our Web3Forms gateway.</p>
+        <h3>Community & Open Source</h3>
+        <p>Visit our <a href="https://github.com/Guitariz/Guitariz" style="color: #3b82f6;">GitHub Repository</a> to file technical issues, or reach out on <a href="https://x.com/GuitarizStudio" style="color: #3b82f6;">X (@GuitarizStudio)</a>.</p>
       </section>
     `,
     jsonLd: JSON.stringify({
@@ -624,7 +655,19 @@ const routes = [
     customHtml: `
       <section style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
         <h2>Cookie Policy</h2>
-        <p>We use cookies to store user preferences (like theme settings), track anonymous site usage (via Google Analytics and PostHog), and serve advertisements (via Google AdSense) or track affiliate links (via Amazon Associates). You can opt out of personalized ads at Google's Ad Settings.</p>
+        <p>Last updated: August 24, 2026</p>
+        <p>This Cookie Policy explains how Guitariz Studio uses cookies and browser local storage to provide and improve our services.</p>
+        <h3>1. Essential Functional Storage (Client-side)</h3>
+        <p>We use browser LocalStorage to store your functional preferences (such as dark mode preference, interactive fretboard settings, and your local Chord AI analysis history) purely on your device.</p>
+        <h3>2. Analytics Cookies (Third-party)</h3>
+        <p>We use third-party analytics services (Google Analytics 4, PostHog, Ahrefs Analytics, and Vercel Analytics/Speed Insights) to collect anonymous usage and performance metrics. No personally identifiable information or audio files are tracked.</p>
+        <h3>3. Advertising & Affiliate Tracking</h3>
+        <p>We partner with Google AdSense and Monetag to serve advertisements, and participate in the Amazon Associates program for recommended gear. These networks set cookies to deliver relevant ads and attribute qualifying purchases.</p>
+        <h3>4. Embedded Media Cookies</h3>
+        <p>Embedded YouTube video features use the YouTube IFrame API and are subject to Google's standard privacy policies.</p>
+        <h3>5. Managing Your Choices</h3>
+        <p>You can adjust your browser settings to reject cookies or opt out of personalized advertising via Google Ads Settings or aboutads.info.</p>
+        <p>For questions, contact <strong>support@guitariz.studio</strong>.</p>
       </section>
     `,
     jsonLd: JSON.stringify({

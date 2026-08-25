@@ -33,7 +33,7 @@ const CookiePolicyPage = () => {
             <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-foreground font-display">
               Cookie <span className="text-muted-foreground font-thin italic">Policy</span>
             </h1>
-            <p className="text-sm text-zinc-400">Last updated: July 20, 2026</p>
+            <p className="text-sm text-zinc-400">Last updated: August 24, 2026</p>
           </header>
         </div>
 
@@ -91,17 +91,24 @@ const CookiePolicyPage = () => {
               <div className="p-5 rounded-2xl bg-zinc-950 border border-white/[0.04] space-y-2">
                 <h3 className="text-sm font-semibold text-white">Analytics Cookies (Third-party)</h3>
                 <p className="text-xs text-zinc-400">
-                  We use <strong className="text-white">Google Analytics (GA4)</strong> and <strong className="text-white">PostHog</strong> to understand how users interact with our features. These cookies track anonymous data such as page clicks, duration on site, browser type, and country coordinates. No raw audio files, personal names, or email addresses are tracked.
+                  We use <strong className="text-white">Google Analytics (GA4)</strong>, <strong className="text-white">PostHog</strong>, <strong className="text-white">Ahrefs Analytics</strong>, and <strong className="text-white">Vercel Analytics / Speed Insights</strong> to understand how users interact with our features and measure performance. These services collect anonymous metrics (pageviews, session duration, device type, Core Web Vitals). No raw audio files or personal names are tracked.
                 </p>
               </div>
 
               <div className="p-5 rounded-2xl bg-zinc-950 border border-white/[0.04] space-y-2">
                 <h3 className="text-sm font-semibold text-white">Advertising Cookies & Tracking (Third-party)</h3>
                 <p className="text-xs text-zinc-400">
-                  We use <strong className="text-white">Google AdSense</strong> to display ads on our pages. Google uses cookies to serve ads based on your prior visits to our website or other websites on the internet. Google's use of advertising cookies enables it and its partners to serve personalized and non-personalized ads to users.
+                  We partner with <strong className="text-white">Google AdSense</strong> and <strong className="text-white">Monetag</strong> to display ads across our website. These ad networks use cookies and device identifiers to deliver relevant advertisements and monitor ad performance.
                 </p>
                 <p className="text-xs text-zinc-400">
                   We also display referral links under the <strong className="text-white">Amazon Associates Program</strong>. When you click on recommendations inside our Recommended Gear pages, a referral cookie is set by Amazon to track qualifying purchases and credit commissions back to support Guitariz Studio.
+                </p>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-zinc-950 border border-white/[0.04] space-y-2">
+                <h3 className="text-sm font-semibold text-white">Embedded Media Cookies (Third-party)</h3>
+                <p className="text-xs text-zinc-400">
+                  When playing video content via the embedded YouTube player in Chord AI, <strong className="text-white">YouTube (Google)</strong> may set cookies and tracking pixels subject to Google's standard privacy policies.
                 </p>
               </div>
             </div>

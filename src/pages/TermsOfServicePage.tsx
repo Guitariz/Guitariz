@@ -25,7 +25,7 @@ const TermsOfServicePage = () => {
             <h1 className="text-4xl md:text-5xl font-light tracking-tighter text-foreground font-display">
               Terms of <span className="text-muted-foreground font-thin italic">Service</span>
             </h1>
-            <p className="text-sm text-zinc-400">Last updated: July 20, 2026</p>
+            <p className="text-sm text-zinc-400">Last updated: August 24, 2026</p>
           </header>
         </div>
 
