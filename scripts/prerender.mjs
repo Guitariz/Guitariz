@@ -103,9 +103,10 @@ const routes = [
   },
   {
     url: '/vocal-splitter',
-    title: 'Free AI Vocal Remover & Stem Splitter | Guitariz',
-    description: 'Separate vocals and instrumentals from any song using Stem Splitter AI. High-quality vocal remover and stem extraction for karaoke and practice.',
+    title: staticContent.vocalSplitter.title,
+    description: staticContent.vocalSplitter.description,
     canonical: 'https://guitariz.studio/vocal-splitter',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.vocalSplitter.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -134,9 +135,10 @@ const routes = [
   },
   {
     url: '/bpm-detector',
-    title: 'Free Online BPM Detector & Tap Tempo Finder | Guitariz',
-    description: 'Detect the exact BPM (tempo) of any MP3 or audio file online for free. Features real-time AI audio tap tempo finder, metronome sync, and analysis.',
+    title: staticContent.bpmDetector.title,
+    description: staticContent.bpmDetector.description,
     canonical: 'https://guitariz.studio/bpm-detector',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.bpmDetector.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -149,15 +151,25 @@ const routes = [
           'description': 'Free online BPM detector and tap tempo finder for songs and audio files.',
           'url': 'https://guitariz.studio/bpm-detector',
           'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to detect BPM of any song online',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Upload your MP3 or audio file into the BPM Detector tool.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Wait a few seconds for the audio engine to calculate beats per minute.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Or use the interactive Tap Tempo button to manually tap along with any song.' }
+          ]
         }
       ]
     })
   },
   {
     url: '/key-detector',
-    title: 'Free Online Key Detector & Song Scale Finder | Guitariz',
-    description: 'Find the key of any song or audio file for free. AI-powered musical key recognition and scale mode detector for musicians and producers.',
+    title: staticContent.keyDetector.title,
+    description: staticContent.keyDetector.description,
     canonical: 'https://guitariz.studio/key-detector',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.keyDetector.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -170,6 +182,15 @@ const routes = [
           'description': 'Free online audio key finder and scale mode detector.',
           'url': 'https://guitariz.studio/key-detector',
           'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to find the key of a song',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Upload your MP3 or audio file to the Key Detector.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'The DSP chromagram engine analyzes the harmonic profile across all 24 major and minor keys.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'View the detected key signature, scale mode, and relative major/minor tonality.' }
+          ]
         }
       ]
     })
@@ -179,6 +200,7 @@ const routes = [
     title: 'Free AI Vocal Remover & Acapella Extractor | Guitariz Studio',
     description: 'Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.',
     canonical: 'https://guitariz.studio/vocal-remover',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.vocalSplitter.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -197,9 +219,10 @@ const routes = [
   },
   {
     url: '/chord-progression-generator',
-    title: 'Free Chord Progression Generator & Harmonic Tools | Guitariz',
-    description: 'Generate inspiring chord progressions for guitar, piano, and songwriting. Choose key, mood, or genre with real-time sound playback and MIDI export.',
+    title: staticContent.chordGenerator.title,
+    description: staticContent.chordGenerator.description,
     canonical: 'https://guitariz.studio/chord-progression-generator',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chordGenerator.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -218,9 +241,10 @@ const routes = [
   },
   {
     url: '/chordify-alternative',
-    title: 'Chordify Alternative: Guitariz vs Chordify (2026) | Guitariz',
-    description: 'Compare Guitariz Studio and Chordify side-by-side. See how chord recognition, MP3 audio uploads, stem separation, and pricing differ in 2026.',
+    title: staticContent.chordifyAlternative.title,
+    description: staticContent.chordifyAlternative.description,
     canonical: 'https://guitariz.studio/chordify-alternative',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chordifyAlternative.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -235,10 +259,18 @@ const routes = [
           'mainEntity': [
             {
               '@type': 'Question',
-              'name': 'Why is Guitariz Studio the best free alternative to Chordify?',
+              'name': 'Why is Guitariz Studio a great free alternative to Chordify?',
               'acceptedAnswer': {
                 '@type': 'Answer',
-                'text': 'Guitariz Studio offers unlimited AI chord recognition for MP3, WAV, and YouTube tracks with no monthly song limits, no paywalls, no ads, and no registration required.'
+                'text': 'Guitariz Studio offers unrestricted AI chord recognition for local MP3, WAV, and YouTube tracks with no mandatory monthly subscriptions, no paywalls, and no registration required.'
+              }
+            },
+            {
+              '@type': 'Question',
+              'name': 'Can I upload my own audio files on Guitariz Studio?',
+              'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': 'Yes. Unlike commercial platforms that restrict audio uploads on free tiers, Guitariz allows direct uploads of MP3, WAV, FLAC, and M4A audio files directly in your browser.'
               }
             }
           ]
@@ -248,9 +280,10 @@ const routes = [
   },
   {
     url: '/moises-alternative',
-    title: 'Best Free Moises AI Alternative (Unlimited 6 Stems) | Guitariz',
-    description: 'Looking for a free Moises AI alternative? Guitariz provides unlimited 6-stem AI audio separation, zero song duration limits, and free WAV downloads.',
+    title: staticContent.moisesAlternative.title,
+    description: staticContent.moisesAlternative.description,
     canonical: 'https://guitariz.studio/moises-alternative',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.moisesAlternative.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -265,10 +298,10 @@ const routes = [
           'mainEntity': [
             {
               '@type': 'Question',
-              'name': 'Why is Guitariz Studio the best free alternative to Moises AI?',
+              'name': 'Why is Guitariz Studio a free alternative to Moises AI?',
               'acceptedAnswer': {
                 '@type': 'Answer',
-                'text': 'Guitariz Studio offers unlimited 6-stem AI separation (vocals, drums, bass, guitar, piano, other) using Meta\'s Demucs model without monthly track caps, 5-minute song length restrictions, or subscription fees.'
+                'text': 'Guitariz Studio offers full 6-stem AI separation (vocals, drums, bass, guitar, piano, other) using Meta\'s Demucs model without monthly track caps, artificial song duration restrictions, or subscription fees.'
               }
             }
           ]
@@ -301,7 +334,7 @@ const routes = [
           'step': [
             { '@type': 'HowToStep', 'position': 1, 'text': 'Upload your audio file (MP3, WAV, FLAC, M4A) to the Stem Separator.' },
             { '@type': 'HowToStep', 'position': 2, 'text': 'Click "Separate Into 6 Stems" to start AI-powered separation.' },
-            { '@type': 'HowToStep', 'position': 3, 'text': 'Wait 5-10 minutes for the neural network to process all stems.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Wait for the neural network to process all stems.' },
             { '@type': 'HowToStep', 'position': 4, 'text': 'Preview and independently control the volume of each stem.' },
             { '@type': 'HowToStep', 'position': 5, 'text': 'Download any or all stems as high-quality audio files.' }
           ]
@@ -311,9 +344,10 @@ const routes = [
   },
   {
     url: '/fretboard',
-    title: 'Interactive Guitar Fretboard & Scale Explorer | Guitariz',
-    description: 'Master guitar theory with our interactive fretboard. Visualize scales, chords, and notes across the neck. Perfect for guitarists of all levels.',
+    title: staticContent.fretboard.title,
+    description: staticContent.fretboard.description,
     canonical: 'https://guitariz.studio/fretboard',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.fretboard.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -342,9 +376,10 @@ const routes = [
   },
   {
     url: '/chords',
-    title: 'Guitar Chord Library - 1000+ Diagrams & Voicings | Guitariz',
-    description: 'Explore a comprehensive guitar chord library. Detailed diagrams, finger positions, and interactive voicings for every chord and every level.',
+    title: staticContent.chords.title,
+    description: staticContent.chords.description,
     canonical: 'https://guitariz.studio/chords',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chords.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -354,7 +389,7 @@ const routes = [
           'name': 'Guitariz Chord Library',
           'applicationCategory': 'MusicApplication',
           'operatingSystem': 'Web',
-          'description': 'Comprehensive guitar chord library with interactive diagrams.',
+          'description': 'Essential guitar chord diagrams, interval formulas, and voicings across all 12 keys.',
           'url': 'https://guitariz.studio/chords',
           'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
         },
@@ -391,9 +426,10 @@ const routes = [
   },
   {
     url: '/raga-theory',
-    title: 'Indian Ragas & Western Scales: The Music Theory Bridge | Guitariz',
-    description: 'Hindustani Thaat System & Western Modes: A Comparative Guide. Compare Bilawal, Yaman, Kafi, Bhairav, and other Indian Ragas to Western music modes.',
+    title: staticContent.ragaTheory.title,
+    description: staticContent.ragaTheory.description,
     canonical: 'https://guitariz.studio/raga-theory',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.ragaTheory.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -420,7 +456,7 @@ const routes = [
               'name': 'How do Western modes map to Indian Thaats?',
               'acceptedAnswer': {
                 '@type': 'Answer',
-                'text': 'Six Hindustani Thaats map directly to Western diatonic modes: Bilawal is equivalent to Ionian (Major Scale), Kalyan is Lydian, Khamaj is Mixolydian, Kafi is Dorian, Asavari is Aeolian (Natural Minor), and Bhairavi is Phrygian. The other four Thaats (Bhairav, Todi, Poorvi, Marwa) do not have clean Western diatonic equivalents.'
+                'text': 'Six Hindustani Thaats map directly to Western diatonic modes: Bilawal is equivalent to Ionian (Major Scale), Kalyan is Lydian, Khamaj is Mixolydian, Kafi is Dorian, Asavari is Aeolian (Natural Minor), and Bhairavi is Phrygian. The other four Thaats (Bhairav, Todi, Poorvi, Marwa) feature altered intervals without clean diatonic equivalents.'
               }
             }
           ]
@@ -430,9 +466,10 @@ const routes = [
   },
   {
     url: '/theory',
-    title: 'Interactive Circle of Fifths - Music Theory Lab | Guitariz',
-    description: 'Master functional harmony with our interactive Circle of Fifths. Visualize key relationships, modulations, and chord families.',
+    title: staticContent.theory.title,
+    description: staticContent.theory.description,
     canonical: 'https://guitariz.studio/theory',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.theory.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -447,9 +484,10 @@ const routes = [
   },
   {
     url: '/jam',
-    title: 'Jam Studio - Loop Chord Progressions with AI Piano & Pads | Guitariz',
-    description: 'Practice soloing over looping chord progressions. Set BPM, pick chords, and improvise with scale suggestions on guitar and piano.',
+    title: staticContent.jam.title,
+    description: staticContent.jam.description,
     canonical: 'https://guitariz.studio/jam',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.jam.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@graph': [
@@ -478,9 +516,10 @@ const routes = [
   },
   {
     url: '/metronome',
-    title: 'Online Metronome & High-Precision Timing | Guitariz',
-    description: 'Free online metronome for precise timing. Adjustable tempo, time signatures, and visual pulse for musicians.',
+    title: staticContent.metronome.title,
+    description: staticContent.metronome.description,
     canonical: 'https://guitariz.studio/metronome',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.metronome.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -495,9 +534,10 @@ const routes = [
   },
   {
     url: '/tuner',
-    title: 'Online Guitar Tuner - Chromatic Tuning Precision | Guitariz',
-    description: 'Free online chromatic tuner for guitar, bass, and other instruments. High-precision pitch detection.',
+    title: staticContent.tuner.title,
+    description: staticContent.tuner.description,
     canonical: 'https://guitariz.studio/tuner',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.tuner.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -512,9 +552,10 @@ const routes = [
   },
   {
     url: '/ear-training',
-    title: 'Ear Training - Level Up Your Musical Hearing | Guitariz',
-    description: 'Gamified ear training for intervals, chords, and pitch recognition. Improve your musicality with our interactive tools.',
+    title: staticContent.earTraining.title,
+    description: staticContent.earTraining.description,
     canonical: 'https://guitariz.studio/ear-training',
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.earTraining.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
@@ -781,7 +822,7 @@ for (const post of blogPosts) {
   });
 }
 
-// --- PROGRAMMATIC CHORD PAGES GENERATION ---
+// --- STEP 1: PROGRAMMATIC CHORD PAGES GENERATION & NOINDEX RULES ---
 const ROOT_SLUG_MAP = {
   "C": "c", "C#/Db": "c-sharp", "C#": "c-sharp", "Db": "c-sharp",
   "D": "d", "D#/Eb": "d-sharp", "D#": "d-sharp", "Eb": "d-sharp",
@@ -793,6 +834,12 @@ const VARIANT_SLUG_MAP = {
   "Major": "major", "Minor": "minor", "7": "7", "maj7": "maj7", "m7": "m7",
   "sus4": "sus4", "sus2": "sus2", "add9": "add9", "dim": "dim", "aug": "aug", "6": "6", "m6": "m6"
 };
+
+// Thin variants to noindex and exclude from sitemap.xml
+const NOINDEX_VARIANTS = new Set(['dim', 'aug', 'sus2', 'add9', '6', 'm6']);
+
+let indexedChordCount = 0;
+let noindexChordCount = 0;
 
 try {
   const rawChordTs = fs.readFileSync(path.resolve(process.cwd(), 'src/data/chordData.ts'), 'utf8');
@@ -817,6 +864,13 @@ try {
       const fullName = `${rootObj.root} ${variant.name}`;
       const chordUrl = `/chords/${rootSlug}/${variantSlug}`;
       const canonical = `https://guitariz.studio${chordUrl}`;
+      const isNoindex = NOINDEX_VARIANTS.has(variantSlug);
+
+      if (isNoindex) {
+        noindexChordCount++;
+      } else {
+        indexedChordCount++;
+      }
 
       const voicingsHtml = variant.voicings.map((v, idx) => `
         <div style="margin-top: 16px; padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
@@ -830,6 +884,7 @@ try {
         title: `${fullName} Guitar Chord (${displayName}) | Voicings, Tabs & Theory | Guitariz`,
         description: `Learn how to play the ${fullName} (${displayName}) guitar chord. Free interactive chord charts, finger positions, tablature, interval formula (${variant.intervals}), and audio previews.`,
         canonical,
+        noindex: isNoindex,
         customHtml: `
           <div style="margin-top: 24px; line-height: 1.8; color: #d4d4d8;">
             <p style="font-size: 1.1rem; color: #f4f4f5; margin-bottom: 16px;">${variant.theoryText}</p>
@@ -878,14 +933,15 @@ try {
       });
     }
   }
-  console.log(`Loaded and queued programmatic chord pages! Total routes now: ${routes.length}`);
+  console.log(`Programmatic chord routes ready: ${indexedChordCount} indexed, ${noindexChordCount} noindexed. Total routes: ${routes.length}`);
 } catch (err) {
   console.error('Error generating programmatic chord routes:', err);
 }
 
-// Generate sitemap.xml dynamically!
+// Generate sitemap.xml dynamically (EXCLUDING noindexed routes)
+const indexedRoutes = routes.filter(r => !r.noindex);
 let sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-for (const r of routes) {
+for (const r of indexedRoutes) {
   const isMain = r.url === '/';
   const priority = isMain ? '1.0' : (r.url.startsWith('/chords/') ? '0.7' : (r.url.startsWith('/blog/') ? '0.6' : '0.8'));
   const freq = isMain ? 'weekly' : (r.url.startsWith('/chords/') ? 'monthly' : (r.url.startsWith('/blog/') ? 'monthly' : 'weekly'));
@@ -894,7 +950,7 @@ for (const r of routes) {
 sitemapXml += `</urlset>\n`;
 fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml);
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml);
-console.log('Generated fresh sitemap.xml dynamically with all tools, blog posts, and chord landing pages!');
+console.log(`Generated fresh sitemap.xml with ${indexedRoutes.length} indexed URLs (filtered out ${noindexChordCount} thin variants)!`);
 
 const srcIndexPath = path.resolve(distDir, 'index.html');
 
@@ -983,6 +1039,21 @@ for (const r of routes) {
     html = html.replace('</head>', `  <meta name="description" content="${r.description}" />\n</head>`);
   }
 
+  // Handle Robots Meta Tag (Step 1 Noindex for thin variants)
+  if (r.noindex) {
+    if (/meta name="robots"/i.test(html)) {
+      html = html.replace(/<meta name="robots"[\s\S]*?>/i, `<meta name="robots" content="noindex, follow" />`);
+    } else {
+      html = html.replace('</head>', `  <meta name="robots" content="noindex, follow" />\n</head>`);
+    }
+  } else {
+    if (/meta name="robots"/i.test(html)) {
+      html = html.replace(/<meta name="robots"[\s\S]*?>/i, `<meta name="robots" content="index, follow" />`);
+    } else {
+      html = html.replace('</head>', `  <meta name="robots" content="index, follow" />\n</head>`);
+    }
+  }
+
   // Replace canonical link
   if (/rel="canonical"/i.test(html)) {
     html = html.replace(/<link rel="canonical"[\s\S]*?>/i, `<link rel="canonical" href="${r.canonical}" />`);
@@ -1032,16 +1103,16 @@ for (const r of routes) {
   console.log(`Wrote prerendered page: ${outIndex}`);
 }
 
-console.log(`\nPrerender completed for ${routes.length} routes: ${routes.map(r => r.url).join(', ')}`);
+console.log(`\nPrerender completed for ${routes.length} total routes (${indexedRoutes.length} indexed, ${noindexChordCount} noindexed).`);
 console.log(`lastmod date used: ${TODAY}`);
 
-// Submit URLs to IndexNow (Bing, Yandex, Seznam, Naver)
+// Submit indexed URLs to IndexNow (Bing, Yandex, Seznam, Naver)
 const INDEXNOW_KEY = '39e5f5fc917949c09dd74fcc2584d752';
 const indexNowPayload = {
   host: 'guitariz.studio',
   key: INDEXNOW_KEY,
   keyLocation: `https://guitariz.studio/${INDEXNOW_KEY}.txt`,
-  urlList: routes.map((r) => `https://guitariz.studio${r.url === '/' ? '' : r.url}`)
+  urlList: indexedRoutes.map((r) => `https://guitariz.studio${r.url === '/' ? '' : r.url}`)
 };
 
 try {
@@ -1051,11 +1122,10 @@ try {
     body: JSON.stringify(indexNowPayload)
   });
   if (res.ok) {
-    console.log(`Successfully submitted ${routes.length} URLs to IndexNow! (HTTP ${res.status})`);
+    console.log(`Successfully submitted ${indexedRoutes.length} indexed URLs to IndexNow! (HTTP ${res.status})`);
   } else {
     console.log(`IndexNow submission response: HTTP ${res.status}`);
   }
 } catch (e) {
   console.log(`IndexNow submission skipped: ${e.message}`);
 }
-
