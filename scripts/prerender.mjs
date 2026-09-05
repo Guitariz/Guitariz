@@ -593,8 +593,8 @@ const routes = [
         <p>Welcome to Guitariz Studio (https://guitariz.studio). We are committed to protecting your privacy and transparently handling user files, analytical tracking, and advertising cookies.</p>
         <h3>1. Audio Uploads & Processing</h3>
         <p>Raw audio files uploaded for Chord AI, Stem Separation, and Key/BPM Detection are processed via temporary server-side files and are permanently deleted immediately after processing finishes. When you generate separated stems, the download files are held in temporary scratch storage for up to 1 hour to allow user download, after which they are permanently deleted by an automated cleanup process. We do not store or train on your audio files in permanent cloud databases.</p>
-        <h3>2. Third-Party Advertising (Google AdSense & Monetag)</h3>
-        <p>We partner with Google AdSense and Monetag to serve contextual and personalized advertisements across our website to support our free tools. Third-party vendors use cookies and device identifiers to serve ads based on prior visits. Users may opt out of personalized advertising via Google Ads Settings or aboutads.info.</p>
+        <h3>2. Third-Party Advertising (Google AdSense)</h3>
+        <p>We partner with Google AdSense to serve contextual and personalized advertisements across our website to support our free tools. Third-party vendors use cookies and device identifiers to serve ads based on prior visits. Users may opt out of personalized advertising via Google Ads Settings or aboutads.info.</p>
         <h3>3. Affiliate Disclosure (Amazon Associates)</h3>
         <p>Guitariz Studio participates in the Amazon Services LLC Associates Program (and Amazon.in Associates Program). We earn from qualifying purchases made via affiliate links on our Recommended Gear pages.</p>
         <h3>4. Analytics & Performance Monitoring</h3>
@@ -703,7 +703,7 @@ const routes = [
         <h3>2. Analytics Cookies (Third-party)</h3>
         <p>We use third-party analytics services (Google Analytics 4, PostHog, Ahrefs Analytics, and Vercel Analytics/Speed Insights) to collect anonymous usage and performance metrics. No personally identifiable information or audio files are tracked.</p>
         <h3>3. Advertising & Affiliate Tracking</h3>
-        <p>We partner with Google AdSense and Monetag to serve advertisements, and participate in the Amazon Associates program for recommended gear. These networks set cookies to deliver relevant ads and attribute qualifying purchases.</p>
+        <p>We partner with Google AdSense to serve advertisements, and participate in the Amazon Associates program for recommended gear. These networks set cookies to deliver relevant ads and attribute qualifying purchases.</p>
         <h3>4. Embedded Media Cookies</h3>
         <p>Embedded YouTube video features use the YouTube IFrame API and are subject to Google's standard privacy policies.</p>
         <h3>5. Managing Your Choices</h3>

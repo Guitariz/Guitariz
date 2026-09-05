@@ -1,25 +1,7 @@
-import { defineConfig, Plugin } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
-import fs from "fs";
-
-function monetagServiceWorkerPlugin(): Plugin {
-  return {
-    name: "monetag-sw-inject",
-    apply: "build",
-    closeBundle() {
-      const swPath = path.resolve(__dirname, "dist/sw.js");
-      if (fs.existsSync(swPath)) {
-        const monetagHeader = `self.options = {\n    "domain": "5gvci.com",\n    "zoneId": 11625720\n};\nself.lary = "";\nimportScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw');\n\n`;
-        const content = fs.readFileSync(swPath, "utf-8");
-        if (!content.includes('"zoneId": 11625720')) {
-          fs.writeFileSync(swPath, monetagHeader + content, "utf-8");
-        }
-      }
-    },
-  };
-}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -40,7 +22,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    monetagServiceWorkerPlugin(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "logo.svg", "logo.png", "logo.webp", "logo2.webp", "robots.txt"],
@@ -107,10 +88,6 @@ export default defineConfig({
         ],
       },
       workbox: {
-        importScripts: [
-          "/monetag-sw.js",
-          "https://5gvci.com/act/files/service-worker.min.js?r=sw"
-        ],
         globPatterns: ["**/*.{js,css,html,ico,png,webp,svg,woff2,wav}"],
         cleanupOutdatedCaches: true,
         skipWaiting: true,

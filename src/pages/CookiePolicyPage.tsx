@@ -98,7 +98,7 @@ const CookiePolicyPage = () => {
               <div className="p-5 rounded-2xl bg-zinc-950 border border-white/[0.04] space-y-2">
                 <h3 className="text-sm font-semibold text-white">Advertising Cookies & Tracking (Third-party)</h3>
                 <p className="text-xs text-zinc-400">
-                  We partner with <strong className="text-white">Google AdSense</strong> and <strong className="text-white">Monetag</strong> to display ads across our website. These ad networks use cookies and device identifiers to deliver relevant advertisements and monitor ad performance.
+                  We partner with <strong className="text-white">Google AdSense</strong> to display ads across our website. These ad networks use cookies and device identifiers to deliver relevant advertisements and monitor ad performance.
                 </p>
                 <p className="text-xs text-zinc-400">
                   We also display referral links under the <strong className="text-white">Amazon Associates Program</strong>. When you click on recommendations inside our Recommended Gear pages, a referral cookie is set by Amazon to track qualifying purchases and credit commissions back to support Guitariz Studio.

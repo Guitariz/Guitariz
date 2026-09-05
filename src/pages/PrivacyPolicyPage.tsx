@@ -57,14 +57,13 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">3. Third-Party Advertising (Google AdSense & Monetag)</h2>
+            <h2 className="text-xl font-semibold text-white">3. Third-Party Advertising (Google AdSense)</h2>
             <p>
-              We partner with third-party advertising networks, including <strong>Google AdSense</strong> and <strong>Monetag</strong>, to serve contextual and personalized advertisements across our website to support our free tools.
+              We partner with third-party advertising networks, including <strong>Google AdSense</strong>, to serve contextual and personalized advertisements across our website to support our free tools.
             </p>
             <ul className="list-disc pl-5 space-y-2 text-zinc-400">
               <li>Third-party vendors use cookies and device identifiers to serve ads based on prior visits to our website or other sites on the internet.</li>
               <li>Google's use of advertising cookies enables it and its partners to serve ads based on your visits to our site and other internet destinations.</li>
-              <li>Monetag operates an ad delivery engine that may utilize web cookies and anonymous session tokens to serve display, in-page, and banner ad formats.</li>
               <li>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google Ads Settings</a> or through <a href="https://www.aboutads.info/choices/" target="_blank" rel="noreferrer" className="text-primary hover:underline">www.aboutads.info</a>.</li>
               <li>To learn more about how Google collects and processes data, review <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noreferrer" className="text-primary hover:underline">How Google uses information from sites or apps that use our services</a>.</li>
               <li>For detailed information on our cookie usage and management options, please read our dedicated <Link to="/cookie-policy" className="text-primary hover:underline">Cookie Policy</Link>.</li>
