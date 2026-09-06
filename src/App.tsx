@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { GlobalMenu } from "@/components/GlobalMenu";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { FeedbackModal } from "@/components/FeedbackModal";
@@ -277,15 +277,7 @@ const App = () => {
               />
               <Route
                 path="/vocal-remover"
-                element={
-                  <Suspense fallback={<RouteFallback />}>
-                    <PageWrapper>
-                      <main id="main-content">
-                        <VocalSplitterPage />
-                      </main>
-                    </PageWrapper>
-                  </Suspense>
-                }
+                element={<Navigate to="/vocal-splitter" replace />}
               />
               <Route
                 path="/chord-progression-generator"

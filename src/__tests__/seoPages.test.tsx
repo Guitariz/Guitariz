@@ -33,16 +33,16 @@ describe("SEO Micro-Tool Landing Pages", () => {
     expect(screen.getByText(/Upload Song \/ Audio Track/i)).toBeInTheDocument();
   });
 
-  it("renders VocalSplitterPage on /vocal-remover route", () => {
+  it("renders VocalSplitterPage on /vocal-splitter route", () => {
     render(
-      <MemoryRouter initialEntries={["/vocal-remover"]}>
+      <MemoryRouter initialEntries={["/vocal-splitter"]}>
         <Routes>
-          <Route path="/vocal-remover" element={<VocalSplitterPage />} />
+          <Route path="/vocal-splitter" element={<VocalSplitterPage />} />
         </Routes>
       </MemoryRouter>
     );
 
-    expect(screen.getAllByText(/Vocal Remover/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Vocal Splitter/i).length).toBeGreaterThan(0);
   });
 
   it("renders ChordGeneratorPage with MIDI export option", () => {

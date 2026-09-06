@@ -11,24 +11,16 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 import GearTip from "@/components/GearTip";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { StemSeparationProgress } from "@/components/StemSeparationProgress";
 
 const VocalSplitterPage = () => {
-  const location = useLocation();
-  const currentUrl = `https://guitariz.studio${location.pathname}`;
-  const isVocalRemoverRoute = location.pathname === "/vocal-remover";
+  const currentUrl = "https://guitariz.studio/vocal-splitter";
 
   usePageMetadata({
-    title: isVocalRemoverRoute
-      ? "Free Online Vocal Remover – Remove Vocals from Any Song | Guitariz"
-      : "Free AI Vocal Splitter & Stem Separator | Guitariz",
-    description: isVocalRemoverRoute
-      ? "Remove vocals from any song instantly with our free AI vocal remover. Create karaoke tracks and extract instrumentals online — no signup required."
-      : "Separate vocals and instrumentals from any song using AI. High-quality free online vocal splitter and acapella stem extraction for karaoke and practice.",
-    keywords: isVocalRemoverRoute
-      ? "vocal remover, remove vocals from song, free vocal remover online, karaoke maker, instrumental extractor, remove vocals mp3"
-      : "vocal splitter, free online vocal splitter, isolate vocals online, acapella maker free, stem splitter ai, karaoke creator, remove vocals from mp3",
+    title: "Free AI Vocal Splitter & Stem Separator | Guitariz",
+    description: "Separate vocals and instrumentals from any song using AI. High-quality free online vocal splitter and acapella stem extraction for karaoke and practice.",
+    keywords: "vocal splitter, free online vocal splitter, isolate vocals online, acapella maker free, stem splitter ai, karaoke creator, remove vocals from mp3",
     canonicalUrl: currentUrl,
     ogImage: "https://guitariz.studio/logo2.png",
     ogType: "website",
@@ -37,10 +29,10 @@ const VocalSplitterPage = () => {
       "@graph": [
         {
           "@type": "SoftwareApplication",
-          "name": "Guitariz AI Vocal Remover",
+          "name": "Guitariz Vocal Splitter",
           "applicationCategory": "MultimediaApplication",
           "operatingSystem": "Web",
-          "description": "High-quality free online AI vocal remover and stem extraction tool.",
+          "description": "High-quality free online AI vocal splitter and stem extraction tool.",
           "url": currentUrl,
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
         },
@@ -504,7 +496,7 @@ const VocalSplitterPage = () => {
           {/* Breadcrumb */}
           <Breadcrumb items={[
             { name: "Home", url: "https://guitariz.studio/" },
-            { name: location.pathname === "/vocal-remover" ? "Vocal Remover" : "Vocal Splitter", url: currentUrl }
+            { name: "Vocal Splitter", url: currentUrl }
           ]} />
 
           {/* Header */}

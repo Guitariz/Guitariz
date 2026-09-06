@@ -12,7 +12,7 @@ import staticContent from "@/data/staticContent.json";
 const featuredTools = [
   { title: "Chord AI", desc: "Neural audio chord detection and harmonic transcription.", icon: Bot, to: "/chord-ai", color: "from-violet-500/20 to-purple-500/20" },
   { title: "Stem Separator", desc: "AI 6-stem separation: vocals, drums, bass, guitar, piano, other.", icon: Mic, to: "/stem-separator", color: "from-pink-500/20 to-rose-500/20" },
-  { title: "Vocal Remover", desc: "AI-powered vocal and instrumental separation.", icon: Wand2, to: "/vocal-remover", color: "from-cyan-500/20 to-blue-500/20" },
+  { title: "Vocal Remover", desc: "AI-powered vocal and instrumental separation.", icon: Wand2, to: "/vocal-splitter", color: "from-cyan-500/20 to-blue-500/20" },
 ];
 
 // Standard tool cards (3 per row on large screens)

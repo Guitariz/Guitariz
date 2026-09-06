@@ -1,8 +1,9 @@
 import { useMemo, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
-import { Box, Layers } from "lucide-react";
+import { useParams, Link } from "react-router-dom";
+import { Box, Layers, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 import Fretboard from "@/components/Fretboard";
 import Fretboard3DWrapper from "@/components/fretboard/Fretboard3DWrapper";
@@ -259,6 +260,23 @@ const FretboardPage = () => {
             <h3 className="text-foreground font-medium mb-1">Visual Learning</h3>
             <p className="text-sm text-muted-foreground text-pretty">Real-time chord detection and interval labeling for every note played.</p>
           </div>
+        </div>
+
+        {/* Contextual Guide Link */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-400">
+              <BookOpen className="w-4 h-4" />
+              <span>Modal Theory Guide</span>
+            </div>
+            <h3 className="text-base font-semibold text-foreground">Guitar Modes Explained: The Fretboard Roadmap</h3>
+            <p className="text-xs text-muted-foreground">Master Dorian, Mixolydian, Aeolian and all 7 modes with neck shape visualizations.</p>
+          </div>
+          <Link to="/blog/guitar-modes-explained">
+            <Button variant="outline" size="sm" className="shrink-0 border-amber-500/30 hover:bg-amber-500/10 text-foreground">
+              Read Guide
+            </Button>
+          </Link>
         </div>
 
         <SEOContent

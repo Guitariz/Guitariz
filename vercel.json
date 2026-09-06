@@ -76,6 +76,11 @@
   ],
   "redirects": [
     {
+      "source": "/vocal-remover",
+      "destination": "/vocal-splitter",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {

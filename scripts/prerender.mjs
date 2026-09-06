@@ -196,28 +196,6 @@ const routes = [
     })
   },
   {
-    url: '/vocal-remover',
-    title: 'Free AI Vocal Remover & Acapella Extractor | Guitariz Studio',
-    description: 'Separate vocals and instrumentals from any song using AI. High-quality free online vocal remover and acapella stem extraction for karaoke and practice.',
-    canonical: 'https://guitariz.studio/vocal-remover',
-    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.vocalSplitter.html}</div>`,
-    jsonLd: JSON.stringify({
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'SoftwareApplication',
-          '@id': 'https://guitariz.studio/vocal-remover#app',
-          'name': 'Guitariz AI Vocal Remover',
-          'applicationCategory': 'MultimediaApplication',
-          'operatingSystem': 'Web',
-          'description': 'High-quality free online AI vocal remover and stem extraction tool.',
-          'url': 'https://guitariz.studio/vocal-remover',
-          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
-        }
-      ]
-    })
-  },
-  {
     url: '/chord-progression-generator',
     title: staticContent.chordGenerator.title,
     description: staticContent.chordGenerator.description,
@@ -414,14 +392,28 @@ const routes = [
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.scales.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      '@id': 'https://guitariz.studio/scales#app',
-      'name': 'Guitariz Scale Explorer',
-      'applicationCategory': 'MusicApplication',
-      'operatingSystem': 'Web',
-      'description': 'Interactive guitar scale explorer for learning scale patterns.',
-      'url': 'https://guitariz.studio/scales',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/scales#app',
+          'name': 'Guitariz Scale Explorer',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Interactive guitar scale explorer for learning scale patterns and modal frameworks.',
+          'url': 'https://guitariz.studio/scales',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to explore guitar scales and modes with Guitariz Scale Explorer',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Select your root note from the chromatic note selector (C through B).' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Choose a scale category (Western Modes, Pentatonic/Blues, Exotic, or Indian Classical Thaats) and select your target scale.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Explore the scale formula, intervals, and note positions highlighted across the interactive 24-fret guitar neck or piano keyboard.' },
+            { '@type': 'HowToStep', 'position': 4, 'text': 'Click on any fret note to audition its pitch with real-time Web Audio synthesis.' }
+          ]
+        }
+      ]
     })
   },
   {
@@ -472,14 +464,28 @@ const routes = [
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.theory.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      '@id': 'https://guitariz.studio/theory#app',
-      'name': 'Guitariz Theory Lab',
-      'applicationCategory': 'MusicApplication',
-      'operatingSystem': 'Web',
-      'description': 'Interactive music theory tools featuring the Circle of Fifths.',
-      'url': 'https://guitariz.studio/theory',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/theory#app',
+          'name': 'Guitariz Theory Lab',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Interactive music theory tools featuring the Circle of Fifths guided learning experience.',
+          'url': 'https://guitariz.studio/theory',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to master key signatures and chord relationships with the Circle of Fifths',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Select any root key on the interactive Circle of Fifths wheel to set your tonal center.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Toggle between Explore Mode to inspect diatonic chords and Learn Mode for interactive harmonic lessons.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Analyze key signatures, sharp/flat accidental counts, and the relative minor key in the inner ring.' },
+            { '@type': 'HowToStep', 'position': 4, 'text': 'Audition diatonic scale degrees and chord families (Tonic, Subdominant, Dominant) with audio playback.' }
+          ]
+        }
+      ]
     })
   },
   {
@@ -522,14 +528,28 @@ const routes = [
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.metronome.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      '@id': 'https://guitariz.studio/metronome#app',
-      'name': 'Guitariz Online Metronome',
-      'applicationCategory': 'MusicApplication',
-      'operatingSystem': 'Web',
-      'description': 'Free online metronome with adjustable tempo and time signatures.',
-      'url': 'https://guitariz.studio/metronome',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/metronome#app',
+          'name': 'Guitariz Online Metronome',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Free online metronome with adjustable tempo, poly-meter support, and time signatures.',
+          'url': 'https://guitariz.studio/metronome',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to practice rhythm with the Guitariz Precision Metronome',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Set your desired tempo using the BPM slider, tempo presets (Largo to Presto), or the interactive Tap Tempo button.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Configure your time signature (e.g. 4/4, 3/4, 6/8) and select rhythmic subdivisions (Quarter, 8th, Triplet, or 16th notes).' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Press the Play button to start sample-accurate Web Audio click scheduling.' },
+            { '@type': 'HowToStep', 'position': 4, 'text': 'Follow along with the high-visibility animated visual pulse ring for silent practice and timing sync.' }
+          ]
+        }
+      ]
     })
   },
   {
@@ -540,14 +560,29 @@ const routes = [
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.tuner.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      '@id': 'https://guitariz.studio/tuner#app',
-      'name': 'Guitariz Online Tuner',
-      'applicationCategory': 'MusicApplication',
-      'operatingSystem': 'Web',
-      'description': 'Professional online chromatic tuner with high-precision detection.',
-      'url': 'https://guitariz.studio/tuner',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/tuner#app',
+          'name': 'Guitariz Online Tuner',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Professional online chromatic tuner with high-precision pitch detection.',
+          'url': 'https://guitariz.studio/tuner',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to tune your guitar online with the Guitariz Chromatic Tuner',
+          'description': 'Step-by-step guide on tuning your guitar or instrument using real-time autocorrelation-based pitch detection and visual cent deviation meter.',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Click "Start Listening" and allow browser microphone access when prompted.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Pluck any open string on your guitar, bass, or ukulele close to your microphone.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Observe the detected pitch note, frequency in Hertz, and real-time cent deviation meter.' },
+            { '@type': 'HowToStep', 'position': 4, 'text': 'Adjust your tuning pegs until the needle aligns with the center 0-cent target in the green in-tune zone.' }
+          ]
+        }
+      ]
     })
   },
   {
@@ -558,14 +593,28 @@ const routes = [
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.earTraining.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
-      '@id': 'https://guitariz.studio/ear-training#app',
-      'name': 'Guitariz Ear Training',
-      'applicationCategory': 'MusicApplication',
-      'operatingSystem': 'Web',
-      'description': 'Interactive ear training tools for musicians.',
-      'url': 'https://guitariz.studio/ear-training',
-      'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/ear-training#app',
+          'name': 'Guitariz Ear Training',
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'description': 'Interactive gamified ear training arcade for intervals, chord recognition, and pitch mastery.',
+          'url': 'https://guitariz.studio/ear-training',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'HowTo',
+          'name': 'How to train your musical ear with the Guitariz Ear Training Arcade',
+          'step': [
+            { '@type': 'HowToStep', 'position': 1, 'text': 'Choose a game module from the arcade: Interval Mastery, Chord Recognition, Fretboard Memory, or Pitch ID.' },
+            { '@type': 'HowToStep', 'position': 2, 'text': 'Click "Play Sound" to listen to the synthesized interval, chord quality, or target tone.' },
+            { '@type': 'HowToStep', 'position': 3, 'text': 'Select your answer from the interactive multiple-choice buttons before time runs out.' },
+            { '@type': 'HowToStep', 'position': 4, 'text': 'Get instant visual audio feedback, track your correct streak, and level up your musical hearing.' }
+          ]
+        }
+      ]
     })
   },
   {
@@ -881,6 +930,7 @@ try {
 
       routes.push({
         url: chordUrl,
+        chordName: fullName,
         title: `${fullName} Guitar Chord (${displayName}) | Voicings, Tabs & Theory | Guitariz`,
         description: `Learn how to play the ${fullName} (${displayName}) guitar chord. Free interactive chord charts, finger positions, tablature, interval formula (${variant.intervals}), and audio previews.`,
         canonical,
@@ -1020,6 +1070,171 @@ function buildRouteBodyHtml(r) {
   `;
 }
 
+function generateBreadcrumbJsonLd(r) {
+  if (r.url === '/') return null;
+
+  const items = [
+    {
+      '@type': 'ListItem',
+      'position': 1,
+      'name': 'Home',
+      'item': 'https://guitariz.studio/'
+    }
+  ];
+
+  if (r.url.startsWith('/blog/')) {
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Blog',
+      'item': 'https://guitariz.studio/blog'
+    });
+    const cleanTitle = r.title.replace(/\s*\|\s*Guitariz.*$/i, '').trim();
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': cleanTitle,
+      'item': `https://guitariz.studio${r.url}`
+    });
+  } else if (r.url.startsWith('/chords/') && r.url !== '/chords') {
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Chord Library',
+      'item': 'https://guitariz.studio/chords'
+    });
+    const chordName = r.chordName || r.title.split(' Guitar Chord')[0] || 'Chord';
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': chordName,
+      'item': `https://guitariz.studio${r.url}`
+    });
+  } else if (r.url === '/blog') {
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Blog',
+      'item': 'https://guitariz.studio/blog'
+    });
+  } else if (r.url === '/chords') {
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Tools',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': 'Chord Library',
+      'item': 'https://guitariz.studio/chords'
+    });
+  } else if (['/privacy', '/terms', '/cookie-policy'].includes(r.url)) {
+    const nameMap = {
+      '/privacy': 'Privacy Policy',
+      '/terms': 'Terms of Service',
+      '/cookie-policy': 'Cookie Policy'
+    };
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Legal',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': nameMap[r.url],
+      'item': `https://guitariz.studio${r.url}`
+    });
+  } else if (['/about', '/contact'].includes(r.url)) {
+    const nameMap = {
+      '/about': 'About Us',
+      '/contact': 'Contact Us'
+    };
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Company',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': nameMap[r.url],
+      'item': `https://guitariz.studio${r.url}`
+    });
+  } else if (r.url === '/gear') {
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Resources',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': 'Recommended Gear',
+      'item': 'https://guitariz.studio/gear'
+    });
+  } else if (['/chordify-alternative', '/moises-alternative'].includes(r.url)) {
+    const nameMap = {
+      '/chordify-alternative': 'Chordify Alternative',
+      '/moises-alternative': 'Moises Alternative'
+    };
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Comparisons',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': nameMap[r.url],
+      'item': `https://guitariz.studio${r.url}`
+    });
+  } else {
+    // Tools
+    const toolNameMap = {
+      '/chord-ai': 'Chord AI',
+      '/stem-separator': 'Stem Separator',
+      '/vocal-splitter': 'Vocal Splitter',
+      '/bpm-detector': 'BPM Detector',
+      '/key-detector': 'Key Detector',
+      '/chord-progression-generator': 'Chord Progression Generator',
+      '/fretboard': 'Interactive Fretboard',
+      '/scales': 'Scale Explorer',
+      '/theory': 'Theory Lab',
+      '/raga-theory': 'Raga Theory',
+      '/metronome': 'Metronome',
+      '/tuner': 'Guitar Tuner',
+      '/ear-training': 'Ear Training',
+      '/jam': 'Jam Studio'
+    };
+    const toolName = toolNameMap[r.url] || r.title.replace(/\s*\|\s*Guitariz.*$/i, '').trim();
+    items.push({
+      '@type': 'ListItem',
+      'position': 2,
+      'name': 'Tools',
+      'item': 'https://guitariz.studio/'
+    });
+    items.push({
+      '@type': 'ListItem',
+      'position': 3,
+      'name': toolName,
+      'item': `https://guitariz.studio${r.url}`
+    });
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items
+  };
+}
+
 for (const r of routes) {
   const outDir = path.join(distDir, r.url.replace(/^\//, ''));
   const outIndex = r.url === '/' ? path.join(distDir, 'index.html') : path.join(outDir, 'index.html');
@@ -1091,9 +1306,13 @@ for (const r of routes) {
     html = html.replace('</head>', `  <meta name="twitter:image" content="https://guitariz.studio/logo2.png" />\n</head>`);
   }
 
-  // Insert page-specific JSON-LD before </head>
-  const ldScript = `  <script type="application/ld+json">${r.jsonLd}</script>`;
-  html = html.replace('</head>', `${ldScript}\n</head>`);
+  // Insert page-specific JSON-LD and BreadcrumbList JSON-LD before </head>
+  let schemaScripts = `  <script type="application/ld+json">${r.jsonLd}</script>`;
+  const breadcrumbSchema = generateBreadcrumbJsonLd(r);
+  if (breadcrumbSchema) {
+    schemaScripts += `\n  <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>`;
+  }
+  html = html.replace('</head>', `${schemaScripts}\n</head>`);
 
   // Write out
   if (r.url !== '/') {

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Key, RefreshCw, ArrowRight, FileAudio } from "lucide-react";
+import { Upload, Key, RefreshCw, ArrowRight, FileAudio, BookOpen } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
@@ -186,6 +186,30 @@ const KeyDetectorPage = () => {
                 Upload Song / Audio Track
               </Button>
             )}
+          </div>
+
+          {/* Educational Guide Callout */}
+          <div className="mt-16 p-6 sm:p-8 rounded-[2rem] border border-border bg-card/60 backdrop-blur-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-primary" />
+                  <span>Music Theory Guide</span>
+                </h4>
+                <h3 className="text-xl font-light text-white tracking-tight">
+                  Want to learn how to identify musical keys manually?
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed font-light max-w-2xl">
+                  Read our practical guide on how to determine the key of any song by ear using melody analysis, accidentals, and diatonic chords.
+                </p>
+              </div>
+              <Link 
+                to="/blog/how-to-find-the-key-of-a-song" 
+                className="inline-flex items-center gap-1.5 text-xs text-white bg-primary/20 hover:bg-primary/30 border border-primary/30 transition-all font-medium py-3 px-6 rounded-2xl shrink-0"
+              >
+                Read Key Finding Guide <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
 
           <SEOContent

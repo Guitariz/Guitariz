@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 import RootChordLibrary from "@/components/RootChordLibrary";
 import { BookOpen, Music, Layers, Bot } from "lucide-react";
@@ -120,6 +120,23 @@ const ChordsPage = () => {
             <h3 className="text-foreground font-medium mb-1">Studio Ready</h3>
             <p className="text-xs text-muted-foreground">Clean, distraction-free environment for songwriting.</p>
           </div>
+        </div>
+
+        {/* Contextual Guide Link */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-transparent border border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-400">
+              <BookOpen className="w-4 h-4" />
+              <span>Ear Training & Chords</span>
+            </div>
+            <h3 className="text-base font-semibold text-foreground">How to Transcribe Songs and Chords by Ear</h3>
+            <p className="text-xs text-muted-foreground">Practical step-by-step techniques to decode chord progressions and song arrangements.</p>
+          </div>
+          <Link to="/blog/how-to-transcribe-songs-by-ear">
+            <Button variant="outline" size="sm" className="shrink-0 border-cyan-500/30 hover:bg-cyan-500/10 text-foreground">
+              Read Guide
+            </Button>
+          </Link>
         </div>
 
         <SEOContent

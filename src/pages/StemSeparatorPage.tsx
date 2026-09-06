@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import WaveformViewer from "@/components/chord-ai/WaveformViewer";
-import { Wand2, Upload, Mic, Music2, Download, Loader2, Drum, Guitar, Piano, Volume2, VolumeX, Sliders, Layers } from "lucide-react";
+import { Wand2, Upload, Mic, Music2, Download, Loader2, Drum, Guitar, Piano, Volume2, VolumeX, Sliders, Layers, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
@@ -930,6 +931,23 @@ const StemSeparatorPage = () => {
                         className="prose prose-invert max-w-none text-sm md:text-base text-zinc-300 leading-relaxed space-y-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:text-white [&>h2]:mt-8 [&>h2]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ul]:text-zinc-400 [&>p]:leading-relaxed [&_a]:text-emerald-400 [&_a]:hover:underline"
                         dangerouslySetInnerHTML={{ __html: staticContent.stemSeparator.html }}
                     />
+                </div>
+
+                {/* Contextual Guide Link */}
+                <div className="max-w-4xl mx-auto mt-12 p-6 rounded-2xl bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-transparent border border-pink-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-pink-400">
+                            <BookOpen className="w-4 h-4" />
+                            <span>In-Depth Comparison</span>
+                        </div>
+                        <h3 className="text-base font-semibold text-foreground">Moises AI vs Guitariz: Complete Stem Separation Comparison</h3>
+                        <p className="text-xs text-muted-foreground">Compare track quality, isolation fidelity, processing times, and free tier limits in 2026.</p>
+                    </div>
+                    <Link to="/blog/moises-vs-guitariz-stem-separation">
+                        <Button variant="outline" size="sm" className="shrink-0 border-pink-500/30 hover:bg-pink-500/10 text-foreground">
+                            Read Comparison
+                        </Button>
+                    </Link>
                 </div>
 
                 {/* SEO FAQ */}

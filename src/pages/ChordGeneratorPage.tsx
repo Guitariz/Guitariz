@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Play, Pause, RefreshCw, FileAudio, Music2, ArrowRight } from "lucide-react";
+import { Sparkles, Play, Pause, RefreshCw, FileAudio, Music2, ArrowRight, BookOpen } from "lucide-react";
 import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
@@ -184,6 +185,30 @@ const ChordGeneratorPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* Educational Guide Callout */}
+          <div className="mt-16 p-6 sm:p-8 rounded-[2rem] border border-border bg-card/60 backdrop-blur-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-primary" />
+                  <span>DAW & MIDI Guide</span>
+                </h4>
+                <h3 className="text-xl font-light text-white tracking-tight">
+                  How to use exported chord progressions in your DAW?
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed font-light max-w-2xl">
+                  Learn how to drag and drop MIDI chord progressions directly into Ableton Live, FL Studio, Logic Pro, and Studio One.
+                </p>
+              </div>
+              <Link 
+                to="/blog/how-to-export-chords-to-midi-ableton-fl-studio" 
+                className="inline-flex items-center gap-1.5 text-xs text-white bg-primary/20 hover:bg-primary/30 border border-primary/30 transition-all font-medium py-3 px-6 rounded-2xl shrink-0"
+              >
+                Read MIDI Guide <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
 

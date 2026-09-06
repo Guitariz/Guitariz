@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import CircleOfFifths from "@/components/CircleOfFifths";
-import { Disc, Layers, BookOpen, Sparkles } from "lucide-react";
+import { Disc, Layers, BookOpen, Sparkles, ArrowRight } from "lucide-react";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 
@@ -111,6 +112,30 @@ const TheoryPage = () => {
             }
           ]}
         />
+        {/* Educational Guide Callout */}
+        <div className="mt-16 p-6 sm:p-8 rounded-[2rem] border border-border bg-card/60 backdrop-blur-xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                <span>Music Theory Guide</span>
+              </h4>
+              <h3 className="text-xl font-light text-white tracking-tight">
+                Want a complete breakdown of the Circle of Fifths?
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed font-light max-w-2xl">
+                Master key signatures, accidental formulas, relative minors, and harmonic songwriting with our in-depth Circle of Fifths tutorial.
+              </p>
+            </div>
+            <Link 
+              to="/blog/circle-of-fifths-explained" 
+              className="inline-flex items-center gap-1.5 text-xs text-white bg-primary/20 hover:bg-primary/30 border border-primary/30 transition-all font-medium py-3 px-6 rounded-2xl shrink-0"
+            >
+              Read Theory Guide <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
         <RelatedTools currentPath="/theory" />
       </main>
     </div>
