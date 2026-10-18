@@ -1,0 +1,8 @@
+# Permanent redirects
+/vocal-remover /vocal-splitter 301
+
+# PostHog ingestion reverse proxy
+/ingest/* https://us.i.posthog.com/:splat 200
+
+# SPA fallback (static prerendered files take priority automatically in Cloudflare Pages)
+/* /index.html 200
