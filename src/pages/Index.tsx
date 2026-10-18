@@ -17,6 +17,7 @@ const featuredTools = [
 
 // Standard tool cards (3 per row on large screens)
 const toolCards = [
+  { title: "Chord Finder", desc: "Identify chords from guitar frets or piano keys instantly.", icon: Music2, to: "/chord-finder", color: "from-cyan-500/20 to-blue-500/20" },
   { title: "BPM Detector", desc: "Detect beats per minute & tap tempo for any audio file.", icon: Clock, to: "/bpm-detector", color: "from-emerald-500/20 to-teal-500/20" },
   { title: "Key Detector", desc: "Find key signatures & scale modes from MP3 audio.", icon: Key, to: "/key-detector", color: "from-blue-500/20 to-indigo-500/20" },
   { title: "Chord Generator", desc: "Generate chord progressions with sound preview & MIDI export.", icon: Sparkles, to: "/chord-progression-generator", color: "from-purple-500/20 to-violet-500/20" },

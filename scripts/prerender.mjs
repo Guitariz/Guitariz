@@ -74,6 +74,7 @@ const routes = [
     title: staticContent.chordAi.title,
     description: staticContent.chordAi.description,
     canonical: 'https://guitariz.studio/chord-ai',
+    lastmod: TODAY,
     customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chordAi.html}</div>`,
     jsonLd: JSON.stringify({
       '@context': 'https://schema.org',
@@ -83,7 +84,7 @@ const routes = [
           '@id': 'https://guitariz.studio/chord-ai#app',
           'name': 'Chord AI - Guitariz',
           'url': 'https://guitariz.studio/chord-ai',
-          'description': 'Advanced Chord AI: Extract chords, tempo, and scales from audio using neural networks.',
+          'description': staticContent.chordAi.description,
           'applicationCategory': 'MusicApplication',
           'operatingSystem': 'Web',
           'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
@@ -97,6 +98,40 @@ const routes = [
             { '@type': 'HowToStep', 'position': 3, 'text': 'Wait for the AI to analyze the harmonic structure and generate the chord map.' },
             { '@type': 'HowToStep', 'position': 4, 'text': 'Use the interactive player to play along with the extracted chords in real-time.' }
           ]
+        }
+      ]
+    })
+  },
+  {
+    url: '/chord-finder',
+    title: staticContent.chordFinder.title,
+    description: staticContent.chordFinder.description,
+    canonical: 'https://guitariz.studio/chord-finder',
+    lastmod: TODAY,
+    customHtml: `<div style="margin-top: 32px; line-height: 1.8; color: #d4d4d8;">${staticContent.chordFinder.html}</div>`,
+    jsonLd: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'SoftwareApplication',
+          '@id': 'https://guitariz.studio/chord-finder#app',
+          'name': 'Chord Finder - Guitariz',
+          'url': 'https://guitariz.studio/chord-finder',
+          'description': staticContent.chordFinder.description,
+          'applicationCategory': 'MusicApplication',
+          'operatingSystem': 'Web',
+          'offers': { '@type': 'Offer', 'price': '0', 'priceCurrency': 'USD' }
+        },
+        {
+          '@type': 'FAQPage',
+          'mainEntity': staticContent.chordFinder.faqs.map(f => ({
+            '@type': 'Question',
+            'name': f.q,
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': f.a
+            }
+          }))
         }
       ]
     })
@@ -913,13 +948,9 @@ try {
       const fullName = `${rootObj.root} ${variant.name}`;
       const chordUrl = `/chords/${rootSlug}/${variantSlug}`;
       const canonical = `https://guitariz.studio${chordUrl}`;
-      const isNoindex = NOINDEX_VARIANTS.has(variantSlug);
+      const isNoindex = true; // Pruned from search index & sitemap per user request
 
-      if (isNoindex) {
-        noindexChordCount++;
-      } else {
-        indexedChordCount++;
-      }
+      noindexChordCount++;
 
       const voicingsHtml = variant.voicings.map((v, idx) => `
         <div style="margin-top: 16px; padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
@@ -992,10 +1023,8 @@ try {
 const indexedRoutes = routes.filter(r => !r.noindex);
 let sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
 for (const r of indexedRoutes) {
-  const isMain = r.url === '/';
-  const priority = isMain ? '1.0' : (r.url.startsWith('/chords/') ? '0.7' : (r.url.startsWith('/blog/') ? '0.6' : '0.8'));
-  const freq = isMain ? 'weekly' : (r.url.startsWith('/chords/') ? 'monthly' : (r.url.startsWith('/blog/') ? 'monthly' : 'weekly'));
-  sitemapXml += `  <url>\n    <loc>https://guitariz.studio${r.url === '/' ? '/' : r.url}</loc>\n    <lastmod>${TODAY}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${priority}</priority>\n  </url>\n`;
+  const lastmod = r.lastmod || '2026-03-15';
+  sitemapXml += `  <url>\n    <loc>https://guitariz.studio${r.url === '/' ? '/' : r.url}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>\n`;
 }
 sitemapXml += `</urlset>\n`;
 fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), sitemapXml);
@@ -1139,12 +1168,6 @@ function generateBreadcrumbJsonLd(r) {
     items.push({
       '@type': 'ListItem',
       'position': 2,
-      'name': 'Legal',
-      'item': 'https://guitariz.studio/'
-    });
-    items.push({
-      '@type': 'ListItem',
-      'position': 3,
       'name': nameMap[r.url],
       'item': `https://guitariz.studio${r.url}`
     });
@@ -1156,12 +1179,6 @@ function generateBreadcrumbJsonLd(r) {
     items.push({
       '@type': 'ListItem',
       'position': 2,
-      'name': 'Company',
-      'item': 'https://guitariz.studio/'
-    });
-    items.push({
-      '@type': 'ListItem',
-      'position': 3,
       'name': nameMap[r.url],
       'item': `https://guitariz.studio${r.url}`
     });
@@ -1169,12 +1186,6 @@ function generateBreadcrumbJsonLd(r) {
     items.push({
       '@type': 'ListItem',
       'position': 2,
-      'name': 'Resources',
-      'item': 'https://guitariz.studio/'
-    });
-    items.push({
-      '@type': 'ListItem',
-      'position': 3,
       'name': 'Recommended Gear',
       'item': 'https://guitariz.studio/gear'
     });
@@ -1186,12 +1197,6 @@ function generateBreadcrumbJsonLd(r) {
     items.push({
       '@type': 'ListItem',
       'position': 2,
-      'name': 'Comparisons',
-      'item': 'https://guitariz.studio/'
-    });
-    items.push({
-      '@type': 'ListItem',
-      'position': 3,
       'name': nameMap[r.url],
       'item': `https://guitariz.studio${r.url}`
     });
@@ -1199,6 +1204,7 @@ function generateBreadcrumbJsonLd(r) {
     // Tools
     const toolNameMap = {
       '/chord-ai': 'Chord AI',
+      '/chord-finder': 'Chord Finder',
       '/stem-separator': 'Stem Separator',
       '/vocal-splitter': 'Vocal Splitter',
       '/bpm-detector': 'BPM Detector',
@@ -1217,12 +1223,6 @@ function generateBreadcrumbJsonLd(r) {
     items.push({
       '@type': 'ListItem',
       'position': 2,
-      'name': 'Tools',
-      'item': 'https://guitariz.studio/'
-    });
-    items.push({
-      '@type': 'ListItem',
-      'position': 3,
       'name': toolName,
       'item': `https://guitariz.studio${r.url}`
     });
@@ -1292,6 +1292,18 @@ for (const r of routes) {
     html = html.replace('</head>', `  <meta property="og:type" content="website" />\n</head>`);
   }
 
+  // Ensure twitter:title & twitter:description are set per-page
+  if (/name="twitter:title"/i.test(html)) {
+    html = html.replace(/<meta name="twitter:title"[\s\S]*?>/i, `<meta name="twitter:title" content="${r.title}" />`);
+  } else {
+    html = html.replace('</head>', `  <meta name="twitter:title" content="${r.title}" />\n</head>`);
+  }
+  if (/name="twitter:description"/i.test(html)) {
+    html = html.replace(/<meta name="twitter:description"[\s\S]*?>/i, `<meta name="twitter:description" content="${r.description}" />`);
+  } else {
+    html = html.replace('</head>', `  <meta name="twitter:description" content="${r.description}" />\n</head>`);
+  }
+
   // Ensure og:image uses logo2.png
   if (/property="og:image"/i.test(html)) {
     html = html.replace(/<meta property="og:image"[\s\S]*?>/i, `<meta property="og:image" content="https://guitariz.studio/logo2.png" />`);
@@ -1307,7 +1319,7 @@ for (const r of routes) {
   }
 
   // Insert page-specific JSON-LD and BreadcrumbList JSON-LD before </head>
-  let schemaScripts = `  <script type="application/ld+json">${r.jsonLd}</script>`;
+  let schemaScripts = `  <script id="ld-json-metadata" type="application/ld+json">${r.jsonLd}</script>`;
   const breadcrumbSchema = generateBreadcrumbJsonLd(r);
   if (breadcrumbSchema) {
     schemaScripts += `\n  <script type="application/ld+json">${JSON.stringify(breadcrumbSchema)}</script>`;

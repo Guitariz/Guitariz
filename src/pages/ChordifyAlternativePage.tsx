@@ -5,10 +5,12 @@ import { usePageMetadata } from "@/hooks/usePageMetadata";
 import { SEOContent, Breadcrumb } from "@/components/SEOContent";
 import RelatedTools from "@/components/RelatedTools";
 
+import staticContent from "@/data/staticContent.json";
+
 const ChordifyAlternativePage = () => {
   usePageMetadata({
-    title: "Chordify Alternative: Guitariz vs Chordify (2026) | Guitariz",
-    description: "Compare Guitariz Studio and Chordify side-by-side. See how chord recognition, MP3 audio uploads, stem separation, and pricing differ in 2026.",
+    title: staticContent.chordifyAlternative.title,
+    description: staticContent.chordifyAlternative.description,
     keywords: "chordify alternative, chordify vs guitariz, free chordify alternative 2026, compare chordify, chord recognition app comparison, extract chords from youtube",
     canonicalUrl: "https://guitariz.studio/chordify-alternative",
     ogImage: "https://guitariz.studio/logo2.png",

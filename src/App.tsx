@@ -39,6 +39,7 @@ const CookiePolicyPage = lazy(() => import("./pages/CookiePolicyPage"));
 const BpmDetectorPage = lazy(() => import("./pages/BpmDetectorPage"));
 const KeyDetectorPage = lazy(() => import("./pages/KeyDetectorPage"));
 const ChordGeneratorPage = lazy(() => import("./pages/ChordGeneratorPage"));
+const ChordFinderPage = lazy(() => import("./pages/ChordFinderPage"));
 const ChordifyAlternativePage = lazy(() => import("./pages/ChordifyAlternativePage"));
 const MoisesAlternativePage = lazy(() => import("./pages/MoisesAlternativePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -222,6 +223,18 @@ const App = () => {
                     <PageWrapper>
                       <main id="main-content">
                         <ChordAIPage />
+                      </main>
+                    </PageWrapper>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/chord-finder"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PageWrapper>
+                      <main id="main-content">
+                        <ChordFinderPage />
                       </main>
                     </PageWrapper>
                   </Suspense>

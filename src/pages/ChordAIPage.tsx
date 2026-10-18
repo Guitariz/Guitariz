@@ -595,12 +595,18 @@ const ChordAIPage = () => {
                   <span className="text-2xl md:text-3xl font-light italic text-muted-foreground">Free Chord Finder</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed font-light">
-                  Free online AI chord finder: extract guitar chords, key signatures, and harmonic progressions from MP3s or YouTube audio.
+                  Free online chord finder and chord identifier: extract guitar chords, key signatures, and harmonic progressions from MP3s or YouTube audio.
                 </p>
-                <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl">
+                <div className="mt-4 p-5 rounded-2xl bg-card/60 border border-border/60 max-w-3xl space-y-2">
                   <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">AI Chord Finder & Audio Transcriber</h2>
                   <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
                     Guitariz Chord AI is an intelligent online chord finder that automatically detects guitar and piano chords, keys, and tempo (BPM) from any MP3, WAV, or YouTube track without paywalls or login requirements.
+                  </p>
+                  <p className="text-xs text-muted-foreground pt-1 flex items-center gap-1.5 font-medium">
+                    <span>Have notes under your fingers instead?</span>
+                    <Link to="/chord-finder" className="text-primary hover:underline inline-flex items-center gap-1">
+                      Identify them with the Chord Finder <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </p>
                 </div>
               </div>

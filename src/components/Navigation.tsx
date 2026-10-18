@@ -99,6 +99,7 @@ const Navigation = () => {
 
   const navItems = [
     { icon: Bot, label: "Chord AI", path: "/chord-ai" },
+    { icon: Music, label: "Chord Finder", path: "/chord-finder" },
     { icon: Wand2, label: "Vocal Splitter", path: "/vocal-splitter" },
     { icon: Guitar, label: "Fretboard", path: "/fretboard" },
     { icon: Layers, label: "Chords", path: "/chords" },

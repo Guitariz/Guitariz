@@ -81,10 +81,21 @@ export const usePageMetadata = ({
         }
         ogTypeElement.content = ogType;
 
-        // Set JSON-LD
+        // Set JSON-LD without duplicate blocks
         if (jsonLd) {
             const ldId = "ld-json-metadata";
             let ld = document.getElementById(ldId) as HTMLScriptElement | null;
+            if (!ld) {
+                // Find existing prerendered page schema (exclude breadcrumb schema)
+                const existingScripts = document.querySelectorAll('script[type="application/ld+json"]');
+                for (const script of existingScripts) {
+                    if (!script.textContent?.includes('"BreadcrumbList"')) {
+                        ld = script as HTMLScriptElement;
+                        ld.id = ldId;
+                        break;
+                    }
+                }
+            }
             if (!ld) {
                 ld = document.createElement("script");
                 ld.type = "application/ld+json";
@@ -93,12 +104,6 @@ export const usePageMetadata = ({
             }
             ld.textContent = JSON.stringify(jsonLd);
         }
-
-        return () => {
-            // Optional: cleanup JSON-LD on unmount if it's page-specific
-            const ld = document.getElementById("ld-json-metadata");
-            if (ld) ld.remove();
-        };
     }, [title, description, keywords, canonicalUrl, ogUrl, ogImage, ogType, jsonLd]);
 };
 

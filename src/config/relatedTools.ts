@@ -12,7 +12,14 @@ export const TOOLS_CONFIG: Record<string, ToolDefinition> = {
     name: "Chord AI",
     path: "/chord-ai",
     description: "Extract chords, key & tempo from any song with AI audio analysis.",
-    relatedIds: ["key-detector", "stem-separator", "bpm-detector"],
+    relatedIds: ["chord-finder", "key-detector", "stem-separator"],
+  },
+  "chord-finder": {
+    id: "chord-finder",
+    name: "Chord Finder",
+    path: "/chord-finder",
+    description: "Identify guitar and piano chords from notes with live voicing feedback.",
+    relatedIds: ["key-detector", "chord-progression-generator", "fretboard"],
   },
   "stem-separator": {
     id: "stem-separator",
